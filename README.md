@@ -17,19 +17,34 @@
 
 ## 项目状态
 
-🚧 **当前阶段：方案设计与仓库初始化（方向已确认为代码任务）**
+✅ **当前阶段：最小可运行闭环已完成（Mock 离线模式验证通过）**
 
 - [x] 仓库创建
 - [x] 方向确认：代码任务
-- [ ] 方案文档完善
-- [ ] 应用核心实现
-- [ ] 评测题集构建（含对抗测试与伪正确样本）
-- [ ] 过程评估器实现
-- [ ] 有效性验证
-- [ ] 结果分析与报告
+- [x] 方案文档完善（PROPOSAL.md + docs/design.md + error_taxonomy.md）
+- [x] 应用核心实现（Solver → Sandbox → Rules → Critic → Aggregate）
+- [x] 评测题集构建（含对抗测试与伪正确样本，easy / medium / hard / adversarial）
+- [x] 过程评估器实现（分步 Critic + 规则硬证据融合）
+- [x] 有效性验证（定位准确率 83.3%，伪正确识别率 100%，误报率 0%）
+- [x] 结果分析与报告（results/latest_report.md）
 - [ ] Demo 视频/GIF
+- [ ] 真实 Hy3 API 大规模评测与调优
+- [ ] Web UI（可选）
 
-## 仓库结构（规划）
+## 最新评测摘要（Mock 模式）
+
+| 指标 | 数值 |
+|------|------|
+| 结果正确率（公开测试） | 8/8 |
+| 真实正确率（公开+对抗） | 3/8 |
+| 伪正确样本 | 6/8 |
+| 伪正确识别率 | 100% |
+| 步骤定位准确率（top-1） | 83.3% |
+| 误报率 | 0% |
+
+详细报告见 [`results/latest_report.md`](results/latest_report.md)
+
+## 仓库结构
 
 ```
 .
@@ -37,37 +52,47 @@
 ├── PROPOSAL.md                 # 方案文档
 ├── docs/
 │   ├── design.md               # 详细设计
-│   ├── error_taxonomy.md       # 错误分类体系
-│   └── analysis_report.md      # 分析报告
+│   └── error_taxonomy.md       # 错误分类体系
 ├── app/
 │   ├── solver/                 # Hy3 驱动的解题过程生成
 │   ├── evaluator/              # 过程评估模块（LLM Critic + 沙盒 + 静态分析）
 │   ├── sandbox/                # 代码执行沙盒
-│   └── ui/                     # CLI / Web 界面
+│   ├── llm/                    # 可插拔后端（Hy3 / Mock）
+│   ├── reporting/              # 报告生成
+│   └── main.py                 # CLI 入口
 ├── datasets/
 │   └── code/                   # 分层代码任务题集
 │       ├── easy/
 │       ├── medium/
 │       ├── hard/
-│       └── adversarial/        # 伪正确样本（测试通过但逻辑有问题）
+│       └── adversarial/        # 伪正确样本
 ├── scripts/
-│   ├── run_solver.py
-│   ├── process_evaluator.py
-│   ├── answer_checker.py       # 测试执行 + 额外对抗测试
-│   └── validation.py           # 定位准确率 / 误报率验证
-├── results/
-├── demos/
+├── results/                    # 评测产物（latest_report.md 已纳入版本控制）
 └── requirements.txt
 ```
 
-## 快速开始（规划）
+## 快速开始
+
+### 离线 Mock 模式（无需任何 Key，推荐先跑这个）
 
 ```bash
-pip install -r requirements.txt
-export HY3_API_KEY=your_key
+# 无需安装依赖（仅标准库）
+python -m app.main --all
 
-# 单题解题 + 过程评估
-python -m app.main --problem datasets/code/medium/001.json
+# 单题评测
+python -m app.main --problem datasets/code/medium/is_palindrome.json
+# 或按 id
+python -m app.main --id medium-002
+```
+
+### 真实 Hy3 模式
+
+```bash
+pip install -r requirements.txt   # 可选，不装也能用 urllib 直连
+export HY3_API_KEY=your_key
+# 可选：export HY3_BASE_URL=...  HY3_MODEL=...
+
+python -m app.main --all --backend hy3
 ```
 
 ## 参考
