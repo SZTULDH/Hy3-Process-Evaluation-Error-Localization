@@ -1,0 +1,38 @@
+{
+  "id": "easy-002",
+  "difficulty": "easy",
+  "title": "数组最大值",
+  "description": "返回整数列表中的最大值。若列表为空，返回 None。",
+  "function_signature": "def find_max(nums: list) -> int | None",
+  "entry_point": "find_max",
+  "language": "python",
+  "constraints": "0 <= len(nums) <= 10^5，元素为 int。",
+  "expected_complexity": { "time": "O(n)", "space": "O(1)" },
+  "required_edge_cases": ["空列表", "全负数", "单元素"],
+  "public_tests": [
+    { "args": [[1, 2, 3]], "expected": 3 },
+    { "args": [[-1, -5]], "expected": -1 },
+    { "args": [[5]], "expected": 5 }
+  ],
+  "adversarial_tests": [
+    { "args": [[]], "expected": null },
+    { "args": [[-3, -3, -3]], "expected": -3 },
+    { "args": [[0]], "expected": 0 },
+    { "args": [[2, 1, 2]], "expected": 2 }
+  ],
+  "mock_solution": {
+    "解题思路": "以列表首元素作为当前最大值的初值，然后从第二个元素开始线性扫描，遇到更大的值就更新。这样避免了把初值设成 0 或负无穷带来的语义问题。",
+    "复杂度分析": "时间复杂度 O(n)：一次线性扫描。空间复杂度 O(1)：只用到常数个辅助变量。",
+    "关键边界与处理策略": "空列表：先判断是否为空，为空直接返回 None，避免取首元素时下标越界。全负数：初值取首元素而非 0，因此全负数场景下也能得到正确结果。单元素：直接返回该元素，循环不执行。含零元素：零参与正常比较，无需特殊处理。",
+    "代码实现": "```python\ndef find_max(nums):\n    if not nums:\n        return None\n    best = nums[0]\n    for x in nums[1:]:\n        if x > best:\n            best = x\n    return best\n```",
+    "自测说明": "公开用例 [1,2,3] -> 3、[-1,-5] -> -1、[5] -> 5 均已通过；另手工验证了空列表返回 None 与全负数列表的情形。"
+  },
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "first_error_step": null,
+    "error_types": [],
+    "note": "对照组：边界讨论完整，实现与描述一致，用于检验误报率。"
+  }
+}

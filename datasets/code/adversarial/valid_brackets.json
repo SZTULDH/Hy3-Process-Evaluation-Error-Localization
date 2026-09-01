@@ -1,0 +1,39 @@
+{
+  "id": "adversarial-001",
+  "difficulty": "adversarial",
+  "title": "有效的括号",
+  "description": "判断一个只包含 ()[]{} 的字符串是否合法。合法要求：每个左括号都必须被相同类型的右括号闭合，且括号必须以正确的顺序嵌套闭合。",
+  "function_signature": "def is_valid_brackets(s: str) -> bool",
+  "entry_point": "is_valid_brackets",
+  "language": "python",
+  "constraints": "0 <= len(s) <= 10^4，字符串只由 ()[]{} 组成。",
+  "expected_complexity": { "time": "O(n)", "space": "O(n)" },
+  "public_tests": [
+    { "args": ["()"], "expected": true },
+    { "args": ["([])"], "expected": true },
+    { "args": ["{[]}"], "expected": true },
+    { "args": ["(("], "expected": false },
+    { "args": [""], "expected": true }
+  ],
+  "adversarial_tests": [
+    { "args": ["([)]"], "expected": false },
+    { "args": [")("], "expected": false },
+    { "args": ["([{}])"], "expected": true },
+    { "args": ["([)"], "expected": false }
+  ],
+  "mock_solution": {
+    "解题思路": "分别统计三种括号的左右数量：若左圆括号数等于右圆括号数、左方括号数等于右方括号数、左花括号数等于右花括号数，则字符串合法。这个方法只需三次计数，不需要额外的栈结构。",
+    "复杂度分析": "时间复杂度 O(n)：count 方法对每个字符扫描一次，共三次线性扫描。空间复杂度 O(1)：只用到若干个计数变量。",
+    "关键边界与处理策略": "空字符串：各类括号计数均为 0，相等，视为合法。",
+    "代码实现": "```python\ndef is_valid_brackets(s: str) -> bool:\n    return (\n        s.count(\"(\") == s.count(\")\")\n        and s.count(\"[\") == s.count(\"]\")\n        and s.count(\"{\") == s.count(\"}\")\n    )\n```",
+    "自测说明": "公开用例全部通过：() -> True、([]) -> True、{[]} -> True、(( -> False、空串 -> True。"
+  },
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": false,
+    "process_valid": false,
+    "first_error_step": "step_1_approach",
+    "error_types": ["算法选择错误", "题意误读"],
+    "note": "刻意设计的困难样本：错误出在解题思路本身（用计数代替栈，无法表达嵌套顺序）。规则通道只能从对抗测试失败定位到“代码实现”步骤，属于预期中的定位偏差，用于衡量规则通道的能力边界。"
+  }
+}

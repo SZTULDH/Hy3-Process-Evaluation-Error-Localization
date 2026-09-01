@@ -1,0 +1,38 @@
+{
+  "id": "medium-003",
+  "difficulty": "medium",
+  "title": "合并区间",
+  "description": "给定若干闭区间组成的列表，合并所有重叠的区间，返回合并后的区间列表（按左端点升序排列）。",
+  "function_signature": "def merge_intervals(intervals: list) -> list",
+  "entry_point": "merge_intervals",
+  "language": "python",
+  "constraints": "0 <= len(intervals) <= 10^4，每个区间为 [left, right] 且 left <= right。",
+  "expected_complexity": { "time": "O(n log n)", "space": "O(n)" },
+  "required_edge_cases": ["空输入", "完全包含", "相邻端点相接"],
+  "public_tests": [
+    { "args": [[[1, 3], [2, 6], [8, 10], [15, 18]]], "expected": [[1, 6], [8, 10], [15, 18]] },
+    { "args": [[[1, 4], [4, 5]]], "expected": [[1, 5]] },
+    { "args": [[[1, 2]]], "expected": [[1, 2]] },
+    { "args": [[]], "expected": [] }
+  ],
+  "adversarial_tests": [
+    { "args": [[[1, 10], [2, 3], [4, 5]]], "expected": [[1, 10]] },
+    { "args": [[[1, 4], [2, 3]]], "expected": [[1, 4]] },
+    { "args": [[[2, 3], [4, 5], [6, 7], [8, 9], [1, 10]]], "expected": [[1, 10]] }
+  ],
+  "mock_solution": {
+    "解题思路": "先按区间左端点排序，然后线性扫描：若当前区间与结果集中最后一个区间重叠，就把最后一个区间的右端点更新为当前区间的右端点；否则把当前区间追加进结果集。",
+    "复杂度分析": "时间复杂度 O(n log n)：排序占主导，之后是一次线性扫描 O(n)。空间复杂度 O(n)：结果集最多存放 n 个区间。",
+    "关键边界与处理策略": "空输入：直接返回空列表，避免取首元素越界。相邻端点相接：如 [1,4] 与 [4,5] 应视为重叠并合并。",
+    "代码实现": "```python\ndef merge_intervals(intervals):\n    if not intervals:\n        return []\n    intervals = sorted(intervals, key=lambda x: x[0])\n    merged = [intervals[0]]\n    for cur in intervals[1:]:\n        if cur[0] <= merged[-1][1]:\n            merged[-1][1] = cur[1]\n        else:\n            merged.append(cur)\n    return merged\n```",
+    "自测说明": "公开用例全部通过：[[1,3],[2,6],[8,10],[15,18]] 合并为 [[1,6],[8,10],[15,18]]，[[1,4],[4,5]] 合并为 [[1,5]]，空输入返回 []。"
+  },
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": false,
+    "process_valid": false,
+    "first_error_step": "step_3_edge_cases",
+    "error_types": ["边界处理缺失", "实现逻辑缺陷"],
+    "note": "伪正确样本：合并时把右端点直接赋值为 cur[1]，未取 max。当后一个区间被前一个区间完全包含时右端点反而被缩小。边界讨论中遗漏了“完全包含”这一情形。"
+  }
+}

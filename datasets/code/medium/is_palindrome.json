@@ -1,0 +1,40 @@
+{
+  "id": "medium-002",
+  "difficulty": "medium",
+  "title": "验证回文串",
+  "description": "判断一个字符串是否为回文。只考虑字母和数字字符，忽略大小写；空格与标点符号不参与比较。空字符串视为回文。",
+  "function_signature": "def is_palindrome(s: str) -> bool",
+  "entry_point": "is_palindrome",
+  "language": "python",
+  "constraints": "0 <= len(s) <= 10^5，字符串由可打印 ASCII 字符组成。",
+  "expected_complexity": { "time": "O(n)", "space": "O(1)" },
+  "required_edge_cases": ["大小写", "标点与空格", "空字符串"],
+  "public_tests": [
+    { "args": ["aba"], "expected": true },
+    { "args": ["ab"], "expected": false },
+    { "args": [""], "expected": true },
+    { "args": ["racecar"], "expected": true },
+    { "args": ["12321"], "expected": true }
+  ],
+  "adversarial_tests": [
+    { "args": ["A man, a plan, a canal: Panama"], "expected": true },
+    { "args": ["race a car"], "expected": true },
+    { "args": ["0P"], "expected": false },
+    { "args": ["aA"], "expected": true }
+  ],
+  "mock_solution": {
+    "解题思路": "回文的定义是正读与反读相同。直接把字符串反转后与原串比较即可，一行代码就能完成，不需要额外的指针或过滤逻辑。",
+    "复杂度分析": "时间复杂度 O(n)：反转操作需要线性时间，比较也是线性时间。空间复杂度 O(n)：反转会产生一个字符串副本。",
+    "关键边界与处理策略": "空字符串：反转后仍为空，比较结果为真，符合定义。单字符：反转后等于自身，返回真。",
+    "代码实现": "```python\ndef is_palindrome(s: str) -> bool:\n    return s == s[::-1]\n```",
+    "自测说明": "公开用例 aba -> True、ab -> False、空串 -> True、racecar -> True、12321 -> True 全部通过，实现正确。"
+  },
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": false,
+    "process_valid": false,
+    "first_error_step": "step_3_edge_cases",
+    "error_types": ["边界处理缺失", "测试覆盖不足导致的伪正确"],
+    "note": "伪正确样本：公开用例恰好都是纯小写/纯数字，直接反转比较能够通过；一旦出现大小写混合或标点空格即失败。根因在边界处理讨论中遗漏了大小写与标点归一化。"
+  }
+}

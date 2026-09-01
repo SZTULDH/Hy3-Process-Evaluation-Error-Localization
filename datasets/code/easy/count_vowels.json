@@ -1,0 +1,38 @@
+{
+  "id": "easy-001",
+  "difficulty": "easy",
+  "title": "统计元音字母",
+  "description": "统计字符串中元音字母（a、e、i、o、u）的个数，不区分大小写。非字母字符不计入。",
+  "function_signature": "def count_vowels(s: str) -> int",
+  "entry_point": "count_vowels",
+  "language": "python",
+  "constraints": "0 <= len(s) <= 10^5，字符串由可打印 ASCII 字符组成。",
+  "expected_complexity": { "time": "O(n)", "space": "O(1)" },
+  "required_edge_cases": ["空字符串", "大小写混合"],
+  "public_tests": [
+    { "args": ["hello"], "expected": 2 },
+    { "args": ["AEIOU"], "expected": 5 },
+    { "args": ["xyz"], "expected": 0 }
+  ],
+  "adversarial_tests": [
+    { "args": [""], "expected": 0 },
+    { "args": ["AeIoU"], "expected": 5 },
+    { "args": ["bcdfg"], "expected": 0 },
+    { "args": ["aA"], "expected": 2 }
+  ],
+  "mock_solution": {
+    "解题思路": "遍历字符串中的每个字符，判断它是否属于预置的元音集合，命中则计数加一。元音集合同时包含大小写形式，因此无需额外做大小写转换。",
+    "复杂度分析": "时间复杂度 O(n)：只做一次线性扫描。空间复杂度 O(1)：元音集合大小固定，与输入规模无关。",
+    "关键边界与处理策略": "空字符串：循环不执行，直接返回 0。大小写混合：元音集合同时收录 aeiou 与 AEIOU，不区分大小写。非字母字符：不在集合中，自然被忽略。",
+    "代码实现": "```python\ndef count_vowels(s: str) -> int:\n    vowels = set(\"aeiouAEIOU\")\n    return sum(1 for ch in s if ch in vowels)\n```",
+    "自测说明": "用公开用例验证：hello -> 2，AEIOU -> 5，xyz -> 0，均与预期一致。覆盖范围为公开用例本身，未额外构造边界用例。"
+  },
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "first_error_step": null,
+    "error_types": [],
+    "note": "对照组：实现与过程均成立，用于检验评估器在正确样本上的误报率。"
+  }
+}

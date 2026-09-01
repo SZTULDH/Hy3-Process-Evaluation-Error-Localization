@@ -1,0 +1,39 @@
+{
+  "id": "hard-001",
+  "difficulty": "hard",
+  "title": "无重复字符的最长子串",
+  "description": "给定字符串 s，找出其中不含重复字符的最长子串的长度。子串必须是连续的。",
+  "function_signature": "def length_of_longest_substring(s: str) -> int",
+  "entry_point": "length_of_longest_substring",
+  "language": "python",
+  "constraints": "0 <= len(s) <= 10^5，字符串由可打印 ASCII 字符组成。",
+  "expected_complexity": { "time": "O(n)", "space": "O(n)" },
+  "required_edge_cases": ["空字符串", "左指针回退", "全部相同字符"],
+  "public_tests": [
+    { "args": ["abcabcbb"], "expected": 3 },
+    { "args": ["bbbbb"], "expected": 1 },
+    { "args": [""], "expected": 0 },
+    { "args": ["abcdef"], "expected": 6 },
+    { "args": ["dvdf"], "expected": 3 }
+  ],
+  "adversarial_tests": [
+    { "args": ["pwwkew"], "expected": 3 },
+    { "args": ["abba"], "expected": 2 },
+    { "args": ["aab"], "expected": 2 }
+  ],
+  "mock_solution": {
+    "解题思路": "使用滑动窗口。维护左指针 left 与一个记录窗口内字符的集合 seen；右指针 right 逐字符右移，若当前字符已在窗口中，就把窗口最左侧的字符移出集合并将 left 右移一位，然后把当前字符加入集合，用窗口长度更新答案。",
+    "复杂度分析": "时间复杂度 O(n)：左右指针各最多移动 n 次。空间复杂度 O(n)：集合最多存放字符集大小的字符。",
+    "关键边界与处理策略": "空字符串：直接返回 0。左指针回退：遇到重复字符时需要把左端点移出窗口并右移 left，保证窗口内无重复。全部相同字符：每步都会触发回退，窗口长度恒为 1。",
+    "代码实现": "```python\ndef length_of_longest_substring(s: str) -> int:\n    if not s:\n        return 0\n    left = 0\n    best = 0\n    seen = set()\n    for right, ch in enumerate(s):\n        if ch in seen:\n            seen.discard(s[left])\n            left += 1\n        seen.add(ch)\n        best = max(best, right - left + 1)\n    return best\n```",
+    "自测说明": "公开用例全部通过：abcabcbb -> 3、bbbbb -> 1、空串 -> 0、abcdef -> 6、dvdf -> 3。"
+  },
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": false,
+    "process_valid": false,
+    "first_error_step": "step_4_implementation",
+    "error_types": ["实现逻辑缺陷", "状态管理错误"],
+    "note": "伪正确样本：边界讨论是完整的，缺陷纯粹在实现——遇到重复字符时 left 只右移一位，而不是持续收缩到重复字符之后。经典用例 abba 与 pwwkew 会暴露该问题。"
+  }
+}

@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+
+# 评测产物：保留 latest_report.md 便于查看，忽略带时间戳的历史文件
+results/*.jsonl
+results/report_*.md
+!results/latest_report.md
+
+# 大规模性能对抗用例由脚本生成，体积较大，不纳入版本控制
+datasets/code/medium/two_sum_perf_args.json

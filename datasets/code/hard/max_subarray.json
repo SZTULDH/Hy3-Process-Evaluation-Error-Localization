@@ -1,0 +1,39 @@
+{
+  "id": "hard-002",
+  "difficulty": "hard",
+  "title": "最大子数组和",
+  "description": "给定一个非空的整数数组，返回其最大连续子数组之和。子数组必须是连续的，且至少包含一个元素。",
+  "function_signature": "def max_subarray(nums: list) -> int",
+  "entry_point": "max_subarray",
+  "language": "python",
+  "constraints": "1 <= len(nums) <= 10^5，元素为 int。",
+  "expected_complexity": { "time": "O(n)", "space": "O(1)" },
+  "required_edge_cases": ["全负数", "单元素", "含零"],
+  "public_tests": [
+    { "args": [[1, -2, 3, 4]], "expected": 7 },
+    { "args": [[1, 2, 3]], "expected": 6 },
+    { "args": [[-1, 1, 2]], "expected": 3 },
+    { "args": [[5]], "expected": 5 }
+  ],
+  "adversarial_tests": [
+    { "args": [[-3, -2, -1]], "expected": -1 },
+    { "args": [[-5]], "expected": -5 },
+    { "args": [[0, 0, 0]], "expected": 0 },
+    { "args": [[-1, -1, 2]], "expected": 2 }
+  ],
+  "mock_solution": {
+    "解题思路": "使用 Kadane 算法的变体：维护当前连续子数组的和 cur，每步令 cur = max(0, cur + x)，即当累积和变为负数时宁可重新开始；同时用 best 记录历史最大值。",
+    "复杂度分析": "时间复杂度 O(n)：一次线性扫描。空间复杂度 O(1)：只用到两个累加变量。",
+    "关键边界与处理策略": "单元素：直接返回该元素。含零：零不会使累积和变差，参与正常比较即可。",
+    "代码实现": "```python\ndef max_subarray(nums):\n    best = 0\n    cur = 0\n    for x in nums:\n        cur = max(0, cur + x)\n        best = max(best, cur)\n    return best\n```",
+    "自测说明": "公开用例全部通过：[1,-2,3,4] -> 7、[1,2,3] -> 6、[-1,1,2] -> 3、[5] -> 5。"
+  },
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": false,
+    "process_valid": false,
+    "first_error_step": "step_3_edge_cases",
+    "error_types": ["边界处理缺失", "实现逻辑缺陷"],
+    "note": "伪正确样本：把 cur 的下界钳制为 0，等价于假设答案非负。全负数数组（如 [-3,-2,-1]）会错误地返回 0。边界讨论中遗漏了“全负数”这一关键情形。"
+  }
+}

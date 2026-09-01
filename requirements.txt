@@ -1,0 +1,8 @@
+# 核心链路（生成 → 执行 → 评估 → 报告）只依赖 Python 标准库，
+# 因此克隆后无需安装任何依赖即可跑通离线 Mock 模式：
+#
+#     python -m app.main --all
+#
+# 以下依赖仅在接入真实 Hy3 API 时需要，且为可选：
+# 若未安装，app/llm/hy3.py 会自动退回标准库 urllib 直连 OpenAI 兼容端点。
+openai>=1.0.0        # 可选：安装后 Hy3 后端走官方 SDK，否则走 urllib
