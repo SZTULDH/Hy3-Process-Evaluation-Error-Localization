@@ -15,6 +15,7 @@ import json
 import os
 import sys
 import threading
+import time
 import traceback
 from contextlib import redirect_stderr, redirect_stdout
 
@@ -140,6 +141,7 @@ def load_module(code_path: str, max_output: int, recursion_limit: int):
 
 def run_one(fn, args: list, kwargs: dict, max_output: int) -> dict:
     out, err = _LimitedWriter(max_output), _LimitedWriter(max_output)
+    start = time.perf_counter()
     try:
         with redirect_stdout(out), redirect_stderr(err):
             result = fn(*args, **kwargs)
@@ -148,6 +150,7 @@ def run_one(fn, args: list, kwargs: dict, max_output: int) -> dict:
             "result": result,
             "stdout": out.getvalue()[:300],
             "stderr": err.getvalue()[:300],
+            "duration_ms": round((time.perf_counter() - start) * 1000, 3),
         }
     except BaseException as exc:  # noqa: BLE001
         return {
@@ -157,6 +160,7 @@ def run_one(fn, args: list, kwargs: dict, max_output: int) -> dict:
             "traceback": traceback.format_exc()[-1500:],
             "stdout": out.getvalue()[:300],
             "stderr": err.getvalue()[:300],
+            "duration_ms": round((time.perf_counter() - start) * 1000, 3),
         }
 
 

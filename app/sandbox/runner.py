@@ -32,6 +32,9 @@ HARNESS_PATH = Path(__file__).with_name("_harness.py")
 # 实测启动约 1s，留 5s 作为低配机器上的安全余量。
 STARTUP_OVERHEAD = 5.0
 
+# SANDBOX_DEBUG=1：报告与 CLI 输出保留完整 traceback / stdout / stderr
+DEBUG = bool(os.getenv("SANDBOX_DEBUG"))
+
 
 # ------------------------------------------------------------------ 数据结构
 
@@ -41,10 +44,13 @@ class TestResult:
     index: int
     args: list
     expected: Any
-    status: str  # ok | wrong_answer | runtime_error | timeout | missing_entry | unserializable
+    status: str  # ok | wrong_answer | runtime_error | timeout | not_run
+                 # | missing_entry | import_error | unserializable
     actual: Any = None
     error: str = ""
     traceback: str = ""
+    stdout: str = ""
+    stderr: str = ""
     duration_ms: float = 0.0
 
     @property
@@ -52,15 +58,49 @@ class TestResult:
         return self.status == "ok"
 
     def to_dict(self) -> dict:
-        return {
+        """序列化。失败用例附带 traceback / stdout / stderr 便于定位根因。
+
+        诊断字段默认截断；设 SANDBOX_DEBUG=1 可放开到完整长度。
+        """
+        d = {
             "index": self.index,
             "args": self.args,
             "expected": self.expected,
             "status": self.status,
             "actual": self.actual,
             "error": self.error[:300],
-            "duration_ms": round(self.duration_ms, 1),
+            "duration_ms": round(self.duration_ms, 3),
         }
+        if self.status == "ok":
+            return d
+        lim = 100000 if DEBUG else 600
+        if self.traceback:
+            d["traceback"] = self.traceback[-lim:]
+        if self.stdout:
+            d["stdout"] = self.stdout[-lim:]
+        if self.stderr:
+            d["stderr"] = self.stderr[-lim:]
+        return d
+
+    def explain(self) -> str:
+        """人类可读的单用例诊断文本，供 CLI --debug 与人工抽检使用。"""
+        lines = [
+            f"[{self.status}] 用例 #{self.index}",
+            f"  入参  : {self.args!r}",
+            f"  期望  : {self.expected!r}",
+            f"  实际  : {self.actual!r}",
+            f"  耗时  : {self.duration_ms:.3f} ms",
+        ]
+        if self.error:
+            lines.append(f"  错误  : {self.error}")
+        if self.traceback:
+            lines.append("  回溯  :")
+            lines.extend("    " + ln for ln in self.traceback.strip().splitlines()[-12:])
+        if self.stdout:
+            lines.append(f"  stdout: {self.stdout[:300]!r}")
+        if self.stderr:
+            lines.append(f"  stderr: {self.stderr[:300]!r}")
+        return "\n".join(lines)
 
 
 @dataclass
@@ -236,7 +276,9 @@ def run_suite(
                         payload.get("status", "runtime_error"),
                         error=payload.get("error", ""),
                         traceback=payload.get("traceback", ""),
-                        duration_ms=0.0,
+                        stdout=payload.get("stdout", ""),
+                        stderr=payload.get("stderr", ""),
+                        duration_ms=float(payload.get("duration_ms", 0.0)),
                     )
                 )
                 continue
@@ -244,11 +286,29 @@ def run_suite(
             actual = payload.get("result")
             if values_equal(actual, expected):
                 suite.results.append(
-                    TestResult(i, args, expected, "ok", actual=actual)
+                    TestResult(
+                        i,
+                        args,
+                        expected,
+                        "ok",
+                        actual=actual,
+                        stdout=payload.get("stdout", ""),
+                        stderr=payload.get("stderr", ""),
+                        duration_ms=float(payload.get("duration_ms", 0.0)),
+                    )
                 )
             else:
                 suite.results.append(
-                    TestResult(i, args, expected, "wrong_answer", actual=actual)
+                    TestResult(
+                        i,
+                        args,
+                        expected,
+                        "wrong_answer",
+                        actual=actual,
+                        stdout=payload.get("stdout", ""),
+                        stderr=payload.get("stderr", ""),
+                        duration_ms=float(payload.get("duration_ms", 0.0)),
+                    )
                 )
 
     return suite
@@ -269,3 +329,27 @@ def check_syntax(code: str) -> str | None:
         return None
     except SyntaxError as exc:
         return f"SyntaxError: {exc.msg} (行 {exc.lineno})"
+
+
+def debug_run(
+    code: str,
+    entry_point: str,
+    args: list | None = None,
+    kwargs: dict | None = None,
+    timeout: float = SANDBOX_TIMEOUT,
+) -> TestResult:
+    """单用例调试入口：跑一次指定入参，返回带完整诊断的 TestResult。
+
+    与 run_suite 的区别是只跑一个用例、且诊断字段不做截断，
+    用于人工/ Agent 复现某个失败用例（CLI: python -m app.sandbox.debug）。
+    """
+    res = run_suite(code, entry_point, [{"args": args or [], "expected": None,
+                                         "kwargs": kwargs or {}, "timeout": timeout}])
+    if not res.results:
+        return TestResult(0, args or [], None, "not_run", error="沙盒未产出结果")
+    r = res.results[0]
+    # debug_run 不做断言：expected 传的是 None，只要没抛异常就算执行成功，
+    # 实际返回值一律放在 actual 里供调用方查看
+    if r.status == "wrong_answer" and r.expected is None:
+        r.status = "ok"
+    return r

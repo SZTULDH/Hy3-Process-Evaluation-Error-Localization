@@ -5,9 +5,15 @@ __pycache__/
 venv/
 .env
 
+# 工作区元数据（记忆、会话产物），不随开源仓库发布
+.workbuddy/
+
 # 评测产物：保留 latest_report.md 便于查看，忽略带时间戳的历史文件
+# 但人工抽检依赖的原始轨迹必须随仓库交付（任务书要求可复现）
 results/*.jsonl
 results/report_*.md
+!results/raw/
+!results/raw/*.jsonl
 !results/latest_report.md
 
 # 大规模性能对抗用例由脚本生成，体积较大，不纳入版本控制
