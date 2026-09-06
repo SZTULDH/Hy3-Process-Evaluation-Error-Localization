@@ -1,0 +1,4 @@
+[submodule "submodules/sandbox"]
+	path = submodules/sandbox
+	url = git@github.com:SZTULDH/sandbox-debugger.git
+	branch = main
