@@ -1,0 +1,22 @@
+{
+  "id": "easy-003",
+  "difficulty": "easy",
+  "title": "反转字符串",
+  "description": "编写一个函数，将输入的字符串反转后返回。",
+  "function_signature": "def reverse_string(s: str) -> str",
+  "entry_point": "reverse_string",
+  "language": "python",
+  "constraints": "0 <= len(s) <= 10^4",
+  "expected_complexity": {"time": "O(n)", "space": "O(n)"},
+  "required_edge_cases": ["空字符串", "单字符"],
+  "public_tests": [{"args": ["abc"], "expected": "cba"}, {"args": ["a"], "expected": "a"}, {"args": [""], "expected": ""}],
+  "adversarial_tests": [{"args": ["ab"], "expected": "ba"}, {"args": ["你好"], "expected": "好你"}],
+  "mock_solution": {
+    "解题思路": "切片 s[::-1]。",
+    "复杂度分析": "时间 O(n)，空间 O(n)。",
+    "关键边界与处理策略": "空串与单字符正确。",
+    "代码实现": "```python\ndef reverse_string(s: str) -> str:\n    return s[::-1]\n```",
+    "自测说明": "公开用例通过。"
+  },
+  "ground_truth": {"result_correct": true, "truly_correct": true, "process_valid": true, "first_error_step": null, "error_types": [], "note": "正确对照样本"}
+}

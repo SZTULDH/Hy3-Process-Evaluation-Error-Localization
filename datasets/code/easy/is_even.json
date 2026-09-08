@@ -1,0 +1,22 @@
+{
+  "id": "easy-005",
+  "difficulty": "easy",
+  "title": "判断偶数",
+  "description": "给定整数 n，判断是否为偶数。是则返回 True，否则 False。",
+  "function_signature": "def is_even(n: int) -> bool",
+  "entry_point": "is_even",
+  "language": "python",
+  "constraints": "-10^9 <= n <= 10^9",
+  "expected_complexity": {"time": "O(1)", "space": "O(1)"},
+  "required_edge_cases": ["0", "负数"],
+  "public_tests": [{"args": [2], "expected": true}, {"args": [3], "expected": false}, {"args": [0], "expected": true}],
+  "adversarial_tests": [{"args": [-2], "expected": true}, {"args": [-1], "expected": false}],
+  "mock_solution": {
+    "解题思路": "对 2 取模。",
+    "复杂度分析": "时间 O(1)，空间 O(1)。",
+    "关键边界与处理策略": "0 为偶数；负数同样用模运算。",
+    "代码实现": "```python\ndef is_even(n: int) -> bool:\n    return n % 2 == 0\n```",
+    "自测说明": "公开用例通过。"
+  },
+  "ground_truth": {"result_correct": true, "truly_correct": true, "process_valid": true, "first_error_step": null, "error_types": [], "note": "正确对照样本"}
+}

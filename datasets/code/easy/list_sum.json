@@ -1,0 +1,22 @@
+{
+  "id": "easy-004",
+  "difficulty": "easy",
+  "title": "列表求和",
+  "description": "给定整数列表 nums，返回所有元素之和。空列表和为 0。",
+  "function_signature": "def list_sum(nums: list) -> int",
+  "entry_point": "list_sum",
+  "language": "python",
+  "constraints": "0 <= len(nums) <= 10^4",
+  "expected_complexity": {"time": "O(n)", "space": "O(1)"},
+  "required_edge_cases": ["空列表", "负数"],
+  "public_tests": [{"args": [[1,2,3]], "expected": 6}, {"args": [[-1,1]], "expected": 0}, {"args": [[]], "expected": 0}],
+  "adversarial_tests": [{"args": [[-5]], "expected": -5}, {"args": [[0,0,0]], "expected": 0}],
+  "mock_solution": {
+    "解题思路": "使用内置 sum。",
+    "复杂度分析": "时间 O(n)，空间 O(1)。",
+    "关键边界与处理策略": "空列表 sum 返回 0。",
+    "代码实现": "```python\ndef list_sum(nums: list) -> int:\n    return sum(nums)\n```",
+    "自测说明": "公开用例通过。"
+  },
+  "ground_truth": {"result_correct": true, "truly_correct": true, "process_valid": true, "first_error_step": null, "error_types": [], "note": "正确对照样本"}
+}
