@@ -2,9 +2,10 @@
 
 用法：
     python -m app.main --problem datasets/code/medium/is_palindrome.json
-    python -m app.main --all
-    python -m app.main --all --backend hy3      # 需要设置 HY3_API_KEY
-    python -m app.main --id medium-002 --quiet
+    export HY3_API_KEY=...
+    python -m app.main --all                 # 默认真实 Hy3
+    python -m app.main --id medium-002
+    python -m app.main --all --backend mock  # 仅离线联调
 """
 
 from __future__ import annotations
@@ -78,13 +79,13 @@ def main(argv: list[str] | None = None) -> int:
     g.add_argument("--problem", help="单题 JSON 路径")
     g.add_argument("--id", help="按题目 id 评测")
     g.add_argument("--all", action="store_true", help="评测全部题集")
-    ap.add_argument("--backend", choices=["auto", "hy3", "mock"], default="auto")
+    ap.add_argument("--backend", choices=["hy3", "mock"], default="hy3",
+                    help="默认 hy3（需 API Key）；仅联调可显式 --backend mock")
     ap.add_argument("--quiet", action="store_true", help="只输出汇总")
     ap.add_argument("--no-report", action="store_true", help="不写报告文件")
     args = ap.parse_args(argv)
 
-    force = None if args.backend == "auto" else args.backend
-    llm = get_llm(force)
+    llm = get_llm(args.backend)
     pipeline = EvalPipeline(llm)
 
     if not args.quiet:
