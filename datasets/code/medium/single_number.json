@@ -1,0 +1,29 @@
+{
+  "id": "medium-008",
+  "difficulty": "medium",
+  "title": "只出现一次的数字",
+  "description": "给定非空整数数组 nums，除某个元素只出现一次外，其余均出现两次。找出只出现一次的元素。要求线性时间、常数空间。",
+  "function_signature": "def single_number(nums: list) -> int",
+  "entry_point": "single_number",
+  "language": "python",
+  "constraints": "1 <= len(nums) <= 3*10^4",
+  "expected_complexity": {"time": "O(n)", "space": "O(1)"},
+  "required_edge_cases": ["单元素", "负数"],
+  "public_tests": [{"args": [[2, 2, 1],], "expected": 1}, {"args": [[4, 1, 2, 1, 2],], "expected": 4}, {"args": [[1],], "expected": 1}],
+  "adversarial_tests": [{"args": [[-1, -1, 0],], "expected": 0}, {"args": [[7, 3, 7],], "expected": 3}],
+  "mock_solution": {
+    "解题思路": "异或消去成对元素。",
+    "复杂度分析": "时间 O(n)，空间 O(1)。",
+    "关键边界与处理策略": "单元素即答案。",
+    "代码实现": "```python\ndef single_number(nums: list) -> int:\n    x = 0\n    for v in nums:\n        x ^= v\n    return x\n```",
+    "自测说明": "公开用例通过。"
+  },
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "first_error_step": null,
+    "error_types": [],
+    "note": "正确对照样本"
+  }
+}
