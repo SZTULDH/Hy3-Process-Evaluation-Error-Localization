@@ -1,13 +1,11 @@
 """Hy3 后端：OpenAI 兼容 Chat Completions。
 
-对齐官方文档：
-- 慢思考：`reasoning_effort` = no_think | low | high（推荐 high）
-- 交错式思考：同一 user 轮内，tool 结果回填时原样带回 `reasoning_content`
-- 保留式思考：跨 user 轮时 messages 中保留全部历史 assistant 的 `reasoning_content`
-- 携带 `tools` 时平台默认开启 preserved_thinking；可用 `preserved_thinking` 显式控制
+对齐官方 SDK：
+- 关闭思考：extra_body={"thinking": {"type": "disabled"}}
+- 开启思考：extra_body={"thinking": {"type": "enabled"}}
+  开启后用 getattr(message, "reasoning_content") 读取思考过程
 
-SDK 路径：非标字段经 `extra_body` 透传（openai 官方 SDK 类型签名较严）。
-HTTP 路径：字段直接写入 JSON body。
+默认关闭思考。开启时仍支持 tools / 交错回填 reasoning_content。
 """
 
 from __future__ import annotations
@@ -22,6 +20,7 @@ from ..config import (
     HY3_BASE_URL,
     HY3_MODEL,
     HY3_REASONING_EFFORT,
+    HY3_THINKING,
     LLM_MAX_RETRIES,
     LLM_TIMEOUT,
 )
@@ -35,6 +34,18 @@ from .base import (
 )
 
 
+def _normalize_thinking(value: Any) -> str:
+    """归一化为 enabled / disabled。"""
+    if value is True:
+        return "enabled"
+    if value is False or value is None:
+        return "disabled"
+    s = str(value).strip().lower()
+    if s in {"enabled", "enable", "on", "true", "1", "yes"}:
+        return "enabled"
+    return "disabled"
+
+
 class Hy3LLM(BaseLLM):
     name = "hy3"
 
@@ -43,6 +54,7 @@ class Hy3LLM(BaseLLM):
         api_key: str | None = None,
         base_url: str | None = None,
         model: str | None = None,
+        thinking: str | bool | None = None,
         reasoning_effort: str | None = None,
     ) -> None:
         self.api_key = api_key or HY3_API_KEY
@@ -50,7 +62,10 @@ class Hy3LLM(BaseLLM):
             raise ValueError("缺少 HY3_API_KEY，无法初始化 Hy3 后端")
         self.base_url = (base_url or HY3_BASE_URL).rstrip("/")
         self.model = model or HY3_MODEL
-        self.default_reasoning_effort = reasoning_effort or HY3_REASONING_EFFORT
+        self.default_thinking = _normalize_thinking(
+            thinking if thinking is not None else HY3_THINKING
+        )
+        self.default_reasoning_effort = reasoning_effort or HY3_REASONING_EFFORT or None
         self._sdk = self._try_load_sdk()
 
     # ------------------------------------------------------------ 内部
@@ -72,6 +87,7 @@ class Hy3LLM(BaseLLM):
         json_mode: bool,
         tools: list[ToolSpec] | None,
         tool_choice: str | dict | None,
+        thinking: str,
         reasoning_effort: str | None,
         preserved_thinking: bool | None,
     ) -> dict[str, Any]:
@@ -79,8 +95,8 @@ class Hy3LLM(BaseLLM):
             "model": self.model,
             "messages": [m.to_api_dict() for m in messages],
             "stream": False,
+            "thinking": {"type": thinking},
         }
-        # temperature：慢思考场景下官方示例常省略；保留可配
         if temperature is not None:
             payload["temperature"] = temperature
         if max_tokens:
@@ -90,11 +106,10 @@ class Hy3LLM(BaseLLM):
         if tools:
             payload["tools"] = tools
             payload["tool_choice"] = tool_choice or "auto"
-        # 慢思考 / 保留式思考
-        effort = reasoning_effort if reasoning_effort is not None else self.default_reasoning_effort
-        if effort:
-            payload["reasoning_effort"] = effort
-        if preserved_thinking is not None:
+        # 仅在显式开启思考时透传旧字段
+        if thinking == "enabled" and reasoning_effort:
+            payload["reasoning_effort"] = reasoning_effort
+        if thinking == "enabled" and preserved_thinking is not None:
             payload["preserved_thinking"] = preserved_thinking
         return payload
 
@@ -114,14 +129,13 @@ class Hy3LLM(BaseLLM):
             return json.loads(resp.read().decode("utf-8"))
 
     def _call_sdk(self, payload: dict[str, Any]) -> dict[str, Any]:
-        """官方 openai SDK：标准字段走 kwargs，Hy3 扩展字段走 extra_body。"""
+        """官方 openai SDK：thinking / reasoning 等扩展字段走 extra_body。"""
         client = self._sdk.OpenAI(
             api_key=self.api_key, base_url=self.base_url, timeout=LLM_TIMEOUT
         )
-        # 从 payload 拆出可能不被 SDK 类型识别的字段
         body = dict(payload)
         extra: dict[str, Any] = {}
-        for key in ("reasoning_effort", "preserved_thinking"):
+        for key in ("thinking", "reasoning_effort", "preserved_thinking"):
             if key in body:
                 extra[key] = body.pop(key)
 
@@ -140,16 +154,27 @@ class Hy3LLM(BaseLLM):
             create_kwargs["tool_choice"] = body.pop("tool_choice")
         if "response_format" in body:
             create_kwargs["response_format"] = body.pop("response_format")
-        # 剩余一并塞进 extra_body
         extra.update(body)
         if extra:
             create_kwargs["extra_body"] = extra
 
         resp = client.chat.completions.create(**create_kwargs)
-        # model_dump 保证 reasoning_content 等扩展字段保留
         if hasattr(resp, "model_dump"):
-            return resp.model_dump()
-        return json.loads(resp.model_dump_json())
+            dumped = resp.model_dump()
+        else:
+            dumped = json.loads(resp.model_dump_json())
+        # SDK 不声明 reasoning_content，用 getattr 补进 dump
+        try:
+            msg = resp.choices[0].message
+            reasoning = getattr(msg, "reasoning_content", None)
+            if reasoning is not None:
+                dumped.setdefault("choices", [{}])
+                if dumped.get("choices"):
+                    dumped["choices"][0].setdefault("message", {})
+                    dumped["choices"][0]["message"]["reasoning_content"] = reasoning
+        except Exception:  # noqa: BLE001
+            pass
+        return dumped
 
     @staticmethod
     def _parse_response(raw: dict[str, Any], fallback_model: str) -> LLMResponse:
@@ -160,7 +185,6 @@ class Hy3LLM(BaseLLM):
         msg = choice.get("message") or {}
         content = msg.get("content") or ""
         reasoning = msg.get("reasoning_content")
-        # 部分 SDK 把扩展字段放在 model_extra
         if reasoning is None and isinstance(msg.get("model_extra"), dict):
             reasoning = msg["model_extra"].get("reasoning_content")
 
@@ -203,19 +227,26 @@ class Hy3LLM(BaseLLM):
         *,
         tools: list[ToolSpec] | None = None,
         tool_choice: str | dict | None = None,
+        thinking: str | bool | None = None,
         reasoning_effort: str | None = None,
         preserved_thinking: bool | None = None,
         **kwargs: Any,
     ) -> LLMResponse:
-        # 允许 kwargs 透传同名参数
         if "tools" in kwargs and tools is None:
             tools = kwargs.pop("tools")
         if "tool_choice" in kwargs and tool_choice is None:
             tool_choice = kwargs.pop("tool_choice")
+        if "thinking" in kwargs and thinking is None:
+            thinking = kwargs.pop("thinking")
         if "reasoning_effort" in kwargs and reasoning_effort is None:
             reasoning_effort = kwargs.pop("reasoning_effort")
         if "preserved_thinking" in kwargs and preserved_thinking is None:
             preserved_thinking = kwargs.pop("preserved_thinking")
+
+        think = _normalize_thinking(
+            thinking if thinking is not None else self.default_thinking
+        )
+        effort = reasoning_effort if reasoning_effort is not None else self.default_reasoning_effort
 
         payload = self._build_payload(
             messages=messages,
@@ -224,7 +255,8 @@ class Hy3LLM(BaseLLM):
             json_mode=response_format_json,
             tools=tools,
             tool_choice=tool_choice,
-            reasoning_effort=reasoning_effort,
+            thinking=think,
+            reasoning_effort=effort,
             preserved_thinking=preserved_thinking,
         )
 

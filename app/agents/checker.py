@@ -191,7 +191,7 @@ class CheckerAgent:
                     ),
                 ],
                 response_format_json=True,
-                reasoning_effort="high",
+                thinking="disabled",
             )
             text = (resp.text or "").strip()
             start = text.find("{")
@@ -245,9 +245,7 @@ class CheckerAgent:
                 tools=CHECKER_TOOLS,
                 handlers=handlers,
                 max_rounds=6,
-                reasoning_effort="high",
-                # 携带 tools 时平台默认开启保留式思考；显式 True 更稳妥
-                preserved_thinking=True,
+                thinking="disabled",
             )
             text = (resp.text or "").strip()
             start, end = text.find("{"), text.rfind("}")

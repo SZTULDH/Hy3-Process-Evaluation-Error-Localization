@@ -25,8 +25,10 @@ RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 HY3_API_KEY = os.getenv("HY3_API_KEY") or os.getenv("OPENAI_API_KEY")
 HY3_BASE_URL = os.getenv("HY3_BASE_URL", "https://api.hunyuan.cloud.tencent.com/v1")
 HY3_MODEL = os.getenv("HY3_MODEL", "hy3")
-# 慢思考深度：no_think | low | high（工具/Agent 场景推荐 high）
-HY3_REASONING_EFFORT = os.getenv("HY3_REASONING_EFFORT", "high")
+# 慢思考开关：disabled | enabled（默认关闭，对应 extra_body.thinking.type）
+HY3_THINKING = os.getenv("HY3_THINKING", "disabled").strip().lower()
+# 兼容旧字段：仅在思考开启时生效。no_think | low | high
+HY3_REASONING_EFFORT = os.getenv("HY3_REASONING_EFFORT", "")
 
 LLM_TIMEOUT = float(os.getenv("LLM_TIMEOUT", "120"))
 LLM_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", "0.2"))

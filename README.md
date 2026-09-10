@@ -91,7 +91,7 @@ python -m app.main --id medium-002
 pip install -r requirements.txt   # 可选，不装也能用 urllib 直连
 export HY3_API_KEY=your_key
 # 可选：export HY3_BASE_URL=...  HY3_MODEL=...
-# 可选：export HY3_REASONING_EFFORT=high   # 慢思考深度
+# 可选：export HY3_THINKING=disabled   # enabled 才开启思考
 
 python -m app.main --all --backend hy3
 ```

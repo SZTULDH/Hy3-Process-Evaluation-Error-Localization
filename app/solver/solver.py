@@ -39,6 +39,6 @@ class Solver:
                 ChatMessage(role="system", content=SOLVER_SYSTEM_PROMPT),
                 ChatMessage(role="user", content=build_solver_messages(problem)),
             ],
-            reasoning_effort="high",
+            thinking="disabled",
         )
         return resp.text or ""

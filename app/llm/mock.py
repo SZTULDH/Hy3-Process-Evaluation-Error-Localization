@@ -44,6 +44,7 @@ class MockLLM(BaseLLM):
         *,
         tools=None,
         tool_choice=None,
+        thinking=None,
         reasoning_effort: str | None = None,
         preserved_thinking: bool | None = None,
         **kwargs,

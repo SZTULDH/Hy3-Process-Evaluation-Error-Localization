@@ -147,6 +147,7 @@ class BaseLLM:
         *,
         tools: list[ToolSpec] | None = None,
         tool_choice: str | dict | None = None,
+        thinking: str | bool | None = None,
         reasoning_effort: str | None = None,
         preserved_thinking: bool | None = None,
         **kwargs: Any,
@@ -163,7 +164,8 @@ class BaseLLM:
         handlers: dict[str, ToolHandler],
         *,
         max_rounds: int = 8,
-        reasoning_effort: str | None = "high",
+        thinking: str | bool | None = None,
+        reasoning_effort: str | None = None,
         preserved_thinking: bool | None = None,
         temperature: float | None = None,
         max_tokens: int | None = None,
@@ -194,9 +196,14 @@ class BaseLLM:
                 response_format_json=response_format_json,
                 tools=tools,
                 tool_choice=kwargs.get("tool_choice", "auto"),
+                thinking=thinking,
                 reasoning_effort=reasoning_effort,
                 preserved_thinking=preserved_thinking,
-                **{k: v for k, v in kwargs.items() if k != "tool_choice"},
+                **{
+                    k: v
+                    for k, v in kwargs.items()
+                    if k not in {"tool_choice", "thinking", "reasoning_effort", "preserved_thinking"}
+                },
             )
             # 回填 assistant（含 reasoning_content / tool_calls）
             history.append(last.assistant_message())
