@@ -1,8 +1,14 @@
-# 核心链路（生成 → 执行 → 评估 → 报告）只依赖 Python 标准库，
+# Hy3 Process-Evaluation & Error Localization
+#
+# 核心链路（Producer 生成 → Checker 沙盒/规则取证 → Critic 分步审查 → 报告）
+# 以及多 Agent 编排均只依赖 Python 标准库。
 # 因此克隆后无需安装任何依赖即可跑通离线 Mock 模式：
 #
-#     python -m app.main --all
+#     python -m app.main --all --backend mock
 #
-# 以下依赖仅在接入真实 Hy3 API 时需要，且为可选：
-# 若未安装，app/llm/hy3.py 会自动退回标准库 urllib 直连 OpenAI 兼容端点。
+# 子模块 sandbox-debugger 同样零第三方依赖（git submodule update --init）。
+#
+# 以下依赖仅在接入真实 Hy3 / OpenAI 兼容端点时需要，且为可选：
+# 若未安装，app/llm/hy3.py 会自动退回标准库 urllib 直连。
+# 安装后优先走官方 openai SDK（更好的流式、tools、reasoning_content 支持）。
 openai>=1.0.0        # 可选：安装后 Hy3 后端走官方 SDK，否则走 urllib
