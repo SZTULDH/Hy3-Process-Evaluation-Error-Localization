@@ -23,6 +23,7 @@ from ..llm.base import BaseLLM, ChatMessage
 from ..llm.mock import MockLLM
 from ..sandbox.forensics import forensic_summary, run_forensics
 from ..sandbox.runner import SuiteResult, run_suite
+from .tools import CHECKER_TOOLS, make_checker_handlers
 
 CHECKER_SYSTEM = """[ROLE=checker]
 你是代码产物检查与调试专家。你会收到：
@@ -188,7 +189,9 @@ class CheckerAgent:
                         role="user",
                         content=json.dumps(payload, ensure_ascii=False, indent=2),
                     ),
-                ]
+                ],
+                response_format_json=True,
+                reasoning_effort="high",
             )
             text = (resp.text or "").strip()
             start = text.find("{")
@@ -196,6 +199,64 @@ class CheckerAgent:
             if start >= 0 and end > start:
                 return json.loads(text[start : end + 1])
             return {"summary": text[:300], "raw": True}
+        except Exception as exc:  # noqa: BLE001
+            out = self._rule_summary(report)
+            out["llm_error"] = f"{type(exc).__name__}: {exc}"
+            return out
+
+
+    def diagnose_with_tools(self, problem: dict, report: CheckerReport) -> dict:
+        """使用 Hy3 交错式思考 + 工具调用做二次诊断（可选）。
+
+        模型可自行调用 run_public_tests / run_adversarial_tests / run_forensics，
+        客户端按 SDK 要求原样回填 reasoning_content 与 tool 结果。
+        """
+        if self.llm is None or isinstance(self.llm, MockLLM):
+            return self._rule_summary(report)
+
+        handlers = make_checker_handlers(problem)
+        user = {
+            "problem_id": problem.get("id"),
+            "title": problem.get("title"),
+            "description": problem.get("description"),
+            "entry_point": problem.get("entry_point"),
+            "code": report.code,
+            "hint": (
+                "可调用工具复测公开/对抗用例，或对失败 args 做 forensics。"
+                "最终请输出与系统提示一致的 JSON 总评。"
+            ),
+            "current_signals": {
+                "public_passed": report.public.all_passed if report.public else None,
+                "adversarial_passed": (
+                    report.adversarial.all_passed if report.adversarial else None
+                ),
+                "pseudo_correct": report.pseudo_correct,
+            },
+        }
+        try:
+            resp = self.llm.chat_with_tools(
+                [
+                    ChatMessage(role="system", content=CHECKER_SYSTEM),
+                    ChatMessage(
+                        role="user",
+                        content=json.dumps(user, ensure_ascii=False, indent=2),
+                    ),
+                ],
+                tools=CHECKER_TOOLS,
+                handlers=handlers,
+                max_rounds=6,
+                reasoning_effort="high",
+                # 携带 tools 时平台默认开启保留式思考；显式 True 更稳妥
+                preserved_thinking=True,
+            )
+            text = (resp.text or "").strip()
+            start, end = text.find("{"), text.rfind("}")
+            if start >= 0 and end > start:
+                out = json.loads(text[start : end + 1])
+            else:
+                out = {"summary": text[:400], "raw": True}
+            out["_reasoning_preview"] = (resp.reasoning_content or "")[:200]
+            return out
         except Exception as exc:  # noqa: BLE001
             out = self._rule_summary(report)
             out["llm_error"] = f"{type(exc).__name__}: {exc}"

@@ -1,4 +1,9 @@
-"""Agent 可用的 Hy3 function-calling 工具定义与处理器。"""
+"""Agent 可用的 Hy3 function-calling 工具定义与处理器。
+
+Checker / Critic 在需要动态调试时可通过 `llm.chat_with_tools` 调用：
+- 交错式：同一 user 轮内回填 reasoning_content + tool 结果
+- 保留式：跨 user 轮时 messages 中保留全部历史 reasoning_content（调用方负责）
+"""
 
 from __future__ import annotations
 
@@ -7,6 +12,10 @@ from typing import Any
 
 from ..sandbox.forensics import forensic_summary, run_forensics
 from ..sandbox.runner import run_suite
+
+# ---------------------------------------------------------------------------
+# OpenAI tools schema
+# ---------------------------------------------------------------------------
 
 CHECKER_TOOLS: list[dict[str, Any]] = [
     {
@@ -63,6 +72,8 @@ CHECKER_TOOLS: list[dict[str, Any]] = [
 
 
 def make_checker_handlers(problem: dict) -> dict[str, Any]:
+    """绑定题目测试数据的工具执行器。"""
+
     public = problem.get("public_tests") or []
     adversarial = problem.get("adversarial_tests") or []
 

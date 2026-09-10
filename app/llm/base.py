@@ -41,16 +41,21 @@ class ChatMessage:
 
     role: str  # system | user | assistant | tool
     content: str | None = ""
+    # 慢思考草稿：仅 assistant 有；回填时必须与模型输出完全一致
     reasoning_content: str | None = None
+    # 工具调用（assistant）
     tool_calls: list[ToolCall] | None = None
+    # 工具结果回填（role=tool）
     tool_call_id: str | None = None
-    name: str | None = None
+    name: str | None = None  # 可选：工具名
 
     def to_api_dict(self) -> dict[str, Any]:
+        """序列化为 Chat Completions messages 条目（含 reasoning_content 原样回填）。"""
         d: dict[str, Any] = {"role": self.role}
         if self.content is not None:
             d["content"] = self.content
         if self.reasoning_content is not None:
+            # 即使为空串也回填，保持与模型生成时一致
             d["reasoning_content"] = self.reasoning_content
         if self.tool_calls:
             d["tool_calls"] = [tc.to_api_dict() for tc in self.tool_calls]
@@ -62,6 +67,7 @@ class ChatMessage:
 
     @classmethod
     def from_api_message(cls, msg: dict[str, Any]) -> "ChatMessage":
+        """从 API 响应 message 构造（含 reasoning_content / tool_calls）。"""
         tool_calls = None
         raw_tcs = msg.get("tool_calls") or []
         if raw_tcs:
@@ -102,12 +108,15 @@ class LLMResponse:
     raw: dict[str, Any] = field(default_factory=dict)
     model: str = ""
     simulated: bool = False
+    # Hy3 慢思考
     reasoning_content: str | None = None
     tool_calls: list[ToolCall] = field(default_factory=list)
     finish_reason: str | None = None
+    # 便于多轮回填：完整的 assistant 消息
     message: ChatMessage | None = None
 
     def assistant_message(self) -> ChatMessage:
+        """构造可原样回填到 messages 的 assistant 条目。"""
         if self.message is not None:
             return self.message
         return ChatMessage(
@@ -118,7 +127,9 @@ class LLMResponse:
         )
 
 
+# 工具定义：OpenAI function calling 格式
 ToolSpec = dict[str, Any]
+# 业务侧执行器：name -> (arguments_dict) -> str 结果
 ToolHandler = Callable[[dict[str, Any]], str]
 
 
@@ -159,7 +170,17 @@ class BaseLLM:
         response_format_json: bool = False,
         **kwargs: Any,
     ) -> LLMResponse:
-        """交错式思考 + 工具调用循环；原样回填 reasoning_content。"""
+        """交错式思考 + 工具调用循环。
+
+        每一轮：
+        1. 调用模型（带 tools）
+        2. 若 finish_reason=tool_calls：执行工具，把 assistant（含 reasoning_content）
+           与 role=tool 结果原样追加到 messages，再请求
+        3. 直到输出最终 content 或达到 max_rounds
+
+        保留式思考：跨用户提问轮时，调用方应把本方法返回前的完整 messages
+        （含全部 reasoning_content）保留到下一轮 user 追问。
+        """
         import json
 
         history = list(messages)
@@ -177,6 +198,7 @@ class BaseLLM:
                 preserved_thinking=preserved_thinking,
                 **{k: v for k, v in kwargs.items() if k != "tool_choice"},
             )
+            # 回填 assistant（含 reasoning_content / tool_calls）
             history.append(last.assistant_message())
 
             if not last.tool_calls or last.finish_reason == "stop":
@@ -190,12 +212,16 @@ class BaseLLM:
                     args = {}
                 handler = handlers.get(name)
                 if handler is None:
-                    result = json.dumps({"error": f"unknown tool: {name}"}, ensure_ascii=False)
+                    result = json.dumps(
+                        {"error": f"unknown tool: {name}"}, ensure_ascii=False
+                    )
                 else:
                     try:
                         result = handler(args if isinstance(args, dict) else {})
                     except Exception as exc:  # noqa: BLE001
-                        result = json.dumps({"error": str(exc)}, ensure_ascii=False)
+                        result = json.dumps(
+                            {"error": str(exc)}, ensure_ascii=False
+                        )
                 if not isinstance(result, str):
                     result = json.dumps(result, ensure_ascii=False)
                 history.append(

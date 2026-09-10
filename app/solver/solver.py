@@ -12,6 +12,7 @@ class Solver:
         self.llm = llm
 
     def _bind_mock_solution(self, problem: dict) -> None:
+        """Mock 后端：把题集预置的解答绑上去，使离线链路可复现。"""
         if not isinstance(self.llm, MockLLM):
             return
         preset = problem.get("mock_solution")

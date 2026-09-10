@@ -158,6 +158,7 @@ class Critic:
                     ChatMessage(role="user", content=prompt),
                 ],
                 response_format_json=True,
+                reasoning_effort="high",
             )
             data = _parse_verdict(resp.text)
             if data:
