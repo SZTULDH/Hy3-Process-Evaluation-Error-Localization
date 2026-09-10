@@ -86,6 +86,12 @@
 └── requirements.txt
 ```
 
+## 环境要求
+
+- **Python ≥ 3.9**（所有模块启用 `from __future__ import annotations`，实测环境 3.13）
+- **零必需依赖**：核心链路、多 Agent 编排与 Web 工作台只用标准库，克隆即可跑
+- `openai` 为**可选**：不装时走标准库 `urllib` 直连；装了优先用官方 SDK
+
 ## 快速开始
 
 ### 1. Web 工作台（推荐，可视化跑单题）
