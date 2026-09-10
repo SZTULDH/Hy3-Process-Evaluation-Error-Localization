@@ -13,7 +13,7 @@ import re
 from dataclasses import dataclass, field
 
 from ..config import CRITIC_CONFIDENCE_THRESHOLD
-from ..llm.base import BaseLLM, ChatMessage
+from ..llm.base import BaseLLM, ChatMessage, thinking_of
 from .rules import Finding
 from .taxonomy import ERROR_TYPES, label_of, normalize_error_type
 
@@ -130,7 +130,14 @@ class Critic:
         code: str,
         signals: dict,
         rule_findings: list[Finding],
+        trace: dict | None = None,
     ) -> SectionVerdict:
+        """审查单个步骤。
+
+        `trace` 是可选的**观察袋**：传入后会把本次调用的真实 prompt 与模型
+        原始输出写进去，供上层（Web 面板）展示 Agent 工作流。并发安全的前提
+        是每个并发任务传自己的 dict —— 不要共享同一个。
+        """
         mine = [f for f in rule_findings if f.section == section_title]
         rule_types = sorted({f.error_type for f in mine})
         top_rule = max(mine, key=lambda f: f.confidence, default=None)
@@ -144,6 +151,14 @@ class Critic:
             code=(code or "（未提取到代码）")[:4000],
             signals=json.dumps(signals, ensure_ascii=False, default=repr),
         )
+        if trace is not None:
+            trace.update({
+                "prompt": prompt,
+                "system_prompt": SYSTEM_PROMPT,
+                "rule_types": [label_of(t) for t in rule_types],
+                "section_chars": len(section_content or ""),
+                "code_chars": len(code or ""),
+            })
 
         llm_verdict = None
         llm_conf = 0.0
@@ -158,9 +173,12 @@ class Critic:
                     ChatMessage(role="user", content=prompt),
                 ],
                 response_format_json=True,
-                thinking="disabled",
+                thinking=thinking_of(self.llm),
             )
             data = _parse_verdict(resp.text)
+            if trace is not None:
+                trace["llm_raw"] = (resp.text or "")[:6000]
+                trace["reasoning"] = (resp.reasoning_content or "")[:4000]
             if data:
                 llm_verdict = str(data.get("verdict", "valid")).lower()
                 if llm_verdict not in ("valid", "suspicious", "flawed"):
@@ -180,7 +198,15 @@ class Critic:
                 llm_evidence = str(data.get("evidence", ""))
         except Exception as exc:  # noqa: BLE001 - Critic 失败不应中断整条流水线
             llm_reason = f"Critic 调用失败，仅采用规则信号：{type(exc).__name__}: {exc}"
+            if trace is not None:
+                trace["error"] = f"{type(exc).__name__}: {exc}"
 
+        if trace is not None:
+            trace.update({
+                "llm_verdict": llm_verdict,
+                "llm_confidence": llm_conf,
+                "llm_types": [label_of(t) for t in llm_types],
+            })
         return self._fuse(
             section_title,
             step_id,

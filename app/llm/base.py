@@ -102,6 +102,16 @@ def json_dumps(obj: Any) -> str:
     return json.dumps(obj, ensure_ascii=False)
 
 
+def thinking_of(llm: Any) -> str | bool | None:
+    """取 LLM 实例的默认思考开关，用于各处 chat 调用。
+
+    调用点一律不要写死 `thinking=...`——那会覆盖 Hy3LLM 构造时传入的
+    配置（HY3_THINKING / GUI 思考开关），使开关静默失效。
+    实例没有该属性时返回 None，交由后端自身的默认值处理。
+    """
+    return getattr(llm, "default_thinking", None)
+
+
 @dataclass
 class LLMResponse:
     text: str

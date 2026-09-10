@@ -11,9 +11,11 @@
 from __future__ import annotations
 
 import json
+import time
 import urllib.error
 import urllib.request
-from typing import Any
+from dataclasses import dataclass
+from typing import Any, Iterator
 
 from ..config import (
     HY3_API_KEY,
@@ -23,6 +25,7 @@ from ..config import (
     HY3_THINKING,
     LLM_MAX_RETRIES,
     LLM_TIMEOUT,
+    resolve_thinking,
 )
 from .base import (
     BaseLLM,
@@ -46,6 +49,55 @@ def _normalize_thinking(value: Any) -> str:
     return "disabled"
 
 
+# 思考强度档位词 + 旧式开关词（统一交给 resolve_thinking 按模型能力展开）
+_LEVEL_WORDS = {
+    "auto", "off", "none", "minimal", "low", "medium", "high", "xhigh", "max",
+    "enabled", "disabled",
+}
+
+
+def _resolve(
+    thinking: Any,
+    effort: Any,
+    model: str,
+    default_thinking: str,
+    default_effort: str,
+) -> tuple[str, str]:
+    """把「思考强度 or 开关」 + 推理深度 解析成请求参数。
+
+    强度档位（off/low/medium/high/auto…）会按模型能力展开成
+    `thinking.type` 与 `reasoning_effort` 两个字段；纯开关
+    （enabled/disabled）只决定 thinking，推理深度沿用默认。
+    """
+    raw = default_thinking if thinking is None else thinking
+    s = "" if raw is None else str(raw).strip().lower()
+    if s in _LEVEL_WORDS:
+        think, level_effort = resolve_thinking(s, model)
+    elif s == "":
+        think, level_effort = _normalize_thinking(default_thinking), ""
+    else:
+        think, level_effort = _normalize_thinking(raw), ""
+    eff = default_effort if effort is None else effort
+    return think, (str(eff or level_effort or "").strip().lower() or "")
+
+
+@dataclass
+class StreamResult:
+    """流式生成的累积结果，供生成结束后读取。"""
+
+    text: str = ""
+    reasoning: str = ""
+    finish_reason: str | None = None
+
+
+@dataclass
+class Delta:
+    """一个流式增量。`kind` 为 `content`（正文）或 `reasoning`（思考）。"""
+
+    kind: str
+    text: str
+
+
 class Hy3LLM(BaseLLM):
     name = "hy3"
 
@@ -62,10 +114,13 @@ class Hy3LLM(BaseLLM):
             raise ValueError("缺少 HY3_API_KEY，无法初始化 Hy3 后端")
         self.base_url = (base_url or HY3_BASE_URL).rstrip("/")
         self.model = model or HY3_MODEL
-        self.default_thinking = _normalize_thinking(
-            thinking if thinking is not None else HY3_THINKING
+        self.default_thinking, self.default_reasoning_effort = _resolve(
+            thinking if thinking is not None else HY3_THINKING,
+            reasoning_effort if reasoning_effort is not None else (HY3_REASONING_EFFORT or None),
+            self.model,
+            "disabled",
+            "",
         )
-        self.default_reasoning_effort = reasoning_effort or HY3_REASONING_EFFORT or None
         self._sdk = self._try_load_sdk()
 
     # ------------------------------------------------------------ 内部
@@ -106,8 +161,8 @@ class Hy3LLM(BaseLLM):
         if tools:
             payload["tools"] = tools
             payload["tool_choice"] = tool_choice or "auto"
-        # 仅在显式开启思考时透传旧字段
-        if thinking == "enabled" and reasoning_effort:
+        # 推理深度是独立字段，与 thinking 开关无关（官方文档分开列的两个参数）
+        if reasoning_effort:
             payload["reasoning_effort"] = reasoning_effort
         if thinking == "enabled" and preserved_thinking is not None:
             payload["preserved_thinking"] = preserved_thinking
@@ -177,6 +232,20 @@ class Hy3LLM(BaseLLM):
         return dumped
 
     @staticmethod
+    def _retry_delay(err: Exception, attempt: int) -> float:
+        """失败重试前的退避秒数。
+
+        429（限流）与 5xx 必须等更久，否则连续重试只会继续撞墙；
+        其余错误用较短的指数退避。实测全量上百次调用必然踩到 429。
+        """
+        code = getattr(err, "code", None)
+        if code == 429:
+            return 5.0 * attempt
+        if isinstance(code, int) and 500 <= code < 600:
+            return 2.0 * attempt
+        return min(2.0**attempt, 8.0)
+
+    @staticmethod
     def _parse_response(raw: dict[str, Any], fallback_model: str) -> LLMResponse:
         choices = raw.get("choices") or []
         if not choices:
@@ -243,10 +312,13 @@ class Hy3LLM(BaseLLM):
         if "preserved_thinking" in kwargs and preserved_thinking is None:
             preserved_thinking = kwargs.pop("preserved_thinking")
 
-        think = _normalize_thinking(
-            thinking if thinking is not None else self.default_thinking
+        think, effort = _resolve(
+            thinking,
+            reasoning_effort,
+            self.model,
+            self.default_thinking,
+            self.default_reasoning_effort or "",
         )
-        effort = reasoning_effort if reasoning_effort is not None else self.default_reasoning_effort
 
         payload = self._build_payload(
             messages=messages,
@@ -271,4 +343,192 @@ class Hy3LLM(BaseLLM):
                 last_err = err
                 if attempt == LLM_MAX_RETRIES:
                     break
+                time.sleep(self._retry_delay(err, attempt))
         raise RuntimeError(f"Hy3 调用失败（重试 {LLM_MAX_RETRIES} 次）: {last_err}")
+
+    # ------------------------------------------------------------ 流式
+
+    def _stream_payload(
+        self,
+        messages: list[ChatMessage],
+        temperature: float | None,
+        max_tokens: int | None,
+        response_format_json: bool,
+        think: str,
+        effort: str | None,
+    ) -> dict[str, Any]:
+        payload = self._build_payload(
+            messages=messages,
+            temperature=0.2 if temperature is None else temperature,
+            max_tokens=max_tokens,
+            json_mode=response_format_json,
+            tools=None,
+            tool_choice=None,
+            thinking=think,
+            reasoning_effort=effort,
+            preserved_thinking=None,
+        )
+        payload["stream"] = True
+        return payload
+
+    def iter_stream(
+        self,
+        messages: list[ChatMessage],
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        response_format_json: bool = False,
+        *,
+        thinking: str | bool | None = None,
+        reasoning_effort: str | None = None,
+    ) -> tuple[Iterator[str], StreamResult]:
+        """流式生成：返回 `(正文增量迭代器, 累积结果)`。只要正文。"""
+        deltas, result = self.iter_deltas(
+            messages,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            response_format_json=response_format_json,
+            thinking=thinking,
+            reasoning_effort=reasoning_effort,
+        )
+
+        def only_content() -> Iterator[str]:
+            for d in deltas:
+                if d.kind == "content":
+                    yield d.text
+
+        return only_content(), result
+
+    def iter_deltas(
+        self,
+        messages: list[ChatMessage],
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        response_format_json: bool = False,
+        *,
+        thinking: str | bool | None = None,
+        reasoning_effort: str | None = None,
+    ) -> tuple[Iterator[Delta], StreamResult]:
+        """流式生成：返回 `(全部增量迭代器, 累积结果)`。
+
+        增量分 `content`（正文）与 `reasoning`（思考）两类。**重试只在吐出
+        首个增量之前发生** —— 一旦开始输出就不能重放，否则调用方会收到重复内容。
+
+        思考也要流式：实测开启深度思考时思考过程要跑 5 分钟以上，攒到最后
+        再推会让前端白屏干等。
+        """
+        think, effort = _resolve(
+            thinking,
+            reasoning_effort,
+            self.model,
+            self.default_thinking,
+            self.default_reasoning_effort or "",
+        )
+        payload = self._stream_payload(
+            messages, temperature, max_tokens, response_format_json, think, effort
+        )
+        result = StreamResult()
+        iterator = (
+            self._iter_sdk(payload, result)
+            if self._sdk
+            else self._iter_http(payload, result)
+        )
+        return iterator, result
+
+    def _iter_http(self, payload: dict[str, Any], result: StreamResult) -> Iterator[Delta]:
+        url = f"{self.base_url}/chat/completions"
+        data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.api_key}",
+            "Accept": "text/event-stream",
+        }
+        for attempt in range(1, LLM_MAX_RETRIES + 1):
+            started = False
+            try:
+                req = urllib.request.Request(url, data=data, headers=headers, method="POST")
+                with urllib.request.urlopen(req, timeout=LLM_TIMEOUT) as resp:
+                    for raw_line in resp:
+                        line = raw_line.decode("utf-8", "replace").strip()
+                        if not line.startswith("data:"):
+                            continue
+                        body = line[5:].strip()
+                        if body == "[DONE]":
+                            return
+                        try:
+                            chunk = json.loads(body)
+                        except json.JSONDecodeError:
+                            continue
+                        choices = chunk.get("choices") or []
+                        if not choices:
+                            continue
+                        ch = choices[0]
+                        delta = ch.get("delta") or {}
+                        reason = delta.get("reasoning_content") or ""
+                        piece = delta.get("content") or ""
+                        if reason:
+                            result.reasoning += reason
+                            started = True
+                            yield Delta("reasoning", reason)
+                        if piece:
+                            started = True
+                            result.text += piece
+                            yield Delta("content", piece)
+                        if ch.get("finish_reason"):
+                            result.finish_reason = ch["finish_reason"]
+                return
+            except Exception as err:  # noqa: BLE001
+                if started or attempt == LLM_MAX_RETRIES:
+                    raise
+                time.sleep(self._retry_delay(err, attempt))
+
+    def _iter_sdk(self, payload: dict[str, Any], result: StreamResult) -> Iterator[str]:
+        client = self._sdk.OpenAI(
+            api_key=self.api_key, base_url=self.base_url, timeout=LLM_TIMEOUT
+        )
+        body = dict(payload)
+        extra: dict[str, Any] = {}
+        for key in ("thinking", "reasoning_effort", "preserved_thinking"):
+            if key in body:
+                extra[key] = body.pop(key)
+        kwargs: dict[str, Any] = {
+            "model": body.pop("model"),
+            "messages": body.pop("messages"),
+            "stream": True,
+        }
+        if "temperature" in body:
+            kwargs["temperature"] = body.pop("temperature")
+        if "max_tokens" in body:
+            kwargs["max_tokens"] = body.pop("max_tokens")
+        if "response_format" in body:
+            kwargs["response_format"] = body.pop("response_format")
+        extra.update(body)
+        if extra:
+            kwargs["extra_body"] = extra
+
+        for attempt in range(1, LLM_MAX_RETRIES + 1):
+            started = False
+            try:
+                for chunk in client.chat.completions.create(**kwargs):
+                    choices = getattr(chunk, "choices", None) or []
+                    if not choices:
+                        continue
+                    ch = choices[0]
+                    delta = getattr(ch, "delta", None)
+                    reason = getattr(delta, "reasoning_content", None) or ""
+                    piece = getattr(delta, "content", None) or ""
+                    if reason:
+                        result.reasoning += reason
+                        started = True
+                        yield Delta("reasoning", reason)
+                    if piece:
+                        started = True
+                        result.text += piece
+                        yield Delta("content", piece)
+                    fr = getattr(ch, "finish_reason", None)
+                    if fr:
+                        result.finish_reason = fr
+                return
+            except Exception as err:  # noqa: BLE001
+                if started or attempt == LLM_MAX_RETRIES:
+                    raise
+                time.sleep(self._retry_delay(err, attempt))

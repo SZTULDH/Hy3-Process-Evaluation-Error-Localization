@@ -14,12 +14,12 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Callable
 
 from ..config import SECTION_TITLES
 from ..evaluator.rules import Finding, analyze
 from ..evaluator.splitter import ParsedSolution, extract_code, split_sections
-from ..llm.base import BaseLLM, ChatMessage
+from ..llm.base import BaseLLM, ChatMessage, thinking_of
 from ..llm.mock import MockLLM
 from ..sandbox.forensics import forensic_summary, run_forensics
 from ..sandbox.runner import SuiteResult, run_suite
@@ -84,7 +84,25 @@ class CheckerAgent:
         self.llm = llm
 
     def check(self, problem: dict, raw_solution: str) -> CheckerReport:
-        """对 Producer 产物做完整检查与调试取证。"""
+        """完整检查：执行/规则取证 + LLM 二次诊断。"""
+        report = self.inspect(problem, raw_solution)
+        report.llm_summary = self.summarize(problem, report)
+        return report
+
+    def inspect(self, problem: dict, raw_solution: str,
+                on_step: Callable[[str, dict], None] | None = None) -> CheckerReport:
+        """只做解析、沙盒执行、规则分析与取证，**不调用 LLM**。
+
+        拆出来是为了流式场景：先把"硬证据"（测试结果）推给前端，
+        再慢慢跑后面的 LLM 审查。
+
+        `on_step` 是可选观察回调，按发生顺序收到 `(步骤名, {input, output})`，
+        用于把 Agent 的每一步真实输入/输出开放给上层展示。
+        """
+        def emit(step: str, inp: dict, out: dict) -> None:
+            if on_step is not None:
+                on_step(step, {"input": inp, "output": out})
+
         report = CheckerReport()
         parsed = split_sections(raw_solution)
         report.parsed = parsed
@@ -95,15 +113,56 @@ class CheckerAgent:
             code = extract_code(raw_solution)
         report.code = code or ""
 
+        emit(
+            "parse",
+            {"解答字符数": len(raw_solution or ""), "入口函数": problem.get("entry_point", "")},
+            {
+                "识别到的段落": [t for t in SECTION_TITLES if parsed.get(t) is not None],
+                "代码字符数": len(report.code),
+            },
+        )
+
         entry = problem.get("entry_point", "")
         public = run_suite(code, entry, problem.get("public_tests", []))
+        emit(
+            "public",
+            {"用例数": len(problem.get("public_tests", []) or [])},
+            {
+                "通过": f"{public.passed}/{public.total}",
+                "失败样本": [
+                    f"#{r.index} args={r.args!r} -> {r.status}"
+                    for r in public.results if not r.passed
+                ][:5],
+            },
+        )
+
         adversarial = run_suite(code, entry, problem.get("adversarial_tests", []))
+        emit(
+            "adversarial",
+            {"用例数": len(problem.get("adversarial_tests", []) or [])},
+            {
+                "通过": f"{adversarial.passed}/{adversarial.total}",
+                "失败样本": [
+                    f"#{r.index} args={r.args!r} expected={r.expected!r} actual={r.actual!r}"
+                    for r in adversarial.results if not r.passed
+                ][:5],
+            },
+        )
         report.public = public
         report.adversarial = adversarial
 
         findings, signals = analyze(problem, parsed, code, public, adversarial)
         report.findings = findings
         report.signals = signals
+        emit(
+            "rules",
+            {"输入": "段落 + 代码 + 两组测试结果"},
+            {
+                "命中条数": len(findings),
+                "错误类型": sorted({f.error_type for f in findings if f.error_type}),
+                "信号字段": sorted(signals.keys()),
+            },
+        )
 
         failed = [r for r in adversarial.results if not r.passed][:3]
         for r in failed:
@@ -119,6 +178,15 @@ class CheckerAgent:
                     "summary": forensic_summary(fo),
                 }
             )
+
+        emit(
+            "forensics",
+            {"待取证失败用例": len(failed)},
+            {
+                "取证条数": len(report.forensics),
+                "摘要": [f.get("summary", "")[:200] for f in report.forensics],
+            },
+        )
 
         report.code_ok = public.all_passed and (
             adversarial.total == 0 or adversarial.all_passed
@@ -136,8 +204,14 @@ class CheckerAgent:
         )
 
         report.debug_hints = self._build_debug_hints(report)
-        report.llm_summary = self._llm_diagnose(problem, report)
         return report
+
+    def summarize(self, problem: dict, report: CheckerReport, trace: dict | None = None) -> dict:
+        """在 inspect 结果上补 LLM 二次诊断（与 inspect 分离，便于流式编排）。
+
+        `trace` 为可选观察袋，写入本次 LLM 调用的真实输入/输出，供上层展示。
+        """
+        return self._llm_diagnose(problem, report, trace)
 
     def _build_debug_hints(self, report: CheckerReport) -> list[str]:
         hints: list[str] = []
@@ -160,7 +234,8 @@ class CheckerAgent:
             hints.append("公开与对抗测试均通过，规则层未见高置信缺陷。")
         return hints
 
-    def _llm_diagnose(self, problem: dict, report: CheckerReport) -> dict:
+    def _llm_diagnose(self, problem: dict, report: CheckerReport,
+                      trace: dict | None = None) -> dict:
         if self.llm is None:
             return self._rule_summary(report)
 
@@ -181,6 +256,9 @@ class CheckerAgent:
         if isinstance(self.llm, MockLLM):
             return self._rule_summary(report)
 
+        if trace is not None:
+            trace.update({"input": payload, "system_prompt": CHECKER_SYSTEM})
+
         try:
             resp = self.llm.chat(
                 [
@@ -191,15 +269,19 @@ class CheckerAgent:
                     ),
                 ],
                 response_format_json=True,
-                thinking="disabled",
+                thinking=thinking_of(self.llm),
             )
             text = (resp.text or "").strip()
+            if trace is not None:
+                trace["llm_raw"] = text[:6000]
             start = text.find("{")
             end = text.rfind("}")
             if start >= 0 and end > start:
                 return json.loads(text[start : end + 1])
             return {"summary": text[:300], "raw": True}
         except Exception as exc:  # noqa: BLE001
+            if trace is not None:
+                trace["error"] = f"{type(exc).__name__}: {exc}"
             out = self._rule_summary(report)
             out["llm_error"] = f"{type(exc).__name__}: {exc}"
             return out
@@ -245,7 +327,7 @@ class CheckerAgent:
                 tools=CHECKER_TOOLS,
                 handlers=handlers,
                 max_rounds=6,
-                thinking="disabled",
+                thinking=thinking_of(self.llm),
             )
             text = (resp.text or "").strip()
             start, end = text.find("{"), text.rfind("}")

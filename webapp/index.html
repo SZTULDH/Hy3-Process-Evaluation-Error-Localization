@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>过程评估工作台</title>
+<style>
+  :root{
+    --bg:#f5f6f8; --panel:#ffffff; --line:#e2e5ea; --line-soft:#eef0f3;
+    --text:#1f2328; --muted:#6a737d; --faint:#8b949e;
+    --brand:#2563eb; --brand-soft:#eff4ff;
+    --ok:#1a7f37; --ok-bg:#e9f7ee; --warn:#b45309; --warn-bg:#fdf3e3;
+    --bad:#c1272d; --bad-bg:#fdecec; --info-bg:#f1f3f5;
+    --radius:10px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font:14px/1.6 system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;
+  }
+  code,pre,.mono{font-family:ui-monospace,SFMono-Regular,Consolas,"Cascadia Mono",monospace}
+
+  /* ---------- 顶栏 ---------- */
+  header{
+    display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+    padding:12px 20px; background:var(--panel); border-bottom:1px solid var(--line);
+    position:sticky; top:0; z-index:20;
+  }
+  .brand{font-size:16px; font-weight:650; letter-spacing:.2px}
+  .brand small{display:block; font-size:11px; color:var(--faint); font-weight:400; letter-spacing:0}
+  .tabs{display:flex; background:var(--info-bg); border-radius:8px; padding:3px}
+  .tabs button{
+    border:0; background:transparent; padding:6px 14px; border-radius:6px;
+    font:inherit; color:var(--muted); cursor:pointer;
+  }
+  .tabs button.on{background:var(--panel); color:var(--text); font-weight:600; box-shadow:0 1px 2px rgba(0,0,0,.06)}
+  .spacer{flex:1}
+
+  .switch{display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none}
+  .switch input{display:none}
+  .track{
+    width:38px; height:22px; border-radius:11px; background:#cfd4da; position:relative;
+    transition:background .18s;
+  }
+  .track::after{
+    content:""; position:absolute; top:3px; left:3px; width:16px; height:16px;
+    border-radius:50%; background:#fff; transition:transform .18s; box-shadow:0 1px 2px rgba(0,0,0,.2);
+  }
+  .switch input:checked + .track{background:var(--brand)}
+  .switch input:checked + .track::after{transform:translateX(16px)}
+  .switch .lab{font-size:13px}
+  .switch .lab b{display:block; font-size:11px; font-weight:400; color:var(--faint)}
+
+  /* ---------- 模型 / 思考强度 ---------- */
+  .ctl{display:flex; align-items:center; gap:6px}
+  .ctl > .mini-l{font-size:11.5px; color:var(--faint); margin:0}
+  .mini{
+    border:1px solid var(--line); border-radius:7px; padding:6px 9px;
+    font:inherit; font-size:12.5px; color:var(--text); background:#fcfcfd;
+  }
+  .mini:focus{outline:0; border-color:var(--brand); box-shadow:0 0 0 3px var(--brand-soft)}
+  #model{width:190px}
+  .ctl-note{font-size:11px; color:var(--faint); max-width:210px; line-height:1.4}
+
+  /* ---------- Agent 工作流 ---------- */
+  .wf{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:10px}
+  @media (max-width:1100px){ .wf{grid-template-columns:1fr} }
+  .wf-col{border:1px solid var(--line); border-radius:8px; background:#fcfcfd; overflow:hidden}
+  .wf-h{
+    padding:7px 11px; font-size:12px; font-weight:650; color:var(--muted);
+    background:var(--info-bg); border-bottom:1px solid var(--line);
+    display:flex; align-items:center; gap:6px;
+  }
+  .wf-h .role{font-size:10.5px; padding:1px 6px; border-radius:20px; background:#fff; border:1px solid var(--line)}
+  .wf-body{padding:8px 10px; max-height:520px; overflow:auto}
+  .wf-empty{font-size:12px; color:var(--faint); padding:6px 2px}
+  .wf-step{border-left:2px solid var(--line); padding:5px 0 6px 9px; margin-bottom:7px}
+  .wf-step.running{border-left-color:var(--brand)}
+  .wf-step.done{border-left-color:var(--ok)}
+  .wf-step.error{border-left-color:var(--bad)}
+  .wf-top{display:flex; align-items:center; gap:7px; flex-wrap:wrap}
+  .wf-name{font-size:12.5px; font-weight:600}
+  .wf-sec{margin-left:auto; font-size:11px; color:var(--faint)}
+  .wf-io{margin-top:4px; font-size:11.5px; color:#3d444d}
+  .io{margin-top:4px}
+  .io > b{font-size:11px; color:var(--faint); font-weight:650}
+  .io-row{display:flex; gap:6px; padding:2px 0; align-items:flex-start}
+  .io-k{color:var(--faint); min-width:76px; flex-shrink:0}
+  .io-v{word-break:break-word; white-space:pre-wrap}
+  .io pre.dump{margin:4px 0 0; font-size:11px; max-height:220px; background:#f8f9fb}
+
+  .run{
+    background:var(--brand); color:#fff; border:0; border-radius:8px;
+    padding:9px 20px; font:inherit; font-weight:600; cursor:pointer;
+  }
+  .run:disabled{background:#9db4e8; cursor:not-allowed}
+  .ghost{
+    background:var(--panel); color:var(--text); border:1px solid var(--line);
+    border-radius:8px; padding:7px 12px; font:inherit; cursor:pointer;
+  }
+  .ghost:hover{border-color:#c9ced6}
+
+  /* ---------- 布局 ---------- */
+  main{display:grid; grid-template-columns:minmax(380px,440px) 1fr; gap:16px; padding:16px 20px 40px; align-items:start}
+  @media (max-width:1000px){ main{grid-template-columns:1fr} }
+
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:16px}
+  .card + .card{margin-top:14px}
+  .card h2{margin:0 0 12px; font-size:13px; font-weight:650; color:var(--muted); letter-spacing:.4px}
+
+  label{display:block; margin:12px 0 5px; font-size:12.5px; font-weight:600; color:#3d444d}
+  label .hint{font-weight:400; color:var(--faint); font-size:11.5px}
+  textarea,input[type=text]{
+    width:100%; border:1px solid var(--line); border-radius:8px; padding:9px 11px;
+    font:inherit; color:var(--text); background:#fcfcfd; resize:vertical;
+  }
+  textarea:focus,input:focus{outline:0; border-color:var(--brand); background:#fff; box-shadow:0 0 0 3px var(--brand-soft)}
+  textarea.mono{font-size:12.5px; line-height:1.55}
+  .row{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+
+  .opt{display:flex; align-items:flex-start; gap:8px; margin-top:14px; font-size:12.5px; color:var(--muted)}
+  .opt input{margin-top:3px}
+
+  /* ---------- 题库选择器 ---------- */
+  .pk{margin-top:9px}
+  .pk-row{display:flex; gap:6px; margin-top:7px; flex-wrap:wrap}
+  .pk-row .mini{flex:0 0 auto}
+  #pk-q{flex:1 1 120px; min-width:0}
+  #pk-list{width:100%; margin-top:7px; font-size:12px; padding:4px}
+  #pk-list option{padding:3px 5px}
+  .pk-meta{font-size:11.5px; color:var(--faint); margin-top:5px; line-height:1.5}
+  .pk-prev{
+    margin-top:7px; font-size:12px; color:#3d444d; background:#f8f9fb;
+    border:1px solid var(--line-soft); border-radius:7px; padding:8px 10px;
+    max-height:150px; overflow:auto; white-space:pre-wrap; display:none;
+  }
+  .pk-prev b{color:var(--muted)}
+
+  details{border-top:1px solid var(--line-soft); padding-top:10px; margin-top:12px}
+  details:first-of-type{border-top:0}
+  summary{cursor:pointer; font-size:12.5px; font-weight:600; color:var(--muted)}
+
+  /* ---------- 进度 ---------- */
+  .stages{display:flex; gap:6px; flex-wrap:wrap; margin-top:10px}
+  .stg{
+    font-size:11.5px; padding:3px 10px; border-radius:20px;
+    background:var(--info-bg); color:var(--faint);
+  }
+  .stg.on{background:var(--brand-soft); color:var(--brand); font-weight:600}
+  .stg.done{background:var(--ok-bg); color:var(--ok)}
+
+  /* ---------- 结果 ---------- */
+  .verdicts{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px}
+  .v{border:1px solid var(--line); border-radius:8px; padding:10px 12px; background:#fcfcfd}
+  .v .k{font-size:11.5px; color:var(--faint)}
+  .v .val{font-size:15px; font-weight:650; margin-top:2px}
+  .v.ok{background:var(--ok-bg); border-color:#c6e6d1} .v.ok .val{color:var(--ok)}
+  .v.bad{background:var(--bad-bg); border-color:#f3c9c9} .v.bad .val{color:var(--bad)}
+
+  .banner{
+    margin-top:12px; padding:10px 12px; border-radius:8px; font-size:13px;
+    background:var(--warn-bg); border:1px solid #f0dcb8; color:var(--warn);
+  }
+  .banner.bad{background:var(--bad-bg); border-color:#f3c9c9; color:var(--bad)}
+  .banner.ok{background:var(--ok-bg); border-color:#c6e6d1; color:var(--ok)}
+
+  table{width:100%; border-collapse:collapse; font-size:12.5px}
+  th,td{text-align:left; padding:6px 8px; border-bottom:1px solid var(--line-soft); vertical-align:top}
+  th{color:var(--faint); font-weight:600; font-size:11.5px}
+  td.mono{font-size:12px; word-break:break-all}
+  .pill{display:inline-block; padding:1px 7px; border-radius:20px; font-size:11px; font-weight:600}
+  .pill.ok{background:var(--ok-bg); color:var(--ok)}
+  .pill.bad{background:var(--bad-bg); color:var(--bad)}
+  .pill.warn{background:var(--warn-bg); color:var(--warn)}
+  .pill.mute{background:var(--info-bg); color:var(--muted)}
+
+  .sec{border:1px solid var(--line); border-radius:8px; padding:11px 13px; margin-bottom:9px; background:#fcfcfd}
+  .sec.flawed{background:var(--bad-bg); border-color:#f3c9c9}
+  .sec.suspicious{background:var(--warn-bg); border-color:#f0dcb8}
+  .sec .top{display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+  .sec .name{font-weight:650}
+  .sec .conf{margin-left:auto; font-size:11.5px; color:var(--faint)}
+  .sec .bar{height:4px; border-radius:2px; background:#e6e9ed; margin:8px 0 7px; overflow:hidden}
+  .sec .bar i{display:block; height:100%; background:var(--brand)}
+  .sec.flawed .bar i{background:var(--bad)} .sec.suspicious .bar i{background:var(--warn)}
+  .sec .why{font-size:12.5px; color:#3d444d}
+  .sec .ev{margin-top:5px; font-size:12px; color:var(--muted); border-left:2px solid var(--line); padding-left:8px}
+  .sec .tags{margin-top:6px; display:flex; gap:5px; flex-wrap:wrap}
+
+  pre.dump{
+    background:#f8f9fb; border:1px solid var(--line-soft); border-radius:8px;
+    padding:11px; font-size:12px; line-height:1.6; overflow:auto; max-height:340px; margin:8px 0 0;
+    white-space:pre-wrap; word-break:break-word;
+  }
+  #stream{min-height:70px; max-height:420px}
+  .caret{display:inline-block; width:6px; height:13px; background:var(--brand);
+    vertical-align:-2px; animation:blink 1s steps(2) infinite}
+  @keyframes blink{50%{opacity:0}}
+
+  .empty{color:var(--faint); font-size:13px; padding:26px 4px; text-align:center; line-height:1.9}
+  .meta{font-size:11.5px; color:var(--faint); margin-top:10px}
+  .spin{width:15px;height:15px;border:2px solid var(--line);border-top-color:var(--brand);border-radius:50%;animation:s .8s linear infinite; display:inline-block}
+  @keyframes s{to{transform:rotate(360deg)}}
+  .err{background:var(--bad-bg); border:1px solid #f3c9c9; color:var(--bad); padding:11px 13px; border-radius:8px; font-size:12.5px; margin-top:12px}
+  ul.hints{margin:6px 0 0; padding-left:18px; font-size:12.5px; color:#3d444d}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">过程评估工作台<small id="cfgline">加载中…</small></div>
+
+  <div class="tabs">
+    <button id="tab-algo" class="on" data-mode="algorithm">算法竞赛</button>
+    <button id="tab-code" data-mode="code">代码任务</button>
+  </div>
+
+  <div class="ctl">
+    <span class="mini-l">模型</span>
+    <input id="model" class="mini" list="model-list" placeholder="hy3" autocomplete="off">
+    <datalist id="model-list"></datalist>
+  </div>
+
+  <div class="ctl">
+    <span class="mini-l">思考强度</span>
+    <select id="effort" class="mini" title="越深越准，但耗时与 token 消耗显著上升">
+      <option value="auto">默认（跟随模型）</option>
+      <option value="off">关闭（最快）</option>
+      <option value="low">低 · low</option>
+      <option value="medium">中 · medium</option>
+      <option value="high">高 · high（最慢）</option>
+    </select>
+  </div>
+  <span class="ctl-note" id="model-note"></span>
+
+  <div class="spacer"></div>
+  <button class="ghost" id="demo">填入示例</button>
+  <button class="run" id="run">开始评估</button>
+</header>
+
+<main>
+  <!-- ============ 输入 ============ -->
+  <section>
+    <div class="card">
+      <h2>题目 / 需求</h2>
+
+      <details id="picker">
+        <summary>从题库载入（懒加载：先取索引，选中后才读题面）</summary>
+        <div class="pk">
+          <div class="pk-row">
+            <select id="pk-cat" class="mini"><option value="">全部难度</option></select>
+            <input id="pk-q" class="mini" placeholder="搜题名 / 函数名">
+            <button class="ghost" id="pk-refresh" type="button">重载</button>
+          </div>
+          <select id="pk-list" class="mini" size="7"></select>
+          <div class="pk-meta" id="pk-meta">展开后加载索引…</div>
+          <div class="pk-prev" id="pk-prev"></div>
+          <div class="pk-row">
+            <button class="ghost" id="pk-load" type="button">载入题面</button>
+            <button class="ghost" id="pk-load-mock" type="button">载入题面 + 内置解答</button>
+          </div>
+        </div>
+      </details>
+
+      <label>标题 <span class="hint">选填</span></label>
+      <input type="text" id="title" placeholder="例如：两数之和">
+
+      <label id="lbl-desc">题目描述</label>
+      <textarea id="description" rows="8" placeholder="把完整题面粘进来：要做什么、输入是什么、输出是什么。"></textarea>
+
+      <div class="row">
+        <div>
+          <label>入口函数名</label>
+          <input type="text" id="entry_point" placeholder="two_sum">
+        </div>
+        <div>
+          <label>期望复杂度 <span class="hint">选填</span></label>
+          <input type="text" id="complexity" placeholder="O(n)">
+        </div>
+      </div>
+
+      <label>函数签名</label>
+      <input type="text" id="signature" placeholder="def two_sum(nums: list[int], target: int) -> list[int]:">
+
+      <label>约束 <span class="hint">选填，写清楚才能判复杂度是否达标</span></label>
+      <textarea id="constraints" rows="2" placeholder="例如：2 <= len(nums) <= 10^4；答案唯一；不能整体转整型"></textarea>
+    </div>
+
+    <div class="card">
+      <h2>测试数据</h2>
+
+      <label id="lbl-public">公开测试用例</label>
+      <textarea id="public_tests" rows="5" class="mono"
+        placeholder='[{"args": [[2,7,11,15], 9], "expected": [0,1]}]'></textarea>
+
+      <label id="lbl-adv">对抗测试用例 <span class="hint">选填 —— 用来暴露"公开测过了但逻辑其实错"</span></label>
+      <textarea id="adversarial_tests" rows="4" class="mono"
+        placeholder='[{"args": [[3,3], 6], "expected": [0,1]}]'></textarea>
+    </div>
+
+    <div class="card">
+      <h2>候选解答</h2>
+      <label>解答内容 <span class="hint">留空则让模型现生成一份</span></label>
+      <textarea id="candidate" rows="6" class="mono"
+        placeholder="粘贴待评估的解答：可以是完整五段，也可以只是一段代码。"></textarea>
+
+      <label class="opt">
+        <input type="checkbox" id="code_only">
+        <span>只评估代码实现（粘贴的是纯代码时勾选，跳过思路/复杂度/边界的过程审查，只跑 1 次评审，更快）</span>
+      </label>
+    </div>
+  </section>
+
+  <!-- ============ 结果 ============ -->
+  <section>
+    <div class="card" id="result">
+      <div class="empty">
+        填好左边的题面后点「开始评估」。<br>
+        流程：生成解答 → 沙盒真实执行 → 规则信号 → 逐段 Critic 审查。<br>
+        <span style="color:#8b949e">结论区分「测试通过」与「过程成立」，能识别出伪正确。</span>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+let mode = 'algorithm';
+let timer = null;
+
+const TEXT = {
+  algorithm: {
+    desc: '题目描述',
+    public: '公开测试用例',
+    adv: '对抗测试用例 <span class="hint">选填 —— 用来暴露"公开测过了但逻辑其实错"</span>',
+  },
+  code: {
+    desc: '需求描述',
+    public: '测试用例',
+    adv: '边界 / 异常用例 <span class="hint">选填 —— 用来暴露"常规测过了但逻辑其实错"</span>',
+  },
+};
+
+const DEMO = {
+  algorithm: {
+    title: '字符串相加',
+    description: '给定两个非负整数字符串 num1 和 num2，返回它们和的字符串形式。\n要求：不能把整个字符串转成整数来计算。',
+    entry_point: 'add_strings',
+    complexity: 'O(n)',
+    signature: 'def add_strings(num1: str, num2: str) -> str:',
+    constraints: '1 <= len(num1), len(num2) <= 10^4；只含数字 0-9；不能有前导零（除 "0" 本身）',
+    public_tests: '[{"args": ["11","123"], "expected": "134"},\n {"args": ["0","0"], "expected": "0"}]',
+    adversarial_tests: '[{"args": ["9","1"], "expected": "10"},\n {"args": ["999","1"], "expected": "1000"},\n {"args": ["1","9"], "expected": "10"}]',
+    candidate: '',
+  },
+  code: {
+    title: '合并区间',
+    description: '实现 merge_intervals(intervals)，把有重叠的区间合并。\n输入是区间列表，每个区间为 [start, end]；返回按起点升序排列的合并后区间列表。',
+    entry_point: 'merge_intervals',
+    complexity: '',
+    signature: 'def merge_intervals(intervals: list[list[int]]) -> list[list[int]]:',
+    constraints: '区间可能为空列表；端点可为负数；相邻相接的区间（[1,4] 与 [4,5]）也应合并',
+    public_tests: '[{"args": [[[1,3],[2,6],[8,10],[15,18]]], "expected": [[1,6],[8,10],[15,18]]},\n {"args": [[[1,4],[4,5]]], "expected": [[1,5]]}]',
+    adversarial_tests: '[{"args": [[]], "expected": []},\n {"args": [[[1,4],[2,3]]], "expected": [[1,4]]},\n {"args": [[[-5,-1],[-3,2]]], "expected": [[-5,2]]}]',
+    candidate: '',
+  },
+};
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+const STATUS = {
+  ok: ['ok','通过'], wrong_answer: ['bad','答案错'], timeout: ['warn','超时'],
+  runtime_error: ['bad','运行错'], missing_entry: ['bad','找不到函数'],
+  import_error: ['bad','导入失败'], not_run: ['mute','未执行'], unserializable: ['warn','不可序列化'],
+};
+const VERDICT = {valid: ['ok','成立'], suspicious: ['warn','可疑'], flawed: ['bad','不成立']};
+
+/* ---------- 模式切换 ---------- */
+document.querySelectorAll('.tabs button').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+    mode = btn.dataset.mode;
+    $('lbl-desc').textContent = TEXT[mode].desc;
+    $('lbl-public').textContent = TEXT[mode].public;
+    $('lbl-adv').innerHTML = TEXT[mode].adv;
+  };
+});
+
+$('demo').onclick = () => {
+  const d = DEMO[mode];
+  for (const k of ['title','description','entry_point','complexity','signature','constraints','public_tests','adversarial_tests','candidate']) {
+    $(k).value = d[k] ?? '';
+  }
+};
+
+/* ---------- 启动检查 + 模型清单 ---------- */
+let CATALOG = [];
+const specOf = id => CATALOG.find(m => m.id === (id || '').trim()) || null;
+
+function refreshEffort() {
+  const id = $('model').value.trim();
+  const spec = specOf(id);
+  const canDisable = !spec || spec.can_disable !== false;
+  const allowed = (spec && spec.efforts && spec.efforts.length) ? spec.efforts : null;
+
+  for (const opt of $('effort').options) {
+    if (opt.value === 'auto') { opt.disabled = false; continue; }
+    if (opt.value === 'off') opt.disabled = !canDisable;
+    else opt.disabled = !!allowed && !allowed.includes(opt.value);
+    if (opt.value === 'off' && !canDisable) {
+      opt.textContent = '关闭（该模型不支持）';
+    } else if (opt.value === 'off') {
+      opt.textContent = '关闭（最快）';
+    }
+  }
+  if ($('effort').selectedOptions[0]?.disabled) $('effort').value = 'auto';
+
+  const bits = [];
+  if (spec) {
+    bits.push(spec.label);
+    bits.push(`默认${spec.thinking_default === 'disabled' ? '不思考' : '思考'}`
+      + (spec.effort_default ? ` / ${spec.effort_default}` : ''));
+    if (!canDisable) bits.push('不支持关闭思考');
+    if (allowed) bits.push(`档位：${allowed.join(' / ')}`);
+  } else if (id) {
+    bits.push('自定义模型：参数按最宽松下发');
+  }
+  $('model-note').textContent = bits.join(' · ');
+}
+
+fetch('/api/config').then(r => r.json()).then(c => {
+  CATALOG = c.models || [];
+  $('model-list').innerHTML = CATALOG
+    .map(m => `<option value="${esc(m.id)}">${esc(m.label)}${m.note ? ' — ' + esc(m.note) : ''}</option>`)
+    .join('');
+  $('model').value = c.model || 'hy3';
+  // 兼容 .env 里的旧写法（disabled/enabled）
+  const legacy = {disabled: 'off', enabled: 'auto'};
+  const dflt = legacy[c.thinking_default] || c.thinking_default;
+  if (['auto', 'off', 'low', 'medium', 'high'].includes(dflt)) $('effort').value = dflt;
+  refreshEffort();
+
+  $('cfgline').textContent = `${c.model} · Key ${c.has_key ? '已配置' : '缺失'}`;
+  if (!c.has_key) {
+    $('run').disabled = true;
+    $('result').innerHTML = '<div class="err">未检测到 API Key。请在仓库根目录的 <code>.env</code> 里写入 <code>HY3_API_KEY=...</code> 后重启服务。</div>';
+  }
+}).catch(() => { $('cfgline').textContent = '配置读取失败'; });
+
+$('model').addEventListener('input', refreshEffort);
+$('model').addEventListener('change', refreshEffort);
+
+/* ---------- 骨架 ---------- */
+function skeleton() {
+  return `
+    <div id="live">
+      <div style="display:flex;align-items:center;gap:9px">
+        <span class="spin"></span>
+        <span style="font-size:13px">正在评估</span>
+        <span class="pill mute" id="now">准备</span>
+        <span style="flex:1"></span>
+        <span class="meta" style="margin:0" id="elapsed">0s</span>
+      </div>
+      <div class="stages" id="stages">
+        <span class="stg">生成解答</span><span class="stg">执行 + 规则</span>
+        <span class="stg">分步审查</span><span class="stg">汇总</span>
+      </div>
+    </div>
+    <details id="wf-box" open>
+      <summary>Agent 工作流（Checker 执行取证 · Critic 逐段裁决）</summary>
+      <div class="wf">
+        <div class="wf-col">
+          <div class="wf-h"><span class="role">Agent 1</span><span id="wf-checker-h">Checker</span></div>
+          <div class="wf-body" id="wf-checker"><div class="wf-empty">等待中…</div></div>
+        </div>
+        <div class="wf-col">
+          <div class="wf-h"><span class="role">Agent 2</span><span id="wf-critic-h">Critic</span></div>
+          <div class="wf-body" id="wf-critic"><div class="wf-empty">等待中…</div></div>
+        </div>
+      </div>
+    </details>
+    <div id="summary-out"></div>
+    <details id="think-box" open style="display:none">
+      <summary>思考过程（深度思考已开启）</summary><pre class="dump" id="think"></pre>
+    </details>
+    <details open><summary>实时生成</summary><pre class="dump" id="stream"></pre></details>
+    <div id="tests-out"></div>
+    <div id="sections-out"></div>
+    <div id="tail-out"></div>`;
+}
+
+/* ---------- 题库选择器（懒加载） ---------- */
+const PK = {problems: [], detail: null, catReady: false};
+
+async function loadProblemIndex() {
+  const cat = $('pk-cat').value, q = $('pk-q').value.trim();
+  $('pk-meta').textContent = '加载索引…';
+  try {
+    const d = await (await fetch('/api/problems?difficulty='
+      + encodeURIComponent(cat) + '&q=' + encodeURIComponent(q))).json();
+    PK.problems = d.problems || [];
+    $('pk-list').innerHTML = PK.problems.map(p =>
+      `<option value="${esc(p.id)}">${esc(p.difficulty)} · ${esc(p.title)}`
+      + `（公开${p.n_public} / 对抗${p.n_adv}${p.has_mock ? ' · 有内置解答' : ''}）</option>`
+    ).join('');
+
+    if (!PK.catReady && d.counts) {   // 难度下拉只在第一次用真实计数填充
+      $('pk-cat').innerHTML = '<option value="">全部难度</option>'
+        + Object.entries(d.counts).map(([k, v]) =>
+            `<option value="${esc(k)}">${esc(k)}（${v}）</option>`).join('');
+      PK.catReady = true;
+    }
+    const broken = (d.broken || []).length
+      ? `　⚠ ${d.broken.length} 个文件解析失败：${esc(d.broken[0])}` : '';
+    $('pk-meta').textContent = `共 ${d.total} 题` + broken;
+    PK.detail = null;
+    $('pk-prev').style.display = 'none';
+    if (PK.problems.length) loadProblemDetail();
+  } catch (e) {
+    $('pk-meta').textContent = '题库加载失败：' + e.message;
+  }
+}
+
+async function loadProblemDetail() {
+  const id = $('pk-list').value;
+  if (!id) return;
+  $('pk-meta').textContent = '读取题面…';
+  try {
+    const d = await (await fetch('/api/problem?id=' + encodeURIComponent(id))).json();
+    if (d.error) throw new Error(d.error);
+    PK.detail = d;
+    const p = d.problem || {};
+    const gt = d.ground_truth || {};
+    const edge = (p.required_edge_cases || []).join('、');
+    $('pk-prev').style.display = '';
+    $('pk-prev').innerHTML =
+      `<b>${esc(p.title || id)}</b>　${esc(p.difficulty || '')}　<code>${esc(p.entry_point || '')}</code>\n`
+      + esc((p.description || '').slice(0, 260)) + '\n'
+      + `　复杂度要求：${esc((p.expected_complexity || {}).time || '未指定')}`
+      + `　内置解答：${d.candidate_md ? '有' : '无'}`
+      + (edge ? `\n　必须覆盖的边界：${esc(edge)}` : '')
+      + (gt && gt.note ? `\n　标注：${esc(gt.note)}` : '');
+    $('pk-meta').textContent = `已载入 ${id} 的题面`;
+  } catch (e) {
+    $('pk-meta').textContent = '题面读取失败：' + e.message;
+  }
+}
+
+function applyProblem(withMock) {
+  const d = PK.detail;
+  if (!d) { $('pk-meta').textContent = '先选一道题'; return; }
+  const p = d.problem || {};
+  const j = v => JSON.stringify(v || [], null, 1);
+  const edge = p.required_edge_cases || [];
+
+  $('title').value = p.title || '';
+  $('description').value = p.description || '';
+  $('entry_point').value = p.entry_point || '';
+  $('signature').value = p.function_signature || '';
+  $('complexity').value = (p.expected_complexity || {}).time || '';
+  $('constraints').value = [p.constraints || '',
+    edge.length ? '必须覆盖的边界：' + edge.join('、') : ''].filter(Boolean).join('\n');
+  $('public_tests').value = j(p.public_tests);
+  $('adversarial_tests').value = j(p.adversarial_tests);
+  $('candidate').value = withMock ? (d.candidate_md || '') : '';
+  $('code_only').checked = false;
+
+  if (withMock && !d.candidate_md) $('pk-meta').textContent = '这道题没有内置解答，已只载入题面';
+  else $('pk-meta').textContent = `已填入：${p.title || p.id}${withMock ? '（含内置解答）' : ''}`;
+}
+
+$('picker').addEventListener('toggle', () => {
+  if ($('picker').open && !PK.problems.length) loadProblemIndex();
+});
+$('pk-cat').addEventListener('change', loadProblemIndex);
+$('pk-q').addEventListener('keydown', e => { if (e.key === 'Enter') loadProblemIndex(); });
+$('pk-refresh').addEventListener('click', loadProblemIndex);
+$('pk-list').addEventListener('change', loadProblemDetail);
+$('pk-load').addEventListener('click', () => applyProblem(false));
+$('pk-load-mock').addEventListener('click', () => applyProblem(true));
+
+/* ---------- 运行 ---------- */
+$('run').onclick = async () => {
+  const btn = $('run');
+  btn.disabled = true;
+  const t0 = Date.now();
+  const state = {raw: '', reasoning: '', got: false};
+  WF = {};
+
+  $('result').innerHTML = skeleton();
+  timer = setInterval(() => {
+    const el = $('elapsed');
+    if (el) el.textContent = ((Date.now() - t0) / 1000).toFixed(0) + 's';
+  }, 500);
+
+  const body = {
+    mode,
+    model: $('model').value.trim(),
+    effort: $('effort').value,
+    thinking: $('effort').value === 'off' ? 'disabled' : 'enabled',
+    title: $('title').value,
+    description: $('description').value,
+    entry_point: $('entry_point').value,
+    function_signature: $('signature').value,
+    constraints: $('constraints').value,
+    expected_complexity: $('complexity').value ? {time: $('complexity').value} : {},
+    public_tests: $('public_tests').value,
+    adversarial_tests: $('adversarial_tests').value,
+    candidate: $('candidate').value,
+    code_only: $('code_only').checked,
+  };
+
+  try {
+    const resp = await fetch('/api/evaluate/stream', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body),
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}：${(await resp.text()).slice(0, 300)}`);
+
+    const reader = resp.body.getReader();
+    const dec = new TextDecoder();
+    let buf = '';
+    while (true) {
+      const {done, value} = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, {stream: true});
+      let i;
+      while ((i = buf.indexOf('\n\n')) >= 0) {
+        handleFrame(buf.slice(0, i), state);
+        buf = buf.slice(i + 2);
+      }
+    }
+    if (!state.got) throw new Error('流提前结束，未收到最终结果');
+  } catch (e) {
+    $('tail-out').innerHTML = `<div class="err"><b>评估失败</b><br>${esc(e.message)}</div>`;
+  } finally {
+    clearInterval(timer);
+    btn.disabled = false;
+    const live = $('live');
+    if (live) live.style.display = 'none';
+    const caret = document.querySelector('.caret');
+    if (caret) caret.remove();
+  }
+};
+
+function handleFrame(frame, state) {
+  let event = 'message', data = '';
+  for (const line of frame.split('\n')) {
+    if (line.startsWith('event:')) event = line.slice(6).trim();
+    else if (line.startsWith('data:')) data += line.slice(5).trim();
+  }
+  if (!data) return;
+  let obj;
+  try { obj = JSON.parse(data); } catch { obj = {raw: data}; }
+
+  switch (event) {
+    case 'agent':
+      renderAgentStep(obj);
+      break;
+    case 'stage': {
+      const stages = $('stages');
+      if (stages) {
+        [...stages.children].forEach((el, i) => {
+          el.classList.toggle('on', i === obj.index - 1);
+          if (i < obj.index - 1) el.classList.add('done');
+        });
+      }
+      const now = $('now');
+      if (now) now.textContent = obj.name;
+      break;
+    }
+    case 'reasoning_delta': {
+      state.reasoning += obj.text;
+      const box = $('think-box'), pre = $('think');
+      if (box) box.style.display = '';   // 有思考内容才显示这个区块
+      if (pre) { pre.textContent = state.reasoning; pre.scrollTop = pre.scrollHeight; }
+      break;
+    }
+    case 'delta': {
+      state.raw += obj.text;
+      const pre = $('stream');
+      if (pre) { pre.textContent = state.raw; pre.scrollTop = pre.scrollHeight; }
+      break;
+    }
+    case 'solution':
+      state.raw = obj.text;
+      break;
+    case 'tests':
+      $('tests-out').innerHTML = testsBlock(obj);
+      break;
+    case 'section':
+      $('sections-out').insertAdjacentHTML('beforeend', sectionCard(obj));
+      break;
+    case 'done':
+      state.got = true;
+      finish(obj, state);
+      break;
+    case 'error':
+      $('tail-out').innerHTML = `<div class="err"><b>服务端出错</b><br>${esc(obj.error || '')}</div>`;
+      break;
+  }
+}
+
+/* ---------- Agent 工作流 ---------- */
+let WF = {};
+
+function ioBlock(obj) {
+  return Object.entries(obj || {})
+    .filter(([, v]) => v !== null && v !== undefined && v !== '')
+    .map(([k, v]) => {
+      const s = typeof v === 'string' ? v : JSON.stringify(v, null, 2);
+      const long = s.length > 90 || ['prompt', 'system_prompt', 'llm_raw'].includes(k);
+      if (long) {
+        return `<div class="io-row"><span class="io-k">${esc(k)}</span><span style="flex:1">
+          <details><summary>展开（${s.length} 字符）</summary><pre class="dump">${esc(s)}</pre></details>
+        </span></div>`;
+      }
+      return `<div class="io-row"><span class="io-k">${esc(k)}</span><span class="io-v">${esc(s)}</span></div>`;
+    }).join('');
+}
+
+function renderAgentStep(d) {
+  const isChecker = d.agent === 'checker';
+  const col = isChecker ? $('wf-checker') : $('wf-critic');
+  if (!col) return;
+  if (d.agent_label) $(isChecker ? 'wf-checker-h' : 'wf-critic-h').textContent = d.agent_label;
+
+  const key = d.agent + '|' + d.step;
+  let el = WF[key];
+  if (!el) {
+    const empty = col.querySelector('.wf-empty');
+    if (empty) empty.remove();
+    el = document.createElement('div');
+    el.className = 'wf-step';
+    el.innerHTML = `<div class="wf-top">
+        <span class="wf-name">${esc(d.title || d.step)}</span>
+        <span class="wf-sec"></span>
+      </div><div class="wf-io"></div>`;
+    col.appendChild(el);
+    WF[key] = el;
+  }
+  el.className = 'wf-step ' + (d.status || '');
+  el.querySelector('.wf-sec').textContent =
+    d.status === 'running' ? '进行中…' : (d.sec ? d.sec + 's' : '');
+  el.querySelector('.wf-io').innerHTML =
+    (d.input && Object.keys(d.input).length ? `<div class="io"><b>输入</b>${ioBlock(d.input)}</div>` : '')
+    + (d.output && Object.keys(d.output).length ? `<div class="io"><b>输出</b>${ioBlock(d.output)}</div>` : '')
+    + (d.note ? `<div class="io">${esc(d.note)}</div>` : '');
+}
+
+/* ---------- 渲染 ---------- */
+function finish(d, state) {
+  const yn = b => b ? '是' : '否';
+  const cr = d.checker_report || {};
+  const sum = cr.llm_summary || {};
+
+  let html = '<h2>总体结论</h2><div class="verdicts">'
+    + vcard('结果正确', yn(d.result_correct), d.result_correct, '公开测试是否全过')
+    + vcard('真实正确', yn(d.truly_correct), d.truly_correct, '公开 + 对抗测试均通过')
+    + vcard(d.code_only ? '实现成立' : '过程成立', yn(d.process_valid), d.process_valid,
+            d.code_only ? '仅审查了「代码实现」段' : '五个步骤是否都成立')
+    + vcard('伪正确', yn(d.false_positive_solution), !d.false_positive_solution,
+            '测试过了但逻辑其实有问题')
+    + '</div>';
+
+  if (d.false_positive_solution)
+    html += `<div class="banner bad"><b>判定为伪正确样本</b> —— 测试通过不代表实现成立：${esc(d.first_error_section || '过程存在缺陷')}${d.error_types?.length ? ' · ' + esc(d.error_types.join('、')) : ''}。</div>`;
+  else if (d.truly_correct && d.process_valid)
+    html += '<div class="banner ok">测试全过，且过程成立。</div>';
+  else if (!d.result_correct)
+    html += '<div class="banner bad">公开测试未通过，先把代码修对。</div>';
+  else if (!d.truly_correct)
+    html += '<div class="banner bad">公开测试过了，但对抗测试暴露了问题。</div>';
+
+  if (d.first_error_step)
+    html += `<div class="meta">首个不成立步骤：<code>${esc(d.first_error_step)}</code>（${esc(d.first_error_section)}）</div>`;
+
+  if (sum.summary || cr.debug_hints?.length) {
+    html += '<h2 style="margin-top:16px">Checker 总评</h2>';
+    if (sum.summary) html += `<div class="why">${esc(sum.summary)}</div>`;
+    if (sum.root_cause) html += `<div class="meta">根因：${esc(sum.root_cause)}</div>`;
+    if (cr.debug_hints?.length)
+      html += `<ul class="hints">${cr.debug_hints.map(h => `<li>${esc(h)}</li>`).join('')}</ul>`;
+  }
+  $('summary-out').innerHTML = html;
+
+  $('tail-out').innerHTML = `
+    <details><summary>提取到的代码</summary><pre class="dump">${esc(d.code || '（未提取到代码）')}</pre></details>
+    <details><summary>完整解答原文</summary><pre class="dump">${esc(d.raw_solution || '')}</pre></details>
+    <details><summary>原始 JSON</summary><pre class="dump">${esc(JSON.stringify(d, null, 2))}</pre></details>
+    <div class="meta">来源：${esc(d.solution_source)} · ${esc(d.backend)}/${esc(d.model || '')} · 思考 ${esc(
+      d.thinking === 'disabled' ? '关' : (d.effort ? d.effort : '开（默认深度）'))} · 服务端 ${d.elapsed_sec}s</div>`;
+}
+
+function vcard(k, val, good, tip) {
+  return `<div class="v ${good ? 'ok' : 'bad'}"><div class="k">${esc(k)}</div>
+    <div class="val">${esc(val)}</div><div class="k" style="margin-top:2px">${esc(tip)}</div></div>`;
+}
+
+function testsBlock(d) {
+  return '<h2 style="margin-top:16px">执行结果</h2>'
+    + suiteTable('公开测试', d.public) + suiteTable('对抗测试', d.adversarial);
+}
+
+function suiteTable(name, s) {
+  if (!s || !s.total) return '';
+  const rows = (s.failure_samples || []).map(r => {
+    const [cls, label] = STATUS[r.status] || ['mute', r.status];
+    return `<tr><td>#${r.index}</td><td class="mono">${esc(JSON.stringify(r.args))}</td>
+      <td class="mono">${esc(JSON.stringify(r.expected))}</td>
+      <td class="mono">${esc(JSON.stringify(r.actual))}</td>
+      <td><span class="pill ${cls}">${label}</span></td></tr>`;
+  }).join('');
+  return `<div style="margin-top:10px"><span class="pill ${s.all_passed ? 'ok' : 'bad'}">${esc(name)} ${s.passed}/${s.total}</span></div>`
+    + (s.all_passed ? '' :
+      `<table><thead><tr><th>#</th><th>入参</th><th>期望</th><th>实际</th><th>状态</th></tr></thead><tbody>${rows}</tbody></table>`);
+}
+
+function sectionCard(s) {
+  const [cls, label] = VERDICT[s.verdict] || ['mute', s.verdict];
+  const tags = (s.error_types || []).filter(Boolean);
+  return `<div class="sec ${s.verdict}">
+    <div class="top">
+      <span class="name">${esc(s.section)}</span>
+      <span class="pill ${cls}">${label}</span>
+      ${s.signal_agreement && s.signal_agreement !== 'n/a' ? `<span class="pill mute">${esc(s.signal_agreement)}</span>` : ''}
+      <span class="conf">置信度 ${s.confidence}</span>
+    </div>
+    <div class="bar"><i style="width:${Math.round((s.confidence || 0) * 100)}%"></i></div>
+    <div class="why">${esc(s.reason || '—')}</div>
+    ${s.evidence ? `<div class="ev">${esc(s.evidence)}</div>` : ''}
+    ${tags.length ? `<div class="tags">${tags.map(t => `<span class="pill bad">${esc(t)}</span>`).join('')}</div>` : ''}
+  </div>`;
+}
+</script>
+</body>
+</html>

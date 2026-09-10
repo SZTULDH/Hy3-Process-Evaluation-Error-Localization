@@ -126,10 +126,56 @@ def split_sections(raw: str) -> ParsedSolution:
 _CODE_BLOCK_RE = re.compile(r"```(?:python|py|python3)?\s*\n(.*?)```", re.S)
 
 
+def _compiles(text: str) -> bool:
+    """能否当作 Python 代码。用 compile 校验，中文注释不影响。"""
+    stripped = text.strip()
+    if not stripped:
+        return False
+    try:
+        compile(stripped, "<candidate>", "exec")
+        return True
+    except SyntaxError:
+        return False
+    except ValueError:
+        # 源码里混入空字节等，同样不能当代码用
+        return False
+
+
 def extract_code(text: str) -> str:
-    """从“代码实现”段落或整段输出中提取 Python 代码块。"""
+    """从“代码实现”段落或整段输出中提取 Python 代码。
+
+    按 **围栏块 → 缩进块 → 裸代码** 逐级回退。裸代码只在能通过 compile()
+    时才采纳——把散文当代码喂进沙盒会全量判 `missing_entry`（代码根本没跑），
+    比"没提取到"更难排查。
+
+    回退的必要性：用户直接粘贴函数定义（无 ``` 围栏）是很常见的操作，
+    此前这种情况会静默返回空串，测试全挂却报"代码有错"。
+    """
     blocks = _CODE_BLOCK_RE.findall(text)
     if blocks:
         # 取最长的代码块，通常是完整实现
         return max(blocks, key=lambda b: len(b.strip())).strip()
+
+    # 缩进代码块：Markdown 里四个空格（或一个 tab）表示一个代码块
+    best = ""
+    buf: list[str] = []
+    for line in text.splitlines():
+        if line.startswith(("    ", "\t")) and line.strip():
+            buf.append(line[4:] if line.startswith("    ") else line[1:])
+        else:
+            if buf:
+                cand = "\n".join(buf)
+                if len(cand) > len(best) and _compiles(cand):
+                    best = cand
+                buf = []
+    if buf:
+        cand = "\n".join(buf)
+        if len(cand) > len(best) and _compiles(cand):
+            best = cand
+    if best:
+        return best.strip()
+
+    # 裸代码：整段本身就是代码
+    if _compiles(text):
+        return text.strip()
     return ""

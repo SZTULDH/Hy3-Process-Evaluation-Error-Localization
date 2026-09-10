@@ -9,8 +9,8 @@
   "constraints": "1 <= len(nums) <= 3*10^4",
   "expected_complexity": {"time": "O(n)", "space": "O(1)"},
   "required_edge_cases": ["单元素", "负数"],
-  "public_tests": [{"args": [[2, 2, 1],], "expected": 1}, {"args": [[4, 1, 2, 1, 2],], "expected": 4}, {"args": [[1],], "expected": 1}],
-  "adversarial_tests": [{"args": [[-1, -1, 0],], "expected": 0}, {"args": [[7, 3, 7],], "expected": 3}],
+  "public_tests": [{"args": [[2, 2, 1]], "expected": 1}, {"args": [[4, 1, 2, 1, 2]], "expected": 4}, {"args": [[1]], "expected": 1}],
+  "adversarial_tests": [{"args": [[-1, -1, 0]], "expected": 0}, {"args": [[7, 3, 7]], "expected": 3}],
   "mock_solution": {
     "解题思路": "异或消去成对元素。",
     "复杂度分析": "时间 O(n)，空间 O(1)。",
