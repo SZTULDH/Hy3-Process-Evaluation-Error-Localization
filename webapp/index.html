@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>过程评估工作台</title>
+<title>Hy3 过程评估与错误定位</title>
 <style>
   :root{
     --bg:#f5f6f8; --panel:#ffffff; --line:#e2e5ea; --line-soft:#eef0f3;
@@ -209,12 +209,12 @@
 <body>
 
 <header>
-  <div class="brand">过程评估工作台<small id="cfgline">加载中…</small></div>
+  <div class="brand">Hy3 过程评估与错误定位<small id="cfgline">加载中…</small></div>
 
   <div class="tabs">
     <button id="tab-algo" class="on" data-mode="algorithm">算法竞赛</button>
     <button id="tab-code" data-mode="code">代码任务</button>
-    <button id="tab-class" data-mode="class">代码任务 · 类级</button>
+    <button id="tab-class" data-mode="class">工程任务</button>
   </div>
 
   <div class="ctl">
@@ -236,6 +236,8 @@
   <span class="ctl-note" id="model-note"></span>
 
   <div class="spacer"></div>
+  <button class="ghost" id="export" disabled
+          title="把本次评估的完整流程记录导出为 Markdown：运行信息、判定、执行结果、Agent 工作流逐步输入输出、分步裁决、解答与代码">导出流程记录</button>
   <button class="ghost" id="demo">填入示例</button>
   <button class="run" id="run">开始评估</button>
 </header>
@@ -663,6 +665,10 @@ $('run').onclick = async () => {
   const t0 = Date.now();
   const state = {raw: '', reasoning: '', got: false};
   WF = {};
+  WFLOG = [];
+  WFIDX = new Map();
+  LAST = null;
+  $('export').disabled = true;
 
   $('result').innerHTML = skeleton();
   timer = setInterval(() => {
@@ -785,6 +791,21 @@ function handleFrame(frame, state) {
 /* ---------- Agent 工作流 ---------- */
 let WF = {};
 
+// 有序的流程记录：同一步只保留最新状态，但保持首次出现的顺序
+let WFLOG = [];
+let WFIDX = new Map();
+
+function logAgentStep(d) {
+  const key = d.agent + '|' + d.step;
+  const rec = {
+    agent: d.agent, label: d.agent_label, step: d.step, title: d.title,
+    status: d.status, sec: d.sec,
+    input: d.input || {}, output: d.output || {}, note: d.note || '',
+  };
+  if (WFIDX.has(key)) WFLOG[WFIDX.get(key)] = rec;
+  else { WFIDX.set(key, WFLOG.length); WFLOG.push(rec); }
+}
+
 function ioBlock(obj) {
   return Object.entries(obj || {})
     .filter(([, v]) => v !== null && v !== undefined && v !== '')
@@ -801,6 +822,7 @@ function ioBlock(obj) {
 }
 
 function renderAgentStep(d) {
+  logAgentStep(d);
   const isChecker = d.agent === 'checker';
   const col = isChecker ? $('wf-checker') : $('wf-critic');
   if (!col) return;
@@ -830,7 +852,13 @@ function renderAgentStep(d) {
 }
 
 /* ---------- 渲染 ---------- */
+let LAST = null;
+
 function finish(d, state) {
+  LAST = {data: d, raw: state.raw || '', reasoning: state.reasoning || '',
+          log: WFLOG.slice()};
+  const btn = $('export');
+  if (btn) btn.disabled = false;
   const yn = b => b ? '是' : '否';
   const cr = d.checker_report || {};
   const sum = cr.llm_summary || {};
@@ -923,6 +951,199 @@ function sectionCard(s) {
     ${tags.length ? `<div class="tags">${tags.map(t => `<span class="pill bad">${esc(t)}</span>`).join('')}</div>` : ''}
   </div>`;
 }
+/* ---------- 流程记录导出 ---------- */
+
+// 表格单元格：换行压平，竖线转义，避免破表
+const mdCell = v => String(v ?? '').replace(/\r?\n+/g, ' ').split('|').join('&#124;');
+const mdFence = (s, lang) => '```' + (lang || '') + '\n' + String(s ?? '') + '\n```';
+const mdJSON = v => '`' + mdCell(JSON.stringify(v)) + '`';
+
+function mdIO(title, obj) {
+  const rows = Object.entries(obj || {})
+    .filter(([, v]) => v !== null && v !== undefined && v !== '');
+  if (!rows.length) return '';
+  const out = ['**' + title + '**', ''];
+  for (const [k, v] of rows) {
+    const s = typeof v === 'string' ? v : JSON.stringify(v, null, 2);
+    if (s.includes('\n') || s.length > 120) out.push('- ' + k + '：', '', mdFence(s), '');
+    else out.push('- ' + k + '：' + s);
+  }
+  out.push('');
+  return out.join('\n');
+}
+
+function mdSuite(name, s) {
+  if (!s || !s.total) return '### ' + name + '\n\n_（无用例）_\n';
+  const out = ['### ' + name + '：' + s.passed + '/' + s.total
+               + (s.all_passed ? '（全过）' : ''), ''];
+  const fails = s.failure_samples || [];
+  if (fails.length) {
+    const m = fails.some(r => r.method);
+    out.push('| ' + (m ? '方法 | ' : '') + '# | 入参 | 期望 | 实际 | 状态 |');
+    out.push('| ' + (m ? '--- | ' : '') + '--- | --- | --- | --- | --- |');
+    for (const r of fails) {
+      out.push('| ' + (m ? mdCell(r.method || '') + ' | ' : '')
+        + r.index + ' | ' + mdJSON(r.args) + ' | ' + mdJSON(r.expected)
+        + ' | ' + mdJSON(r.actual) + ' | ' + r.status + ' |');
+    }
+    out.push('');
+  }
+  return out.join('\n');
+}
+
+function traceMarkdown(snap) {
+  const d = snap.data || {};
+  const cr = d.checker_report || {};
+  const sum = cr.llm_summary || {};
+  const yn = b => (b === true ? '是' : (b === false ? '否' : '—'));
+  const L = [];
+
+  L.push('# 流程记录 · ' + (d.title || d.problem_id || '未命名'));
+  L.push('');
+  L.push('> 由「Hy3 过程评估与错误定位」工作台导出');
+  L.push('');
+
+  L.push('## 一、运行信息');
+  L.push('');
+  L.push('| 项 | 值 |');
+  L.push('| --- | --- |');
+  L.push('| 题目 ID | ' + mdJSON(d.problem_id || '—') + ' |');
+  L.push('| 标题 | ' + mdCell(d.title || '—') + ' |');
+  L.push('| 形态 | ' + (d.kind === 'class' ? '工程任务（类级）' : '函数级') + ' |');
+  L.push('| 难度 | ' + mdCell(d.difficulty || '—') + ' |');
+  L.push('| 模型 | ' + mdCell(d.model || '—') + ' |');
+  L.push('| 思考强度 | ' + (d.thinking === 'disabled' ? '关闭' : (d.effort || '默认')) + ' |');
+  L.push('| 解答来源 | ' + mdCell(d.solution_source || '—') + ' |');
+  L.push('| 审查范围 | ' + (d.code_only ? '仅「代码实现」段' : '完整五段') + ' |');
+  L.push('| 服务端耗时 | ' + (d.elapsed_sec ?? '—') + ' s |');
+  L.push('');
+
+  L.push('## 二、判定');
+  L.push('');
+  L.push('| 判定 | 结果 | 含义 |');
+  L.push('| --- | --- | --- |');
+  L.push('| 结果正确 | ' + yn(d.result_correct) + ' | 公开测试是否全过 |');
+  L.push('| 真实正确 | ' + yn(d.truly_correct) + ' | 公开 + 对抗测试均通过 |');
+  L.push('| 过程成立 | ' + yn(d.process_valid) + ' | 五个步骤是否都成立 |');
+  L.push('| 伪正确 | ' + yn(d.false_positive_solution) + ' | 测试过了但逻辑其实有问题 |');
+  L.push('');
+  if (d.first_error_step)
+    L.push('- 首个不成立步骤：`' + d.first_error_step + '`（' + (d.first_error_section || '—') + '）');
+  if (d.error_types && d.error_types.length)
+    L.push('- 错误类型：' + d.error_types.join('、'));
+  L.push('');
+
+  L.push('## 三、执行结果');
+  L.push('');
+  L.push(mdSuite('公开测试', cr.public || d.public));
+  L.push(mdSuite('对抗测试', cr.adversarial || d.adversarial));
+
+  L.push('## 四、Agent 工作流（按发生顺序）');
+  L.push('');
+  if (!snap.log.length) L.push('_（无记录）_', '');
+  snap.log.forEach((s, i) => {
+    L.push('### ' + (i + 1) + '. ' + (s.title || s.step)
+           + ' — ' + (s.label || s.agent) + (s.sec ? '（' + s.sec + 's）' : ''));
+    L.push('');
+    L.push('- 状态：' + (s.status || '—'));
+    L.push('');
+    const a = mdIO('输入', s.input), b = mdIO('输出', s.output);
+    if (a) L.push(a);
+    if (b) L.push(b);
+    if (s.note) L.push('> ' + s.note, '');
+  });
+
+  const sv = d.section_verdicts || [];
+  L.push('## 五、分步裁决');
+  L.push('');
+  if (!sv.length) L.push('_（无分步裁决）_', '');
+  sv.forEach(v => {
+    L.push('### ' + v.section + ' —— ' + v.verdict + '（置信度 ' + v.confidence + '）');
+    L.push('');
+    if (v.error_types && v.error_types.length) L.push('- 错误类型：' + v.error_types.join('、'));
+    L.push('- 依据：' + (v.reason || '—'));
+    if (v.evidence) L.push('- 证据：' + mdCell(v.evidence));
+    if (v.signal_agreement) L.push('- 信号一致性：' + v.signal_agreement);
+    L.push('');
+  });
+
+  L.push('## 六、Checker 总评');
+  L.push('');
+  L.push('- 总评：' + (sum.summary || '—'));
+  if (sum.root_cause) L.push('- 根因：' + sum.root_cause);
+  if (sum.pseudo_correct !== undefined) L.push('- 伪正确：' + yn(sum.pseudo_correct));
+  if (cr.debug_hints && cr.debug_hints.length) {
+    L.push('- 调试建议：');
+    cr.debug_hints.forEach(h => L.push('  - ' + h));
+  }
+  L.push('');
+
+  const fo = cr.forensics || [];
+  if (fo.length) {
+    L.push('## 七、失败用例源码级取证');
+    L.push('');
+    fo.forEach(f => {
+      L.push('- 用例 #' + f.case_index + (f.method ? ' · ' + f.method + '()' : '')
+             + '：`' + mdCell(JSON.stringify(f.args)) + '` 期望 `'
+             + mdCell(JSON.stringify(f.expected)) + '` 实际 `'
+             + mdCell(JSON.stringify(f.actual)) + '`');
+      if (f.summary) L.push('  - ' + mdCell(f.summary));
+    });
+    L.push('');
+  }
+
+  const rf = d.rule_findings || [];
+  if (rf.length) {
+    L.push('## 八、规则层发现');
+    L.push('');
+    rf.forEach(f => L.push('- [' + (f.error_type_label || f.error_type) + '] '
+                         + f.section + '（置信度 ' + f.confidence + '）：' + f.detail));
+    L.push('');
+  }
+
+  L.push('## 九、候选解答原文');
+  L.push('');
+  L.push(mdFence(snap.raw, 'markdown'));
+
+  L.push('## 十、提取到的代码');
+  L.push('');
+  L.push(mdFence(cr.code || d.code || '（未提取到代码）', 'python'));
+
+  if (snap.reasoning) {
+    L.push('## 十一、模型思考过程');
+    L.push('');
+    L.push(mdFence(snap.reasoning));
+  }
+
+  L.push('## 附录、原始 JSON');
+  L.push('');
+  L.push(mdFence(JSON.stringify(d, null, 2), 'json'));
+  return L.join('\n');
+}
+
+function downloadText(filename, text, mime) {
+  const blob = new Blob([text], {type: mime || 'text/markdown;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+$('export').onclick = () => {
+  if (!LAST) return;
+  const d = LAST.data || {};
+  const t = new Date();
+  const p = n => String(n).padStart(2, '0');
+  const stamp = '' + t.getFullYear() + p(t.getMonth() + 1) + p(t.getDate())
+    + '-' + p(t.getHours()) + p(t.getMinutes()) + p(t.getSeconds());
+  const base = String(d.title || d.problem_id || 'evaluation')
+    .replace(/[\\/:*?"<>|\s]+/g, '_').slice(0, 60);
+  downloadText(base + '-流程记录-' + stamp + '.md', traceMarkdown(LAST));
+};
 </script>
 </body>
 </html>
