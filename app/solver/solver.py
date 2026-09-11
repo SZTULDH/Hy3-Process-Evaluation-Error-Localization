@@ -7,7 +7,7 @@ from typing import Iterator
 from ..llm.base import BaseLLM, ChatMessage, thinking_of
 from ..llm.hy3 import Delta
 from ..llm.mock import MockLLM
-from .prompts import SOLVER_SYSTEM_PROMPT, build_solver_messages
+from .prompts import build_solver_messages, build_solver_system
 
 
 class Solver:
@@ -42,7 +42,7 @@ class Solver:
         self.last_reasoning = None
         resp = self.llm.chat(
             [
-                ChatMessage(role="system", content=SOLVER_SYSTEM_PROMPT),
+                ChatMessage(role="system", content=build_solver_system(problem)),
                 ChatMessage(role="user", content=build_solver_messages(problem)),
             ],
             thinking=thinking_of(self.llm),
@@ -52,7 +52,7 @@ class Solver:
 
     def _messages(self, problem: dict) -> list[ChatMessage]:
         return [
-            ChatMessage(role="system", content=SOLVER_SYSTEM_PROMPT),
+            ChatMessage(role="system", content=build_solver_system(problem)),
             ChatMessage(role="user", content=build_solver_messages(problem)),
         ]
 
