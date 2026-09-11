@@ -23,6 +23,24 @@
 
 > 若上方播放器未渲染，点这里直接观看或下载：[`assets/demo视频.mp4`](assets/demo视频.mp4)
 
+## 子项目：Sandbox Debugger
+
+本仓库通过 git submodule 引入独立能力库 [sandbox-debugger](https://github.com/SZTULDH/sandbox-debugger)（路径：`submodules/sandbox`）。
+
+它是面向 Agent 的 **Python 源码级沙盒调试与评测执行**能力，定位为可复用的通用库，不绑定本任务本体：
+
+- **源码级调试**：断点、单步、栈/变量、求值、轨迹回溯
+- **评测执行**：函数级 / 类级测试套件（`runner` + `_harness`）
+
+### 接入方式
+
+1. **MCP Server（推荐）**：`python -m app.sandbox.mcp_server`
+2. **调试 API**：`from app.sandbox import debug_api as D`
+3. **评测 API**：`from app.sandbox.runner import run_suite, run_problem`
+4. **CLI**：`python scripts/sandbox_debug.py --problem ... --run --trace 60`
+
+更多细节见子模块 README：[`submodules/sandbox/README.md`](submodules/sandbox/README.md) 或上游仓库。
+
 ## 项目状态
 
 ✅ **当前阶段：全链路已打通，提供 Web 工作台，已接入真实 Hy3 API**
@@ -91,13 +109,16 @@
 │   ├── server.py
 │   └── index.html
 ├── datasets/
-│   └── code/                   # 分层代码任务题集（共 50 题）
+│   └── code/                   # 分层代码任务题集（共 73 题）
 │       ├── easy/               # 12
 │       ├── medium/             # 15
 │       ├── hard/               # 12
-│       └── adversarial/        # 11（伪正确样本）
+│       ├── adversarial/        # 11（伪正确样本）
+│       └── engineering/        # 23（含类级有状态题目）
+├── submodules/
+│   └── sandbox/                # git submodule → sandbox-debugger（源码级调试 + 评测执行）
 ├── scripts/
-├── results/                    # 评测产物（latest_report.md 已纳入版本控制）
+├── results/                    # 评测产物（latest_report.md / final_report.md 已纳入版本控制）
 └── requirements.txt
 ```
 
@@ -125,7 +146,7 @@ python webapp/server.py 8787
 | 模型与思考强度 | 24 个官方模型可选 + 手填自定义；思考强度 默认/关闭/低/中/高 |
 | 全链路流式 | 解答逐字、执行结果算完即推、每段审查算完即推 |
 | Agent 工作流 | Checker 取证与 Critic 裁决每一步的真实输入/输出可展开 |
-| 题库懒加载 | 先取索引再按需取题面，不一次性载入 50 题 |
+| 题库懒加载 | 先取索引再按需取题面，不一次性载入全部题目 |
 | 候选解答 | 留空由模型现生成；粘贴自己的解答则评估它（可跳过生成直接审） |
 
 详见 [`docs/webui.md`](docs/webui.md)。
@@ -202,6 +223,7 @@ none/high）会就近收敛。实测单题耗时：思考关闭约 100 秒，开
 ## 参考
 
 - Hy3 仓库：https://github.com/Tencent-Hunyuan/Hy3
+- 子项目 sandbox-debugger：https://github.com/SZTULDH/sandbox-debugger
 - 任务核心：过程评估与错误定位（代码实现逻辑正确性）
 
 ## License
