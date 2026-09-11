@@ -1,0 +1,1925 @@
+<!DOCTYPE html>
+<!-- saved from url=(0014)about:internet -->
+<html lang="zh-CN"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hy3 过程评估与错误定位</title>
+<style>
+  :root{
+    --bg:#f5f6f8; --panel:#ffffff; --line:#e2e5ea; --line-soft:#eef0f3;
+    --text:#1f2328; --muted:#6a737d; --faint:#8b949e;
+    --brand:#2563eb; --brand-soft:#eff4ff;
+    --ok:#1a7f37; --ok-bg:#e9f7ee; --warn:#b45309; --warn-bg:#fdf3e3;
+    --bad:#c1272d; --bad-bg:#fdecec; --info-bg:#f1f3f5;
+    --radius:10px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font:14px/1.6 system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;
+  }
+  code,pre,.mono{font-family:ui-monospace,SFMono-Regular,Consolas,"Cascadia Mono",monospace}
+
+  /* ---------- 顶栏 ---------- */
+  header{
+    display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+    padding:12px 20px; background:var(--panel); border-bottom:1px solid var(--line);
+    position:sticky; top:0; z-index:20;
+  }
+  .brand{font-size:16px; font-weight:650; letter-spacing:.2px}
+  .brand small{display:block; font-size:11px; color:var(--faint); font-weight:400; letter-spacing:0}
+  .tabs{display:flex; background:var(--info-bg); border-radius:8px; padding:3px}
+  .tabs button{
+    border:0; background:transparent; padding:6px 14px; border-radius:6px;
+    font:inherit; color:var(--muted); cursor:pointer;
+  }
+  .tabs button.on{background:var(--panel); color:var(--text); font-weight:600; box-shadow:0 1px 2px rgba(0,0,0,.06)}
+  .spacer{flex:1}
+
+  .switch{display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none}
+  .switch input{display:none}
+  .track{
+    width:38px; height:22px; border-radius:11px; background:#cfd4da; position:relative;
+    transition:background .18s;
+  }
+  .track::after{
+    content:""; position:absolute; top:3px; left:3px; width:16px; height:16px;
+    border-radius:50%; background:#fff; transition:transform .18s; box-shadow:0 1px 2px rgba(0,0,0,.2);
+  }
+  .switch input:checked + .track{background:var(--brand)}
+  .switch input:checked + .track::after{transform:translateX(16px)}
+  .switch .lab{font-size:13px}
+  .switch .lab b{display:block; font-size:11px; font-weight:400; color:var(--faint)}
+
+  /* ---------- 模型 / 思考强度 ---------- */
+  .ctl{display:flex; align-items:center; gap:6px}
+  .ctl > .mini-l{font-size:11.5px; color:var(--faint); margin:0}
+  .mini{
+    border:1px solid var(--line); border-radius:7px; padding:6px 9px;
+    font:inherit; font-size:12.5px; color:var(--text); background:#fcfcfd;
+  }
+  .mini:focus{outline:0; border-color:var(--brand); box-shadow:0 0 0 3px var(--brand-soft)}
+  #model{width:190px}
+  .ctl-note{font-size:11px; color:var(--faint); max-width:210px; line-height:1.4}
+
+  /* ---------- Agent 工作流 ---------- */
+  .wf{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:10px}
+  @media (max-width:1100px){ .wf{grid-template-columns:1fr} }
+  .wf-col{border:1px solid var(--line); border-radius:8px; background:#fcfcfd; overflow:hidden}
+  .wf-h{
+    padding:7px 11px; font-size:12px; font-weight:650; color:var(--muted);
+    background:var(--info-bg); border-bottom:1px solid var(--line);
+    display:flex; align-items:center; gap:6px;
+  }
+  .wf-h .role{font-size:10.5px; padding:1px 6px; border-radius:20px; background:#fff; border:1px solid var(--line)}
+  .wf-body{padding:8px 10px; max-height:520px; overflow:auto}
+  .wf-empty{font-size:12px; color:var(--faint); padding:6px 2px}
+  .wf-step{border-left:2px solid var(--line); padding:5px 0 6px 9px; margin-bottom:7px}
+  .wf-step.running{border-left-color:var(--brand)}
+  .wf-step.done{border-left-color:var(--ok)}
+  .wf-step.error{border-left-color:var(--bad)}
+  .wf-top{display:flex; align-items:center; gap:7px; flex-wrap:wrap}
+  .wf-name{font-size:12.5px; font-weight:600}
+  .wf-sec{margin-left:auto; font-size:11px; color:var(--faint)}
+  .wf-io{margin-top:4px; font-size:11.5px; color:#3d444d}
+  .io{margin-top:4px}
+  .io > b{font-size:11px; color:var(--faint); font-weight:650}
+  .io-row{display:flex; gap:6px; padding:2px 0; align-items:flex-start}
+  .io-k{color:var(--faint); min-width:76px; flex-shrink:0}
+  .io-v{word-break:break-word; white-space:pre-wrap}
+  .io pre.dump{margin:4px 0 0; font-size:11px; max-height:220px; background:#f8f9fb}
+
+  .run{
+    background:var(--brand); color:#fff; border:0; border-radius:8px;
+    padding:9px 20px; font:inherit; font-weight:600; cursor:pointer;
+  }
+  .run:disabled{background:#9db4e8; cursor:not-allowed}
+  .ghost{
+    background:var(--panel); color:var(--text); border:1px solid var(--line);
+    border-radius:8px; padding:7px 12px; font:inherit; cursor:pointer;
+  }
+  .ghost:hover{border-color:#c9ced6}
+
+  /* ---------- 布局 ---------- */
+  main{display:grid; grid-template-columns:minmax(380px,440px) 1fr; gap:16px; padding:16px 20px 40px; align-items:start}
+  @media (max-width:1000px){ main{grid-template-columns:1fr} }
+
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:16px}
+  .card + .card{margin-top:14px}
+  .card h2{margin:0 0 12px; font-size:13px; font-weight:650; color:var(--muted); letter-spacing:.4px}
+
+  label{display:block; margin:12px 0 5px; font-size:12.5px; font-weight:600; color:#3d444d}
+  label .hint{font-weight:400; color:var(--faint); font-size:11.5px}
+  textarea,input[type=text]{
+    width:100%; border:1px solid var(--line); border-radius:8px; padding:9px 11px;
+    font:inherit; color:var(--text); background:#fcfcfd; resize:vertical;
+  }
+  textarea:focus,input:focus{outline:0; border-color:var(--brand); background:#fff; box-shadow:0 0 0 3px var(--brand-soft)}
+  textarea.mono{font-size:12.5px; line-height:1.55}
+  .row{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+
+  .opt{display:flex; align-items:flex-start; gap:8px; margin-top:14px; font-size:12.5px; color:var(--muted)}
+  .opt input{margin-top:3px}
+
+  /* ---------- 题库选择器 ---------- */
+  .pk{margin-top:9px}
+  .pk-row{display:flex; gap:6px; margin-top:7px; flex-wrap:wrap}
+  .pk-row .mini{flex:0 0 auto}
+  #pk-q{flex:1 1 120px; min-width:0}
+  #pk-list{width:100%; margin-top:7px; font-size:12px; padding:4px}
+  #pk-list option{padding:3px 5px}
+  .pk-meta{font-size:11.5px; color:var(--faint); margin-top:5px; line-height:1.5}
+  .pk-prev{
+    margin-top:7px; font-size:12px; color:#3d444d; background:#f8f9fb;
+    border:1px solid var(--line-soft); border-radius:7px; padding:8px 10px;
+    max-height:150px; overflow:auto; white-space:pre-wrap; display:none;
+  }
+  .pk-prev b{color:var(--muted)}
+
+  details{border-top:1px solid var(--line-soft); padding-top:10px; margin-top:12px}
+  details:first-of-type{border-top:0}
+  summary{cursor:pointer; font-size:12.5px; font-weight:600; color:var(--muted)}
+
+  /* ---------- 进度 ---------- */
+  .stages{display:flex; gap:6px; flex-wrap:wrap; margin-top:10px}
+  .stg{
+    font-size:11.5px; padding:3px 10px; border-radius:20px;
+    background:var(--info-bg); color:var(--faint);
+  }
+  .stg.on{background:var(--brand-soft); color:var(--brand); font-weight:600}
+  .stg.done{background:var(--ok-bg); color:var(--ok)}
+
+  /* ---------- 结果 ---------- */
+  .verdicts{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px}
+  .v{border:1px solid var(--line); border-radius:8px; padding:10px 12px; background:#fcfcfd}
+  .v .k{font-size:11.5px; color:var(--faint)}
+  .v .val{font-size:15px; font-weight:650; margin-top:2px}
+  .v.ok{background:var(--ok-bg); border-color:#c6e6d1} .v.ok .val{color:var(--ok)}
+  .v.bad{background:var(--bad-bg); border-color:#f3c9c9} .v.bad .val{color:var(--bad)}
+
+  .banner{
+    margin-top:12px; padding:10px 12px; border-radius:8px; font-size:13px;
+    background:var(--warn-bg); border:1px solid #f0dcb8; color:var(--warn);
+  }
+  .banner.bad{background:var(--bad-bg); border-color:#f3c9c9; color:var(--bad)}
+  .banner.ok{background:var(--ok-bg); border-color:#c6e6d1; color:var(--ok)}
+
+  table{width:100%; border-collapse:collapse; font-size:12.5px}
+  th,td{text-align:left; padding:6px 8px; border-bottom:1px solid var(--line-soft); vertical-align:top}
+  th{color:var(--faint); font-weight:600; font-size:11.5px}
+  td.mono{font-size:12px; word-break:break-all}
+  .pill{display:inline-block; padding:1px 7px; border-radius:20px; font-size:11px; font-weight:600}
+  .pill.ok{background:var(--ok-bg); color:var(--ok)}
+  .pill.bad{background:var(--bad-bg); color:var(--bad)}
+  .pill.warn{background:var(--warn-bg); color:var(--warn)}
+  .pill.mute{background:var(--info-bg); color:var(--muted)}
+
+  .sec{border:1px solid var(--line); border-radius:8px; padding:11px 13px; margin-bottom:9px; background:#fcfcfd}
+  .sec.flawed{background:var(--bad-bg); border-color:#f3c9c9}
+  .sec.suspicious{background:var(--warn-bg); border-color:#f0dcb8}
+  .sec .top{display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+  .sec .name{font-weight:650}
+  .sec .conf{margin-left:auto; font-size:11.5px; color:var(--faint)}
+  .sec .bar{height:4px; border-radius:2px; background:#e6e9ed; margin:8px 0 7px; overflow:hidden}
+  .sec .bar i{display:block; height:100%; background:var(--brand)}
+  .sec.flawed .bar i{background:var(--bad)} .sec.suspicious .bar i{background:var(--warn)}
+  .sec .why{font-size:12.5px; color:#3d444d}
+  .sec .ev{margin-top:5px; font-size:12px; color:var(--muted); border-left:2px solid var(--line); padding-left:8px}
+  .sec .tags{margin-top:6px; display:flex; gap:5px; flex-wrap:wrap}
+
+  pre.dump{
+    background:#f8f9fb; border:1px solid var(--line-soft); border-radius:8px;
+    padding:11px; font-size:12px; line-height:1.6; overflow:auto; max-height:340px; margin:8px 0 0;
+    white-space:pre-wrap; word-break:break-word;
+  }
+  #stream{min-height:70px; max-height:420px}
+  .caret{display:inline-block; width:6px; height:13px; background:var(--brand);
+    vertical-align:-2px; animation:blink 1s steps(2) infinite}
+  @keyframes blink{50%{opacity:0}}
+
+  .empty{color:var(--faint); font-size:13px; padding:26px 4px; text-align:center; line-height:1.9}
+  .meta{font-size:11.5px; color:var(--faint); margin-top:10px}
+  .spin{width:15px;height:15px;border:2px solid var(--line);border-top-color:var(--brand);border-radius:50%;animation:s .8s linear infinite; display:inline-block}
+  @keyframes s{to{transform:rotate(360deg)}}
+  .err{background:var(--bad-bg); border:1px solid #f3c9c9; color:var(--bad); padding:11px 13px; border-radius:8px; font-size:12.5px; margin-top:12px}
+  ul.hints{margin:6px 0 0; padding-left:18px; font-size:12.5px; color:#3d444d}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">Hy3 过程评估与错误定位<small id="cfgline">hy4-preview · Key 已配置</small></div>
+
+  <div class="tabs">
+    <button id="tab-algo" class="on" data-mode="algorithm">算法竞赛</button>
+    <button id="tab-code" data-mode="code">代码任务</button>
+    <button id="tab-class" data-mode="class">工程任务</button>
+  </div>
+
+  <div class="ctl">
+    <span class="mini-l">模型</span>
+    <input id="model" class="mini" list="model-list" placeholder="hy3" autocomplete="off">
+    <datalist id="model-list"><option value="hy4-preview">Hy4 preview — 支持 none/high 两档</option><option value="hy3">Hy3</option><option value="hy3-preview">Hy3 preview — 默认不思考</option><option value="deepseek-v4-flash">DeepSeek-V4-Flash</option><option value="deepseek-v4-flash-202605">DeepSeek-V4-Flash（原厂直连）</option><option value="deepseek-v4-pro">DeepSeek-V4-Pro</option><option value="deepseek-v4-pro-202606">DeepSeek-V4-Pro（原厂直连）</option><option value="deepseek-v3.2">DeepSeek-V3.2</option><option value="glm-5.3">GLM-5.3 — 不支持关闭思考</option><option value="glm-5.3-flash">GLM-5.3-Flash — 不支持关闭思考</option><option value="glm-5.2">GLM-5.2 — 档位最全</option><option value="glm-5.1">GLM-5.1</option><option value="glm-5">GLM-5</option><option value="glm-5-turbo">GLM-5-Turbo</option><option value="glm-5v-turbo">GLM-5V-Turbo</option><option value="kimi-k2.7-code">Kimi-K2.7-Code — 不支持关闭思考</option><option value="kimi-k2.7-code-highspeed">Kimi-K2.7-Code-HighSpeed — 不支持关闭思考</option><option value="kimi-k2.6">Kimi-K2.6</option><option value="kimi-k2.5">Kimi-K2.5</option><option value="minimax-m3">MiniMax-M3 — 默认自适应</option><option value="minimax-m2.7">MiniMax-M2.7 — 不支持关闭思考</option><option value="minimax-m2.5">MiniMax-M2.5 — 不支持关闭思考</option><option value="qwen3.5-plus">Qwen3.5-Plus</option><option value="qwen3.5-flash">Qwen3.5-Flash</option></datalist>
+  </div>
+
+  <div class="ctl">
+    <span class="mini-l">思考强度</span>
+    <select id="effort" class="mini" title="越深越准，但耗时与 token 消耗显著上升">
+      <option value="auto">默认（跟随模型）</option>
+      <option value="off">关闭（最快）</option>
+      <option value="low" disabled="">低 · low</option>
+      <option value="medium" disabled="">中 · medium</option>
+      <option value="high">高 · high（最慢）</option>
+    </select>
+  </div>
+  <span class="ctl-note" id="model-note">Hy4 preview · 默认思考 / high · 档位：none / high</span>
+
+  <div class="spacer"></div>
+  <button class="ghost" id="export" title="把本次评估的完整流程记录导出为 Markdown：运行信息、判定、执行结果、Agent 工作流逐步输入输出、分步裁决、解答与代码">导出流程记录</button>
+  <button class="ghost" id="demo">填入示例</button>
+  <button class="run" id="run">开始评估</button>
+</header>
+
+<main>
+  <!-- ============ 输入 ============ -->
+  <section>
+    <div class="card">
+      <h2>题目 / 需求</h2>
+
+      <details id="picker">
+        <summary>从题库载入（懒加载：先取索引，选中后才读题面）</summary>
+        <div class="pk">
+          <div class="pk-row">
+            <select id="pk-cat" class="mini"><option value="">全部难度</option><option value="adversarial">adversarial（11）</option><option value="easy">easy（12）</option><option value="engineering">engineering（22）</option><option value="realworld">realworld（1）</option><option value="hard">hard（12）</option><option value="medium">medium（15）</option></select>
+            <input id="pk-q" class="mini" placeholder="搜题名 / 函数名">
+            <button class="ghost" id="pk-refresh" type="button">重载</button>
+          </div>
+          <select id="pk-list" class="mini" size="7"><option value="adversarial-001">adversarial · 有效的括号（公开5 / 对抗4 · 有内置解答）</option><option value="adversarial-002">adversarial · 爬楼梯（伪正确）（公开3 / 对抗3 · 有内置解答）</option><option value="adversarial-003">adversarial · 缺失的数字（伪正确）（公开3 / 对抗3 · 有内置解答）</option><option value="adversarial-004">adversarial · 两数之和（暴力复杂度错误）（公开2 / 对抗2 · 有内置解答）</option><option value="adversarial-005">adversarial · 回文数（转字符串）（公开3 / 对抗2 · 有内置解答）</option><option value="adversarial-006">adversarial · 缺失的区间（边界遗漏）（公开2 / 对抗4 · 有内置解答）</option><option value="adversarial-007">adversarial · 字符串加法（进位遗漏）（公开2 / 对抗3 · 有内置解答）</option><option value="adversarial-008">adversarial · 排序数组去重计数（过程跳步）（公开2 / 对抗2 · 有内置解答）</option><option value="adversarial-009">adversarial · 幂运算（整数溢出/边界）（公开2 / 对抗2 · 有内置解答）</option><option value="adversarial-010">adversarial · 环形链表检测（公开3 / 对抗2 · 有内置解答）</option><option value="adversarial-011">adversarial · 最大子数组和（暴力）（公开2 / 对抗2 · 有内置解答）</option><option value="easy-001">easy · 统计元音字母（公开3 / 对抗4 · 有内置解答）</option><option value="easy-002">easy · 数组最大值（公开3 / 对抗4 · 有内置解答）</option><option value="easy-003">easy · 反转字符串（公开3 / 对抗2 · 有内置解答）</option><option value="easy-004">easy · 列表求和（公开3 / 对抗2 · 有内置解答）</option><option value="easy-005">easy · 判断偶数（公开3 / 对抗2 · 有内置解答）</option><option value="easy-006">easy · 字符串长度（公开3 / 对抗2 · 有内置解答）</option><option value="easy-007">easy · 绝对值（公开3 / 对抗2 · 有内置解答）</option><option value="easy-008">easy · 列表最大值索引（公开3 / 对抗2 · 有内置解答）</option><option value="easy-009">easy · 判断全正数（公开3 / 对抗2 · 有内置解答）</option><option value="easy-010">easy · 字符计数（公开3 / 对抗2 · 有内置解答）</option><option value="easy-011">easy · 列表去重保序（公开3 / 对抗2 · 有内置解答）</option><option value="easy-012">easy · 斐波那契第 n 项（公开4 / 对抗2 · 有内置解答）</option><option value="eng-cls-001">engineering · 固定窗口限流器（公开4 / 对抗4）</option><option value="eng-cls-002">engineering · 订单状态机（公开3 / 对抗7）</option><option value="eng-cls-003">engineering · 简易 LRU 缓存（公开5 / 对抗6）</option><option value="rw-002">engineering · 指数退避等待序列（公开3 / 对抗3）</option><option value="rw-003">engineering · 固定窗口限流判定（公开3 / 对抗4）</option><option value="rw-004">engineering · 解析简易 .env 行（公开3 / 对抗5）</option><option value="rw-005">engineering · Webhook 时间窗校验（公开3 / 对抗4）</option><option value="rw-006">engineering · 日志敏感字段脱敏（公开3 / 对抗4）</option><option value="rw-007">engineering · 订单状态机合法跳转（公开3 / 对抗6）</option><option value="rw-008">engineering · 安全路径拼接（公开3 / 对抗4）</option><option value="rw-009">engineering · 扁平化嵌套 JSON 字典（公开3 / 对抗3）</option><option value="rw-010">engineering · URL slug 生成（公开3 / 对抗4）</option><option value="rw-011">engineering · 解析时长字符串（公开3 / 对抗5）</option><option value="rw-012">engineering · 分页切片（公开3 / 对抗4）</option><option value="rw-013">engineering · 稳定去重（公开3 / 对抗3）</option><option value="rw-014">engineering · 比较语义化版本（公开3 / 对抗4）</option><option value="rw-015">engineering · 过滤 Hop-by-hop 头（公开3 / 对抗3）</option><option value="rw-016">engineering · 内容 ETag 计算（公开2 / 对抗2）</option><option value="rw-017">engineering · 解析查询字符串（公开3 / 对抗4）</option><option value="rw-018">engineering · 数值夹取（公开3 / 对抗3）</option><option value="rw-019">engineering · 角色权限蕴含（公开3 / 对抗4）</option><option value="rw-020">engineering · 是否应重试的错误分类（公开3 / 对抗5）</option><option value="hard-001">hard · 无重复字符的最长子串（公开5 / 对抗3 · 有内置解答）</option><option value="hard-002">hard · 最大子数组和（公开4 / 对抗4 · 有内置解答）</option><option value="hard-003">hard · 盛最多水的容器（公开2 / 对抗3 · 有内置解答）</option><option value="hard-004">hard · 三数之和（公开3 / 对抗2 · 有内置解答）</option><option value="hard-005">hard · 岛屿数量（公开3 / 对抗2 · 有内置解答）</option><option value="hard-006">hard · 最小路径和（公开2 / 对抗2 · 有内置解答）</option><option value="hard-007">hard · 零钱兑换（公开3 / 对抗2 · 有内置解答）</option><option value="hard-008">hard · 课程表（能否完成）（公开3 / 对抗2 · 有内置解答）</option><option value="hard-009">hard · 单词拆分（公开3 / 对抗2 · 有内置解答）</option><option value="hard-010">hard · 编辑距离（公开3 / 对抗3 · 有内置解答）</option><option value="hard-011">hard · 第 K 个最大元素（公开2 / 对抗2 · 有内置解答）</option><option value="hard-012">hard · 最长公共子序列长度（公开3 / 对抗2 · 有内置解答）</option><option value="medium-001">medium · 两数之和（公开3 / 对抗2 · 有内置解答）</option><option value="medium-002">medium · 验证回文串（公开5 / 对抗4 · 有内置解答）</option><option value="medium-003">medium · 合并区间（公开4 / 对抗3 · 有内置解答）</option><option value="medium-004">medium · 有效的异位词（公开3 / 对抗3 · 有内置解答）</option><option value="medium-005">medium · 移动零（公开3 / 对抗3 · 有内置解答）</option><option value="medium-006">medium · 二进制中 1 的个数（公开3 / 对抗2 · 有内置解答）</option><option value="medium-007">medium · 反转整数（公开3 / 对抗2 · 有内置解答）</option><option value="medium-008">medium · 只出现一次的数字（公开3 / 对抗2 · 有内置解答）</option><option value="medium-009">medium · 合并两个有序数组（公开3 / 对抗2 · 有内置解答）</option><option value="medium-010">medium · 判断子序列（公开3 / 对抗2 · 有内置解答）</option><option value="medium-011">medium · 多数元素（公开3 / 对抗2 · 有内置解答）</option><option value="medium-012">medium · 搜索插入位置（公开3 / 对抗2 · 有内置解答）</option><option value="medium-013">medium · 删除有序数组重复项（公开2 / 对抗3 · 有内置解答）</option><option value="medium-014">medium · 爬楼梯方法数（公开3 / 对抗2 · 有内置解答）</option><option value="medium-015">medium · 最大连续 1 的个数（公开2 / 对抗3 · 有内置解答）</option><option value="rw-001">realworld · 深度合并配置（公开3 / 对抗4）</option></select>
+          <div class="pk-meta" id="pk-meta">已填入：单词拆分</div>
+          <div class="pk-prev" id="pk-prev" style=""><b>单词拆分</b>　hard　<code>word_break</code>
+判断 s 能否被 word_dict 拆分。
+　复杂度要求：O(n^2)　内置解答：有
+　必须覆盖的边界：整词、无法拆
+　标注：正确对照样本</div>
+          <div class="pk-row">
+            <button class="ghost" id="pk-load" type="button">载入题面</button>
+            <button class="ghost" id="pk-load-mock" type="button">载入题面 + 内置解答</button>
+          </div>
+        </div>
+      </details>
+
+      <label>标题 <span class="hint">选填</span></label>
+      <input type="text" id="title" placeholder="例如：两数之和">
+
+      <label id="lbl-desc">题目描述</label>
+      <textarea id="description" rows="8" placeholder="把完整题面粘进来：要做什么、输入是什么、输出是什么。"></textarea>
+
+      <div class="row">
+        <div>
+          <label id="lbl-entry">入口函数名</label>
+          <input type="text" id="entry_point" placeholder="two_sum">
+        </div>
+        <div>
+          <label>期望复杂度 <span class="hint">选填</span></label>
+          <input type="text" id="complexity" placeholder="O(n)">
+        </div>
+      </div>
+
+      <div class="row" id="row-class" style="display:none">
+        <div>
+          <label>类名</label>
+          <input type="text" id="class_name" placeholder="RateLimiter">
+        </div>
+        <div>
+          <label>构造实参 <span class="hint">JSON 数组</span></label>
+          <input type="text" id="init_args" placeholder="[2, 10.0]">
+        </div>
+      </div>
+      <div id="row-class-kw" style="display:none">
+        <label>构造关键字实参 <span class="hint">选填，JSON 对象</span></label>
+        <input type="text" id="init_kwargs" placeholder="{&quot;limit&quot;: 2}">
+      </div>
+
+      <label>函数签名</label>
+      <input type="text" id="signature" placeholder="def two_sum(nums: list[int], target: int) -&gt; list[int]:">
+
+      <label>约束 <span class="hint">选填，写清楚才能判复杂度是否达标</span></label>
+      <textarea id="constraints" rows="2" placeholder="例如：2 &lt;= len(nums) &lt;= 10^4；答案唯一；不能整体转整型"></textarea>
+    </div>
+
+    <div class="card">
+      <h2>测试数据</h2>
+
+      <label id="lbl-public">公开测试用例</label>
+      <textarea id="public_tests" rows="5" class="mono" placeholder="[{&quot;args&quot;: [[2,7,11,15], 9], &quot;expected&quot;: [0,1]}]"></textarea>
+
+      <label id="lbl-adv">对抗测试用例 <span class="hint">选填 —— 用来暴露"公开测过了但逻辑其实错"</span></label>
+      <textarea id="adversarial_tests" rows="4" class="mono" placeholder="[{&quot;args&quot;: [[3,3], 6], &quot;expected&quot;: [0,1]}]"></textarea>
+    </div>
+
+    <div class="card">
+      <h2>候选解答</h2>
+      <label>解答内容 <span class="hint">留空则让模型现生成一份</span></label>
+      <textarea id="candidate" rows="6" class="mono" placeholder="粘贴待评估的解答：可以是完整五段，也可以只是一段代码。"></textarea>
+
+      <label class="opt">
+        <input type="checkbox" id="code_only">
+        <span>只评估代码实现（粘贴的是纯代码时勾选，跳过思路/复杂度/边界的过程审查，只跑 1 次评审，更快）</span>
+      </label>
+    </div>
+  </section>
+
+  <!-- ============ 结果 ============ -->
+  <section>
+    <div class="card" id="result">
+    <div id="live" style="display: none;">
+      <div style="display:flex;align-items:center;gap:9px">
+        <span class="spin"></span>
+        <span style="font-size:13px">正在评估</span>
+        <span class="pill mute" id="now">汇总结论</span>
+        <span style="flex:1"></span>
+        <span class="meta" style="margin:0" id="elapsed">56s</span>
+      </div>
+      <div class="stages" id="stages">
+        <span class="stg done">生成解答</span><span class="stg done">执行 + 规则</span>
+        <span class="stg done">分步审查</span><span class="stg on">汇总</span>
+      </div>
+    </div>
+    <details id="wf-box" open="">
+      <summary>Agent 工作流（Checker 执行取证 · Critic 逐段裁决）</summary>
+      <div class="wf">
+        <div class="wf-col">
+          <div class="wf-h"><span class="role">Agent 1</span><span id="wf-checker-h">Checker（执行取证 · 不靠 LLM 猜）</span></div>
+          <div class="wf-body" id="wf-checker"><div class="wf-step done"><div class="wf-top">
+        <span class="wf-name">① 解析解答 / 抽取代码</span>
+        <span class="wf-sec">0.38s</span>
+      </div><div class="wf-io"><div class="io"><b>输入</b><div class="io-row"><span class="io-k">解答字符数</span><span class="io-v">2001</span></div><div class="io-row"><span class="io-k">入口</span><span class="io-v">word_break</span></div><div class="io-row"><span class="io-k">题目形态</span><span class="io-v">function</span></div></div><div class="io"><b>输出</b><div class="io-row"><span class="io-k">识别到的段落</span><span class="io-v">[
+  "解题思路",
+  "复杂度分析",
+  "关键边界与处理策略",
+  "代码实现",
+  "自测说明"
+]</span></div><div class="io-row"><span class="io-k">代码字符数</span><span class="io-v">307</span></div></div></div></div><div class="wf-step done"><div class="wf-top">
+        <span class="wf-name">② 执行公开测试</span>
+        <span class="wf-sec">0.38s</span>
+      </div><div class="wf-io"><div class="io"><b>输入</b><div class="io-row"><span class="io-k">用例数</span><span class="io-v">3</span></div><div class="io-row"><span class="io-k">执行方式</span><span class="io-v">word_break</span></div></div><div class="io"><b>输出</b><div class="io-row"><span class="io-k">通过</span><span class="io-v">3/3</span></div><div class="io-row"><span class="io-k">失败样本</span><span class="io-v">[]</span></div></div></div></div><div class="wf-step done"><div class="wf-top">
+        <span class="wf-name">③ 执行对抗测试</span>
+        <span class="wf-sec">0.38s</span>
+      </div><div class="wf-io"><div class="io"><b>输入</b><div class="io-row"><span class="io-k">用例数</span><span class="io-v">2</span></div><div class="io-row"><span class="io-k">执行方式</span><span class="io-v">word_break</span></div></div><div class="io"><b>输出</b><div class="io-row"><span class="io-k">通过</span><span class="io-v">2/2</span></div><div class="io-row"><span class="io-k">失败样本</span><span class="io-v">[]</span></div></div></div></div><div class="wf-step done"><div class="wf-top">
+        <span class="wf-name">④ 规则层静态分析</span>
+        <span class="wf-sec">0.38s</span>
+      </div><div class="wf-io"><div class="io"><b>输入</b><div class="io-row"><span class="io-k">输入</span><span class="io-v">段落 + 代码 + 两组测试结果</span></div></div><div class="io"><b>输出</b><div class="io-row"><span class="io-k">命中条数</span><span class="io-v">0</span></div><div class="io-row"><span class="io-k">错误类型</span><span class="io-v">[]</span></div><div class="io-row"><span class="io-k">信号字段</span><span style="flex:1">
+          <details open=""><summary>展开（184 字符）</summary><pre class="dump">[
+  "adversarial",
+  "claimed_complexity",
+  "entry_point",
+  "expected_complexity",
+  "max_loop_depth",
+  "parse_error",
+  "problem_id",
+  "public",
+  "recursive",
+  "rule_findings"
+]</pre></details>
+        </span></div></div></div></div><div class="wf-step done"><div class="wf-top">
+        <span class="wf-name">⑤ 失败用例轨迹取证</span>
+        <span class="wf-sec">0.38s</span>
+      </div><div class="wf-io"><div class="io"><b>输入</b><div class="io-row"><span class="io-k">待取证失败用例</span><span class="io-v">0</span></div><div class="io-row"><span class="io-k">取证方式</span><span class="io-v">函数级：直接取证</span></div></div><div class="io"><b>输出</b><div class="io-row"><span class="io-k">取证条数</span><span class="io-v">0</span></div><div class="io-row"><span class="io-k">摘要</span><span class="io-v">[]</span></div></div></div></div><div class="wf-step done"><div class="wf-top">
+        <span class="wf-name">⑥ LLM 二次诊断总评</span>
+        <span class="wf-sec">5.81s</span>
+      </div><div class="wf-io"><div class="io"><b>输入</b><div class="io-row"><span class="io-k">problem_id</span><span class="io-v">单词拆分</span></div><div class="io-row"><span class="io-k">title</span><span class="io-v">单词拆分</span></div><div class="io-row"><span class="io-k">kind</span><span class="io-v">function</span></div><div class="io-row"><span class="io-k">entry_point</span><span class="io-v">word_break</span></div><div class="io-row"><span class="io-k">public</span><span style="flex:1">
+          <details><summary>展开（93 字符）</summary><pre class="dump">{
+  "total": 3,
+  "passed": 3,
+  "failed": 0,
+  "all_passed": true,
+  "failure_samples": []
+}</pre></details>
+        </span></div><div class="io-row"><span class="io-k">adversarial</span><span style="flex:1">
+          <details><summary>展开（93 字符）</summary><pre class="dump">{
+  "total": 2,
+  "passed": 2,
+  "failed": 0,
+  "all_passed": true,
+  "failure_samples": []
+}</pre></details>
+        </span></div><div class="io-row"><span class="io-k">findings</span><span class="io-v">[]</span></div><div class="io-row"><span class="io-k">forensics</span><span class="io-v">[]</span></div><div class="io-row"><span class="io-k">pseudo_correct</span><span class="io-v">false</span></div><div class="io-row"><span class="io-k">code_ok</span><span class="io-v">true</span></div></div><div class="io"><b>输出</b><div class="io-row"><span class="io-k">summary</span><span class="io-v">公开与对抗测试全部通过，函数级实现正确，无状态残留问题。</span></div><div class="io-row"><span class="io-k">root_cause</span><span class="io-v">无失败用例，代码与逻辑均正确，不存在根因问题。</span></div><div class="io-row"><span class="io-k">pseudo_correct</span><span class="io-v">false</span></div><div class="io-row"><span class="io-k">process_ok</span><span class="io-v">true</span></div><div class="io-row"><span class="io-k">llm_raw</span><span style="flex:1">
+          <details><summary>展开（238 字符）</summary><pre class="dump">{
+  "summary": "公开与对抗测试全部通过，函数级实现正确，无状态残留问题。",
+  "process_ok": true,
+  "code_ok": true,
+  "pseudo_correct": false,
+  "root_cause": "无失败用例，代码与逻辑均正确，不存在根因问题。",
+  "debug_hints": ["无需调试，可补充边界用例（如空串、超长串）做鲁棒性验证"],
+  "failed_case_analysis": []
+}</pre></details>
+        </span></div></div></div></div></div>
+        </div>
+        <div class="wf-col">
+          <div class="wf-h"><span class="role">Agent 2</span><span id="wf-critic-h">Critic（逐段裁决 · LLM 软判断）</span></div>
+          <div class="wf-body" id="wf-critic"><div class="wf-step done"><div class="wf-top">
+        <span class="wf-name">段1·解题思路</span>
+        <span class="wf-sec"></span>
+      </div><div class="wf-io"><div class="io"><b>输入</b><div class="io-row"><span class="io-k">prompt</span><span style="flex:1">
+          <details open=""><summary>展开（1487 字符）</summary><pre class="dump">## 题目
+判断 s 能否被 word_dict 拆分。
+
+## 评估重点（算法竞赛）
+- 解法思路是否真正成立，是否与题目约束匹配，是否存在"看起来对但换组数据就错"的隐患。
+- 复杂度分析必须写成 O(...) 形式，且与实际代码一致，不允许"声称 O(log n) 实际 O(n)"。
+- 关键边界（空输入、单元素、重复、负数、极值、溢出等）必须逐一说明处理方式。
+- 结论不以"公开测试通过"为准：对抗测试才是判断逻辑是否成立的依据。
+
+函数入口：`word_break`
+题目期望复杂度：O(n^2)
+
+## 待审查步骤
+**步骤名称**：解题思路
+**步骤内容**：
+本题要求判断字符串 `s` 是否可以被空格拆分成若干个字典 `word_dict` 中的单词。这是一个典型的动态规划（Dynamic Programming）问题。
+我们定义 `dp[i]` 表示字符串 `s` 的前 `i` 个字符（即 `s[0:i]`）是否可以被成功拆分。初始化 `dp[0] = True`（空串总是可以被拆分）。对于 `i` 从 `1` 到 `len(s)`，我们遍历所有 `j &lt; i`，如果 `dp[j]` 为 `True` 且 `s[j:i]` 在 `word_dict` 中，则 `dp[i] = True`。最终返回 `dp[len(s)]`。
+为了快速判断子串是否在字典中，我们将 `word_dict` 转换为哈希集合（HashSet），使得单次查询为 O(1)。该算法与题目约束（长度 ≤ 300）完全匹配，且不存在“看起来对但换数据就错”的隐患，因为 DP 状态转移覆盖了所有可能的切分点。
+
+## 完整代码实现（供对照）
+```python
+def word_break(s: str, word_dict: list) -&gt; bool:
+    word_set = set(word_dict)
+    n = len(s)
+    dp = [False] * (n + 1)
+    dp[0] = True
+    for i in range(1, n + 1):
+        for j in range(i):
+            if dp[j] and s[j:i] in word_set:
+                dp[i] = True
+                break
+    return dp[n]
+```
+
+## 执行与静态分析信号
+&lt;signals&gt;
+{"problem_id": "单词拆分", "entry_point": "word_break", "max_loop_depth": 2, "recursive": false, "parse_error": null, "claimed_complexity": "n2", "expected_complexity": "O(n^2)", "public": {"total": 3, "passed": 3, "failed": 0, "all_passed": true, "failure_samples": []}, "adversarial": {"total": 2, "passed": 2, "failed": 0, "all_passed": true, "failure_samples": []}, "rule_findings": []}
+&lt;/signals&gt;
+
+请只针对「解题思路」这一步给出裁决。
+</pre></details>
+        </span></div><div class="io-row"><span class="io-k">system_prompt</span><span style="flex:1">
+          <details><summary>展开（532 字符）</summary><pre class="dump">[ROLE=critic]
+你是代码解题过程的严谨评审专家。你的任务是审查解题过程中的**某一个步骤**，判断它是否成立。
+
+重要原则：
+1. 你只审查被指定的那一个步骤，不要越界评价其他步骤。
+2. 执行结果是硬证据。如果 `&lt;signals&gt;` 里显示测试失败，那么实现一定有问题，不要为它辩护。
+3. 区分"结果正确"和"过程正确"：即使测试全部通过，思路描述、复杂度分析、边界讨论仍可能不成立。
+4. 只在你有具体依据时才判定为 flawed，不要臆测。
+5. 必须严格输出 JSON，不要输出任何额外文字。
+
+输出格式：
+{
+  "verdict": "valid" | "suspicious" | "flawed",
+  "confidence": 0.0 到 1.0 之间的数字,
+  "error_types": ["错误类型标签"],
+  "reason": "一句话说明判断依据",
+  "evidence": "引用的具体证据"
+}
+
+错误类型只能从以下列表中选择（可多选，无问题时为空数组）：
+题意误读、算法选择错误、复杂度分析错误、边界处理缺失、实现逻辑缺陷、状态管理错误、终止条件错误、幻觉、描述与实现不一致、测试覆盖不足导致的伪正确</pre></details>
+        </span></div><div class="io-row"><span class="io-k">规则类型</span><span class="io-v">[]</span></div><div class="io-row"><span class="io-k">段落字符数</span><span class="io-v">416</span></div></div><div class="io"><b>输出</b><div class="io-row"><span class="io-k">verdict</span><span class="io-v">valid</span></div><div class="io-row"><span class="io-k">llm_verdict</span><span class="io-v">valid</span></div><div class="io-row"><span class="io-k">confidence</span><span class="io-v">0.95</span></div><div class="io-row"><span class="io-k">error_types</span><span class="io-v">[]</span></div><div class="io-row"><span class="io-k">reason</span><span class="io-v">解题思路描述的DP定义、转移和哈希集合优化与代码实现一致，且公开与对抗测试均通过，无具体证据表明存在题意误读或逻辑缺陷。</span></div><div class="io-row"><span class="io-k">agreement</span><span class="io-v">agree</span></div><div class="io-row"><span class="io-k">llm_raw</span><span style="flex:1">
+          <details><summary>展开（312 字符）</summary><pre class="dump">{
+  "verdict": "valid",
+  "confidence": 0.95,
+  "error_types": [],
+  "reason": "解题思路描述的DP定义、转移和哈希集合优化与代码实现一致，且公开与对抗测试均通过，无具体证据表明存在题意误读或逻辑缺陷。",
+  "evidence": "步骤内容中定义dp[i]为s[0:i]是否可拆分、初始化dp[0]=True、双重循环j&lt;i检查dp[j]且s[j:i]在set中；代码完全对应；signals显示public 3/3 passed, adversarial 2/2 passed, claimed O(n^2)与expected一致。"
+}</pre></details>
+        </span></div></div></div></div><div class="wf-step done"><div class="wf-top">
+        <span class="wf-name">段2·复杂度分析</span>
+        <span class="wf-sec"></span>
+      </div><div class="wf-io"><div class="io"><b>输入</b><div class="io-row"><span class="io-k">prompt</span><span style="flex:1">
+          <details open=""><summary>展开（1385 字符）</summary><pre class="dump">## 题目
+判断 s 能否被 word_dict 拆分。
+
+## 评估重点（算法竞赛）
+- 解法思路是否真正成立，是否与题目约束匹配，是否存在"看起来对但换组数据就错"的隐患。
+- 复杂度分析必须写成 O(...) 形式，且与实际代码一致，不允许"声称 O(log n) 实际 O(n)"。
+- 关键边界（空输入、单元素、重复、负数、极值、溢出等）必须逐一说明处理方式。
+- 结论不以"公开测试通过"为准：对抗测试才是判断逻辑是否成立的依据。
+
+函数入口：`word_break`
+题目期望复杂度：O(n^2)
+
+## 待审查步骤
+**步骤名称**：复杂度分析
+**步骤内容**：
+- 时间复杂度：O(n^2 * L)，其中 n = len(s) ≤ 300，L 为字典中单词的平均长度。外层循环 i 从 1 到 n，内层循环 j 从 0 到 i-1，共约 n^2/2 次子串截取与哈希查询；子串 `s[j:i]` 的构造与哈希计算耗时 O(L)（Python 中切片为 O(L)，集合查询为 O(L) 平均）。由于 n 固定上限 300，实际为 O(n^2 * L)，可视为 O(n^2) 级别（因 L 通常远小于 n 且为常数级）。
+- 空间复杂度：O(n + m * L)，其中 n 为 dp 数组长度，m 为字典单词数，m*L 为哈希集合存储开销。dp 数组占用 O(n)，集合占用 O(m*L)。
+
+## 完整代码实现（供对照）
+```python
+def word_break(s: str, word_dict: list) -&gt; bool:
+    word_set = set(word_dict)
+    n = len(s)
+    dp = [False] * (n + 1)
+    dp[0] = True
+    for i in range(1, n + 1):
+        for j in range(i):
+            if dp[j] and s[j:i] in word_set:
+                dp[i] = True
+                break
+    return dp[n]
+```
+
+## 执行与静态分析信号
+&lt;signals&gt;
+{"problem_id": "单词拆分", "entry_point": "word_break", "max_loop_depth": 2, "recursive": false, "parse_error": null, "claimed_complexity": "n2", "expected_complexity": "O(n^2)", "public": {"total": 3, "passed": 3, "failed": 0, "all_passed": true, "failure_samples": []}, "adversarial": {"total": 2, "passed": 2, "failed": 0, "all_passed": true, "failure_samples": []}, "rule_findings": []}
+&lt;/signals&gt;
+
+请只针对「复杂度分析」这一步给出裁决。
+</pre></details>
+        </span></div><div class="io-row"><span class="io-k">system_prompt</span><span style="flex:1">
+          <details open=""><summary>展开（532 字符）</summary><pre class="dump">[ROLE=critic]
+你是代码解题过程的严谨评审专家。你的任务是审查解题过程中的**某一个步骤**，判断它是否成立。
+
+重要原则：
+1. 你只审查被指定的那一个步骤，不要越界评价其他步骤。
+2. 执行结果是硬证据。如果 `&lt;signals&gt;` 里显示测试失败，那么实现一定有问题，不要为它辩护。
+3. 区分"结果正确"和"过程正确"：即使测试全部通过，思路描述、复杂度分析、边界讨论仍可能不成立。
+4. 只在你有具体依据时才判定为 flawed，不要臆测。
+5. 必须严格输出 JSON，不要输出任何额外文字。
+
+输出格式：
+{
+  "verdict": "valid" | "suspicious" | "flawed",
+  "confidence": 0.0 到 1.0 之间的数字,
+  "error_types": ["错误类型标签"],
+  "reason": "一句话说明判断依据",
+  "evidence": "引用的具体证据"
+}
+
+错误类型只能从以下列表中选择（可多选，无问题时为空数组）：
+题意误读、算法选择错误、复杂度分析错误、边界处理缺失、实现逻辑缺陷、状态管理错误、终止条件错误、幻觉、描述与实现不一致、测试覆盖不足导致的伪正确</pre></details>
+        </span></div><div class="io-row"><span class="io-k">规则类型</span><span class="io-v">[]</span></div><div class="io-row"><span class="io-k">段落字符数</span><span class="io-v">312</span></div></div><div class="io"><b>输出</b><div class="io-row"><span class="io-k">verdict</span><span class="io-v">suspicious</span></div><div class="io-row"><span class="io-k">llm_verdict</span><span class="io-v">suspicious</span></div><div class="io-row"><span class="io-k">confidence</span><span class="io-v">0.7</span></div><div class="io-row"><span class="io-k">error_types</span><span class="io-v">[
+  "COMPLEXITY"
+]</span></div><div class="io-row"><span class="io-k">reason</span><span style="flex:1">
+          <details><summary>展开（132 字符）</summary><pre class="dump">步骤声称时间复杂度为 O(n^2 * L) 并说可视为 O(n^2) 级别，但题目期望复杂度明确为 O(n^2)，且实际代码中切片 s[j:i] 为 O(i-j) 即 O(L) 级别，严格来说不是 O(n^2) 而是 O(n^2 * L)，与期望复杂度表述不一致。</pre></details>
+        </span></div><div class="io-row"><span class="io-k">agreement</span><span class="io-v">llm_only</span></div><div class="io-row"><span class="io-k">llm_raw</span><span style="flex:1">
+          <details><summary>展开（426 字符）</summary><pre class="dump">{
+  "verdict": "suspicious",
+  "confidence": 0.7,
+  "error_types": ["复杂度分析错误"],
+  "reason": "步骤声称时间复杂度为 O(n^2 * L) 并说可视为 O(n^2) 级别，但题目期望复杂度明确为 O(n^2)，且实际代码中切片 s[j:i] 为 O(i-j) 即 O(L) 级别，严格来说不是 O(n^2) 而是 O(n^2 * L)，与期望复杂度表述不一致。",
+  "evidence": "步骤内容写'时间复杂度：O(n^2 * L)... 可视为 O(n^2) 级别（因 L 通常远小于 n 且为常数级）'，而题目期望复杂度为 O(n^2)，signals 中 claimed_complexity 为 'n2'、expected_complexity 为 'O(n^2)'；代码内层 s[j:i] 切片长度随 j,i 变化，非严格 O(n^2)。"
+}</pre></details>
+        </span></div></div></div></div><div class="wf-step done"><div class="wf-top">
+        <span class="wf-name">段3·关键边界与处理策略</span>
+        <span class="wf-sec"></span>
+      </div><div class="wf-io"><div class="io"><b>输入</b><div class="io-row"><span class="io-k">prompt</span><span style="flex:1">
+          <details><summary>展开（1511 字符）</summary><pre class="dump">## 题目
+判断 s 能否被 word_dict 拆分。
+
+## 评估重点（算法竞赛）
+- 解法思路是否真正成立，是否与题目约束匹配，是否存在"看起来对但换组数据就错"的隐患。
+- 复杂度分析必须写成 O(...) 形式，且与实际代码一致，不允许"声称 O(log n) 实际 O(n)"。
+- 关键边界（空输入、单元素、重复、负数、极值、溢出等）必须逐一说明处理方式。
+- 结论不以"公开测试通过"为准：对抗测试才是判断逻辑是否成立的依据。
+
+函数入口：`word_break`
+题目期望复杂度：O(n^2)
+
+## 待审查步骤
+**步骤名称**：关键边界与处理策略
+**步骤内容**：
+- 空输入：题目约束 `1 &lt;= len(s)`，故 s 不为空；但 `word_dict` 可能为空列表，此时任何非空 s 均返回 False，DP 自然处理（无单词可匹配）。
+- 单元素：s 长度为 1 时，检查该单字符是否在 dict 中，DP 中 i=1 仅 j=0 一种情况，正确覆盖。
+- 重复元素：word_dict 中可能有重复单词，转为 set 后自动去重，不影响正确性。
+- 整词：s 本身完全等于 dict 中某个单词，DP 中 j=0 且 s[0:n] in set 会置 dp[n]=True，正确返回 True。
+- 无法拆：如 "catsandog" 无任何合法切分，DP 所有 dp[i] 保持 False，返回 False。
+- 极值：s 长度 300，DP 双重循环 45000 次，完全可接受；无数值溢出风险（仅布尔与字符串操作）。
+- 负数/特殊字符：题目 s 为字符串，不涉及负数；若含非字母字符，集合精确匹配仍成立。
+
+## 完整代码实现（供对照）
+```python
+def word_break(s: str, word_dict: list) -&gt; bool:
+    word_set = set(word_dict)
+    n = len(s)
+    dp = [False] * (n + 1)
+    dp[0] = True
+    for i in range(1, n + 1):
+        for j in range(i):
+            if dp[j] and s[j:i] in word_set:
+                dp[i] = True
+                break
+    return dp[n]
+```
+
+## 执行与静态分析信号
+&lt;signals&gt;
+{"problem_id": "单词拆分", "entry_point": "word_break", "max_loop_depth": 2, "recursive": false, "parse_error": null, "claimed_complexity": "n2", "expected_complexity": "O(n^2)", "public": {"total": 3, "passed": 3, "failed": 0, "all_passed": true, "failure_samples": []}, "adversarial": {"total": 2, "passed": 2, "failed": 0, "all_passed": true, "failure_samples": []}, "rule_findings": []}
+&lt;/signals&gt;
+
+请只针对「关键边界与处理策略」这一步给出裁决。
+</pre></details>
+        </span></div><div class="io-row"><span class="io-k">system_prompt</span><span style="flex:1">
+          <details><summary>展开（532 字符）</summary><pre class="dump">[ROLE=critic]
+你是代码解题过程的严谨评审专家。你的任务是审查解题过程中的**某一个步骤**，判断它是否成立。
+
+重要原则：
+1. 你只审查被指定的那一个步骤，不要越界评价其他步骤。
+2. 执行结果是硬证据。如果 `&lt;signals&gt;` 里显示测试失败，那么实现一定有问题，不要为它辩护。
+3. 区分"结果正确"和"过程正确"：即使测试全部通过，思路描述、复杂度分析、边界讨论仍可能不成立。
+4. 只在你有具体依据时才判定为 flawed，不要臆测。
+5. 必须严格输出 JSON，不要输出任何额外文字。
+
+输出格式：
+{
+  "verdict": "valid" | "suspicious" | "flawed",
+  "confidence": 0.0 到 1.0 之间的数字,
+  "error_types": ["错误类型标签"],
+  "reason": "一句话说明判断依据",
+  "evidence": "引用的具体证据"
+}
+
+错误类型只能从以下列表中选择（可多选，无问题时为空数组）：
+题意误读、算法选择错误、复杂度分析错误、边界处理缺失、实现逻辑缺陷、状态管理错误、终止条件错误、幻觉、描述与实现不一致、测试覆盖不足导致的伪正确</pre></details>
+        </span></div><div class="io-row"><span class="io-k">规则类型</span><span class="io-v">[]</span></div><div class="io-row"><span class="io-k">段落字符数</span><span class="io-v">430</span></div></div><div class="io"><b>输出</b><div class="io-row"><span class="io-k">verdict</span><span class="io-v">valid</span></div><div class="io-row"><span class="io-k">llm_verdict</span><span class="io-v">valid</span></div><div class="io-row"><span class="io-k">confidence</span><span class="io-v">0.95</span></div><div class="io-row"><span class="io-k">error_types</span><span class="io-v">[]</span></div><div class="io-row"><span class="io-k">reason</span><span class="io-v">该步骤对空输入、单元素、重复、整词、无法拆、极值、特殊字符等边界逐一说明，且与给出的 O(n^2) DP 实现一致，公开与对抗测试均通过，无具体缺陷依据。</span></div><div class="io-row"><span class="io-k">agreement</span><span class="io-v">agree</span></div><div class="io-row"><span class="io-k">llm_raw</span><span style="flex:1">
+          <details><summary>展开（395 字符）</summary><pre class="dump">{
+  "verdict": "valid",
+  "confidence": 0.95,
+  "error_types": [],
+  "reason": "该步骤对空输入、单元素、重复、整词、无法拆、极值、特殊字符等边界逐一说明，且与给出的 O(n^2) DP 实现一致，公开与对抗测试均通过，无具体缺陷依据。",
+  "evidence": "步骤内容中'word_dict 可能为空列表，此时任何非空 s 均返回 False，DP 自然处理'对应代码 word_set=set([]) 后 s[j:i] in 空集恒 False；'s 长度 300，DP 双重循环 45000 次'对应 n=300 时 i,j 两重循环约 n*(n+1)/2=45150 次；signals 显示 adversarial all_passed=true 且 rule_findings 为空。"
+}</pre></details>
+        </span></div></div></div></div><div class="wf-step done"><div class="wf-top">
+        <span class="wf-name">段4·代码实现</span>
+        <span class="wf-sec"></span>
+      </div><div class="wf-io"><div class="io"><b>输入</b><div class="io-row"><span class="io-k">prompt</span><span style="flex:1">
+          <details><summary>展开（1392 字符）</summary><pre class="dump">## 题目
+判断 s 能否被 word_dict 拆分。
+
+## 评估重点（算法竞赛）
+- 解法思路是否真正成立，是否与题目约束匹配，是否存在"看起来对但换组数据就错"的隐患。
+- 复杂度分析必须写成 O(...) 形式，且与实际代码一致，不允许"声称 O(log n) 实际 O(n)"。
+- 关键边界（空输入、单元素、重复、负数、极值、溢出等）必须逐一说明处理方式。
+- 结论不以"公开测试通过"为准：对抗测试才是判断逻辑是否成立的依据。
+
+函数入口：`word_break`
+题目期望复杂度：O(n^2)
+
+## 待审查步骤
+**步骤名称**：代码实现
+**步骤内容**：
+```python
+def word_break(s: str, word_dict: list) -&gt; bool:
+    word_set = set(word_dict)
+    n = len(s)
+    dp = [False] * (n + 1)
+    dp[0] = True
+    for i in range(1, n + 1):
+        for j in range(i):
+            if dp[j] and s[j:i] in word_set:
+                dp[i] = True
+                break
+    return dp[n]
+```
+
+## 完整代码实现（供对照）
+```python
+def word_break(s: str, word_dict: list) -&gt; bool:
+    word_set = set(word_dict)
+    n = len(s)
+    dp = [False] * (n + 1)
+    dp[0] = True
+    for i in range(1, n + 1):
+        for j in range(i):
+            if dp[j] and s[j:i] in word_set:
+                dp[i] = True
+                break
+    return dp[n]
+```
+
+## 执行与静态分析信号
+&lt;signals&gt;
+{"problem_id": "单词拆分", "entry_point": "word_break", "max_loop_depth": 2, "recursive": false, "parse_error": null, "claimed_complexity": "n2", "expected_complexity": "O(n^2)", "public": {"total": 3, "passed": 3, "failed": 0, "all_passed": true, "failure_samples": []}, "adversarial": {"total": 2, "passed": 2, "failed": 0, "all_passed": true, "failure_samples": []}, "rule_findings": []}
+&lt;/signals&gt;
+
+请只针对「代码实现」这一步给出裁决。
+</pre></details>
+        </span></div><div class="io-row"><span class="io-k">system_prompt</span><span style="flex:1">
+          <details><summary>展开（532 字符）</summary><pre class="dump">[ROLE=critic]
+你是代码解题过程的严谨评审专家。你的任务是审查解题过程中的**某一个步骤**，判断它是否成立。
+
+重要原则：
+1. 你只审查被指定的那一个步骤，不要越界评价其他步骤。
+2. 执行结果是硬证据。如果 `&lt;signals&gt;` 里显示测试失败，那么实现一定有问题，不要为它辩护。
+3. 区分"结果正确"和"过程正确"：即使测试全部通过，思路描述、复杂度分析、边界讨论仍可能不成立。
+4. 只在你有具体依据时才判定为 flawed，不要臆测。
+5. 必须严格输出 JSON，不要输出任何额外文字。
+
+输出格式：
+{
+  "verdict": "valid" | "suspicious" | "flawed",
+  "confidence": 0.0 到 1.0 之间的数字,
+  "error_types": ["错误类型标签"],
+  "reason": "一句话说明判断依据",
+  "evidence": "引用的具体证据"
+}
+
+错误类型只能从以下列表中选择（可多选，无问题时为空数组）：
+题意误读、算法选择错误、复杂度分析错误、边界处理缺失、实现逻辑缺陷、状态管理错误、终止条件错误、幻觉、描述与实现不一致、测试覆盖不足导致的伪正确</pre></details>
+        </span></div><div class="io-row"><span class="io-k">规则类型</span><span class="io-v">[]</span></div><div class="io-row"><span class="io-k">段落字符数</span><span class="io-v">321</span></div></div><div class="io"><b>输出</b><div class="io-row"><span class="io-k">verdict</span><span class="io-v">valid</span></div><div class="io-row"><span class="io-k">llm_verdict</span><span class="io-v">valid</span></div><div class="io-row"><span class="io-k">confidence</span><span class="io-v">0.95</span></div><div class="io-row"><span class="io-k">error_types</span><span class="io-v">[]</span></div><div class="io-row"><span class="io-k">reason</span><span class="io-v">代码实现使用标准动态规划，双重循环枚举分割点，与题目期望的 O(n^2) 复杂度一致，公开与对抗测试均全部通过，无静态分析告警。</span></div><div class="io-row"><span class="io-k">agreement</span><span class="io-v">agree</span></div><div class="io-row"><span class="io-k">llm_raw</span><span style="flex:1">
+          <details><summary>展开（361 字符）</summary><pre class="dump">{
+  "verdict": "valid",
+  "confidence": 0.95,
+  "error_types": [],
+  "reason": "代码实现使用标准动态规划，双重循环枚举分割点，与题目期望的 O(n^2) 复杂度一致，公开与对抗测试均全部通过，无静态分析告警。",
+  "evidence": "signals 显示 public 3/3 passed、adversarial 2/2 passed、claimed_complexity 'n2' 与 expected 'O(n^2)' 匹配、max_loop_depth=2 对应双重循环、rule_findings 为空；代码逻辑 dp[i]=any(dp[j] and s[j:i] in word_set) 正确覆盖所有拆分可能。"
+}</pre></details>
+        </span></div></div></div></div><div class="wf-step done"><div class="wf-top">
+        <span class="wf-name">段5·自测说明</span>
+        <span class="wf-sec"></span>
+      </div><div class="wf-io"><div class="io"><b>输入</b><div class="io-row"><span class="io-k">prompt</span><span style="flex:1">
+          <details><summary>展开（1524 字符）</summary><pre class="dump">## 题目
+判断 s 能否被 word_dict 拆分。
+
+## 评估重点（算法竞赛）
+- 解法思路是否真正成立，是否与题目约束匹配，是否存在"看起来对但换组数据就错"的隐患。
+- 复杂度分析必须写成 O(...) 形式，且与实际代码一致，不允许"声称 O(log n) 实际 O(n)"。
+- 关键边界（空输入、单元素、重复、负数、极值、溢出等）必须逐一说明处理方式。
+- 结论不以"公开测试通过"为准：对抗测试才是判断逻辑是否成立的依据。
+
+函数入口：`word_break`
+题目期望复杂度：O(n^2)
+
+## 待审查步骤
+**步骤名称**：自测说明
+**步骤内容**：
+我通过构造对抗性测试用例验证实现：
+- 公开用例：`('leetcode', ['leet','code'])` -&gt; True；`('applepenapple', ['apple','pen'])` -&gt; True；`('catsandog', ['cats','dog','sand','and','cat'])` -&gt; False，均符合预期。
+- 边界用例：`('a', [])` -&gt; False（空字典）；`('a', ['a'])` -&gt; True（单元素整词）；`('abcd', ['a','b','c','d','ab','cd'])` -&gt; True（多段拆分）；`('abcd', ['abc'])` -&gt; False（无法拆）；`('aaaa', ['a','aa','aaa'])` -&gt; True（重复字符多解）。
+- 覆盖说明：上述测试覆盖了空字典、单元素、整词、无法拆、重复字符、多段拆分等边界，未发现逻辑错误。未使用臆造的第三方测试结果，仅基于手动构造与题目示例验证。
+
+## 完整代码实现（供对照）
+```python
+def word_break(s: str, word_dict: list) -&gt; bool:
+    word_set = set(word_dict)
+    n = len(s)
+    dp = [False] * (n + 1)
+    dp[0] = True
+    for i in range(1, n + 1):
+        for j in range(i):
+            if dp[j] and s[j:i] in word_set:
+                dp[i] = True
+                break
+    return dp[n]
+```
+
+## 执行与静态分析信号
+&lt;signals&gt;
+{"problem_id": "单词拆分", "entry_point": "word_break", "max_loop_depth": 2, "recursive": false, "parse_error": null, "claimed_complexity": "n2", "expected_complexity": "O(n^2)", "public": {"total": 3, "passed": 3, "failed": 0, "all_passed": true, "failure_samples": []}, "adversarial": {"total": 2, "passed": 2, "failed": 0, "all_passed": true, "failure_samples": []}, "rule_findings": []}
+&lt;/signals&gt;
+
+请只针对「自测说明」这一步给出裁决。
+</pre></details>
+        </span></div><div class="io-row"><span class="io-k">system_prompt</span><span style="flex:1">
+          <details><summary>展开（532 字符）</summary><pre class="dump">[ROLE=critic]
+你是代码解题过程的严谨评审专家。你的任务是审查解题过程中的**某一个步骤**，判断它是否成立。
+
+重要原则：
+1. 你只审查被指定的那一个步骤，不要越界评价其他步骤。
+2. 执行结果是硬证据。如果 `&lt;signals&gt;` 里显示测试失败，那么实现一定有问题，不要为它辩护。
+3. 区分"结果正确"和"过程正确"：即使测试全部通过，思路描述、复杂度分析、边界讨论仍可能不成立。
+4. 只在你有具体依据时才判定为 flawed，不要臆测。
+5. 必须严格输出 JSON，不要输出任何额外文字。
+
+输出格式：
+{
+  "verdict": "valid" | "suspicious" | "flawed",
+  "confidence": 0.0 到 1.0 之间的数字,
+  "error_types": ["错误类型标签"],
+  "reason": "一句话说明判断依据",
+  "evidence": "引用的具体证据"
+}
+
+错误类型只能从以下列表中选择（可多选，无问题时为空数组）：
+题意误读、算法选择错误、复杂度分析错误、边界处理缺失、实现逻辑缺陷、状态管理错误、终止条件错误、幻觉、描述与实现不一致、测试覆盖不足导致的伪正确</pre></details>
+        </span></div><div class="io-row"><span class="io-k">规则类型</span><span class="io-v">[]</span></div><div class="io-row"><span class="io-k">段落字符数</span><span class="io-v">453</span></div></div><div class="io"><b>输出</b><div class="io-row"><span class="io-k">verdict</span><span class="io-v">suspicious</span></div><div class="io-row"><span class="io-k">llm_verdict</span><span class="io-v">suspicious</span></div><div class="io-row"><span class="io-k">confidence</span><span class="io-v">0.6</span></div><div class="io-row"><span class="io-k">error_types</span><span class="io-v">[
+  "FALSE_POSITIVE"
+]</span></div><div class="io-row"><span class="io-k">reason</span><span class="io-v">自测说明声称覆盖了空字典、单元素等边界，但未提及空字符串 s='' 这一关键边界，且对抗测试仅2个通过，覆盖说明可能不充分。</span></div><div class="io-row"><span class="io-k">agreement</span><span class="io-v">llm_only</span></div><div class="io-row"><span class="io-k">llm_raw</span><span style="flex:1">
+          <details><summary>展开（266 字符）</summary><pre class="dump">{
+  "verdict": "suspicious",
+  "confidence": 0.6,
+  "error_types": ["测试覆盖不足导致的伪正确"],
+  "reason": "自测说明声称覆盖了空字典、单元素等边界，但未提及空字符串 s='' 这一关键边界，且对抗测试仅2个通过，覆盖说明可能不充分。",
+  "evidence": "步骤内容中边界用例列举了 ('a', []) 等，但未包含 s='' 的情况；signals 显示 adversarial total=2 passed=2，测试量偏少。"
+}</pre></details>
+        </span></div></div></div></div></div>
+        </div>
+      </div>
+    </details>
+    <div id="summary-out"><h2>总体结论</h2><div class="verdicts"><div class="v ok"><div class="k">结果正确</div>
+    <div class="val">是</div><div class="k" style="margin-top:2px">公开测试是否全过</div></div><div class="v ok"><div class="k">真实正确</div>
+    <div class="val">是</div><div class="k" style="margin-top:2px">公开 + 对抗测试均通过</div></div><div class="v ok"><div class="k">过程成立</div>
+    <div class="val">是</div><div class="k" style="margin-top:2px">五个步骤是否都成立</div></div><div class="v ok"><div class="k">伪正确</div>
+    <div class="val">否</div><div class="k" style="margin-top:2px">测试过了但逻辑其实有问题</div></div></div><div class="banner ok">测试全过，且过程成立。</div><h2 style="margin-top:16px">Checker 总评</h2><div class="why">公开与对抗测试全部通过，函数级实现正确，无状态残留问题。</div><div class="meta">根因：无失败用例，代码与逻辑均正确，不存在根因问题。</div><ul class="hints"><li>公开与对抗测试均通过，规则层未见高置信缺陷。</li></ul></div>
+    <details id="think-box" open="" style="display:none">
+      <summary>思考过程（深度思考已开启）</summary><pre class="dump" id="think"></pre>
+    </details>
+    <details open=""><summary>实时生成</summary><pre class="dump" id="stream">## 1. 解题思路
+本题要求判断字符串 `s` 是否可以被空格拆分成若干个字典 `word_dict` 中的单词。这是一个典型的动态规划（Dynamic Programming）问题。
+我们定义 `dp[i]` 表示字符串 `s` 的前 `i` 个字符（即 `s[0:i]`）是否可以被成功拆分。初始化 `dp[0] = True`（空串总是可以被拆分）。对于 `i` 从 `1` 到 `len(s)`，我们遍历所有 `j &lt; i`，如果 `dp[j]` 为 `True` 且 `s[j:i]` 在 `word_dict` 中，则 `dp[i] = True`。最终返回 `dp[len(s)]`。
+为了快速判断子串是否在字典中，我们将 `word_dict` 转换为哈希集合（HashSet），使得单次查询为 O(1)。该算法与题目约束（长度 ≤ 300）完全匹配，且不存在“看起来对但换数据就错”的隐患，因为 DP 状态转移覆盖了所有可能的切分点。
+
+## 2. 复杂度分析
+- 时间复杂度：O(n^2 * L)，其中 n = len(s) ≤ 300，L 为字典中单词的平均长度。外层循环 i 从 1 到 n，内层循环 j 从 0 到 i-1，共约 n^2/2 次子串截取与哈希查询；子串 `s[j:i]` 的构造与哈希计算耗时 O(L)（Python 中切片为 O(L)，集合查询为 O(L) 平均）。由于 n 固定上限 300，实际为 O(n^2 * L)，可视为 O(n^2) 级别（因 L 通常远小于 n 且为常数级）。
+- 空间复杂度：O(n + m * L)，其中 n 为 dp 数组长度，m 为字典单词数，m*L 为哈希集合存储开销。dp 数组占用 O(n)，集合占用 O(m*L)。
+
+## 3. 关键边界与处理策略
+- 空输入：题目约束 `1 &lt;= len(s)`，故 s 不为空；但 `word_dict` 可能为空列表，此时任何非空 s 均返回 False，DP 自然处理（无单词可匹配）。
+- 单元素：s 长度为 1 时，检查该单字符是否在 dict 中，DP 中 i=1 仅 j=0 一种情况，正确覆盖。
+- 重复元素：word_dict 中可能有重复单词，转为 set 后自动去重，不影响正确性。
+- 整词：s 本身完全等于 dict 中某个单词，DP 中 j=0 且 s[0:n] in set 会置 dp[n]=True，正确返回 True。
+- 无法拆：如 "catsandog" 无任何合法切分，DP 所有 dp[i] 保持 False，返回 False。
+- 极值：s 长度 300，DP 双重循环 45000 次，完全可接受；无数值溢出风险（仅布尔与字符串操作）。
+- 负数/特殊字符：题目 s 为字符串，不涉及负数；若含非字母字符，集合精确匹配仍成立。
+
+## 4. 代码实现
+```python
+def word_break(s: str, word_dict: list) -&gt; bool:
+    word_set = set(word_dict)
+    n = len(s)
+    dp = [False] * (n + 1)
+    dp[0] = True
+    for i in range(1, n + 1):
+        for j in range(i):
+            if dp[j] and s[j:i] in word_set:
+                dp[i] = True
+                break
+    return dp[n]
+```
+
+## 5. 自测说明
+我通过构造对抗性测试用例验证实现：
+- 公开用例：`('leetcode', ['leet','code'])` -&gt; True；`('applepenapple', ['apple','pen'])` -&gt; True；`('catsandog', ['cats','dog','sand','and','cat'])` -&gt; False，均符合预期。
+- 边界用例：`('a', [])` -&gt; False（空字典）；`('a', ['a'])` -&gt; True（单元素整词）；`('abcd', ['a','b','c','d','ab','cd'])` -&gt; True（多段拆分）；`('abcd', ['abc'])` -&gt; False（无法拆）；`('aaaa', ['a','aa','aaa'])` -&gt; True（重复字符多解）。
+- 覆盖说明：上述测试覆盖了空字典、单元素、整词、无法拆、重复字符、多段拆分等边界，未发现逻辑错误。未使用臆造的第三方测试结果，仅基于手动构造与题目示例验证。</pre></details>
+    <div id="tests-out"><h2 style="margin-top:16px">执行结果 <span class="pill mute">函数级</span><span class="meta" style="margin:0;margin-left:8px">入口 <code>word_break</code></span></h2><div style="margin-top:10px"><span class="pill ok">公开测试 3/3</span></div><div style="margin-top:10px"><span class="pill ok">对抗测试 2/2</span></div></div>
+    <div id="sections-out"><div class="sec suspicious">
+    <div class="top">
+      <span class="name">自测说明</span>
+      <span class="pill warn">可疑</span>
+      <span class="pill mute">llm_only</span>
+      <span class="conf">置信度 0.6</span>
+    </div>
+    <div class="bar"><i style="width:60%"></i></div>
+    <div class="why">自测说明声称覆盖了空字典、单元素等边界，但未提及空字符串 s='' 这一关键边界，且对抗测试仅2个通过，覆盖说明可能不充分。</div>
+    <div class="ev">步骤内容中边界用例列举了 ('a', []) 等，但未包含 s='' 的情况；signals 显示 adversarial total=2 passed=2，测试量偏少。</div>
+    <div class="tags"><span class="pill bad">测试覆盖不足导致的伪正确</span></div>
+  </div><div class="sec valid">
+    <div class="top">
+      <span class="name">代码实现</span>
+      <span class="pill ok">成立</span>
+      <span class="pill mute">agree</span>
+      <span class="conf">置信度 0.95</span>
+    </div>
+    <div class="bar"><i style="width:95%"></i></div>
+    <div class="why">代码实现使用标准动态规划，双重循环枚举分割点，与题目期望的 O(n^2) 复杂度一致，公开与对抗测试均全部通过，无静态分析告警。</div>
+    <div class="ev">signals 显示 public 3/3 passed、adversarial 2/2 passed、claimed_complexity 'n2' 与 expected 'O(n^2)' 匹配、max_loop_depth=2 对应双重循环、rule_findings 为空；代码逻辑 dp[i]=any(dp[j] and s[j:i] in word_set) 正确覆盖所有拆分可能。</div>
+    
+  </div><div class="sec valid">
+    <div class="top">
+      <span class="name">解题思路</span>
+      <span class="pill ok">成立</span>
+      <span class="pill mute">agree</span>
+      <span class="conf">置信度 0.95</span>
+    </div>
+    <div class="bar"><i style="width:95%"></i></div>
+    <div class="why">解题思路描述的DP定义、转移和哈希集合优化与代码实现一致，且公开与对抗测试均通过，无具体证据表明存在题意误读或逻辑缺陷。</div>
+    <div class="ev">步骤内容中定义dp[i]为s[0:i]是否可拆分、初始化dp[0]=True、双重循环j&lt;i检查dp[j]且s[j:i]在set中；代码完全对应；signals显示public 3/3 passed, adversarial 2/2 passed, claimed O(n^2)与expected一致。</div>
+    
+  </div><div class="sec valid">
+    <div class="top">
+      <span class="name">关键边界与处理策略</span>
+      <span class="pill ok">成立</span>
+      <span class="pill mute">agree</span>
+      <span class="conf">置信度 0.95</span>
+    </div>
+    <div class="bar"><i style="width:95%"></i></div>
+    <div class="why">该步骤对空输入、单元素、重复、整词、无法拆、极值、特殊字符等边界逐一说明，且与给出的 O(n^2) DP 实现一致，公开与对抗测试均通过，无具体缺陷依据。</div>
+    <div class="ev">步骤内容中'word_dict 可能为空列表，此时任何非空 s 均返回 False，DP 自然处理'对应代码 word_set=set([]) 后 s[j:i] in 空集恒 False；'s 长度 300，DP 双重循环 45000 次'对应 n=300 时 i,j 两重循环约 n*(n+1)/2=45150 次；signals 显示 adversarial all_passed=true 且 rule_findings 为空。</div>
+    
+  </div><div class="sec suspicious">
+    <div class="top">
+      <span class="name">复杂度分析</span>
+      <span class="pill warn">可疑</span>
+      <span class="pill mute">llm_only</span>
+      <span class="conf">置信度 0.7</span>
+    </div>
+    <div class="bar"><i style="width:70%"></i></div>
+    <div class="why">步骤声称时间复杂度为 O(n^2 * L) 并说可视为 O(n^2) 级别，但题目期望复杂度明确为 O(n^2)，且实际代码中切片 s[j:i] 为 O(i-j) 即 O(L) 级别，严格来说不是 O(n^2) 而是 O(n^2 * L)，与期望复杂度表述不一致。</div>
+    <div class="ev">步骤内容写'时间复杂度：O(n^2 * L)... 可视为 O(n^2) 级别（因 L 通常远小于 n 且为常数级）'，而题目期望复杂度为 O(n^2)，signals 中 claimed_complexity 为 'n2'、expected_complexity 为 'O(n^2)'；代码内层 s[j:i] 切片长度随 j,i 变化，非严格 O(n^2)。</div>
+    <div class="tags"><span class="pill bad">复杂度分析错误</span></div>
+  </div></div>
+    <div id="tail-out">
+    <details><summary>提取到的代码</summary><pre class="dump">def word_break(s: str, word_dict: list) -&gt; bool:
+    word_set = set(word_dict)
+    n = len(s)
+    dp = [False] * (n + 1)
+    dp[0] = True
+    for i in range(1, n + 1):
+        for j in range(i):
+            if dp[j] and s[j:i] in word_set:
+                dp[i] = True
+                break
+    return dp[n]</pre></details>
+    <details open=""><summary>完整解答原文</summary><pre class="dump"></pre></details>
+    <details open=""><summary>原始 JSON</summary><pre class="dump">{
+  "problem_id": "单词拆分",
+  "difficulty": "custom",
+  "title": "单词拆分",
+  "backend": "hy3",
+  "result_correct": true,
+  "truly_correct": true,
+  "process_valid": true,
+  "false_positive_solution": false,
+  "public": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 2,
+    "passed": 2,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "first_error_step": null,
+  "first_error_section": null,
+  "error_types": [],
+  "sections": {
+    "解题思路": "本题要求判断字符串 `s` 是否可以被空格拆分成若干个字典 `word_dict` 中的单词。这是一个典型的动态规划（Dynamic Programming）问题。\n我们定义 `dp[i]` 表示字符串 `s` 的前 `i` 个字符（即 `s[0:i]`）是否可以被成功拆分。初始化 `dp[0] = True`（空串总是可以被拆分）。对于 `i` 从 `1` 到 `len(s)`，我们遍历所有 `j &lt; i`，如果 `dp[j]` 为 `True` 且 `s[j:i]` 在 `word_dict` 中，则 `dp[i] = True`。最终返回 `dp[len(s)]`。\n为了快速判断子串是否在字典中，我们将 `word_dict` 转换为哈希集合（HashSet），使得单次查询为 O(1)。该算法与题目约束（长度 ≤ 300）完全匹配，且不存在“看起来对但换数据就错”的隐患，因为 DP 状态转移覆盖了所有可能的切分点。",
+    "复杂度分析": "- 时间复杂度：O(n^2 * L)，其中 n = len(s) ≤ 300，L 为字典中单词的平均长度。外层循环 i 从 1 到 n，内层循环 j 从 0 到 i-1，共约 n^2/2 次子串截取与哈希查询；子串 `s[j:i]` 的构造与哈希计算耗时 O(L)（Python 中切片为 O(L)，集合查询为 O(L) 平均）。由于 n 固定上限 300，实际为 O(n^2 * L)，可视为 O(n^2) 级别（因 L 通常远小于 n 且为常数级）。\n- 空间复杂度：O(n + m * L)，其中 n 为 dp 数组长度，m 为字典单词数，m*L 为哈希集合存储开销。dp 数组占用 O(n)，集合占用 O(m*L)。",
+    "关键边界与处理策略": "- 空输入：题目约束 `1 &lt;= len(s)`，故 s 不为空；但 `word_dict` 可能为空列表，此时任何非空 s 均返回 False，DP 自然处理（无单词可匹配）。\n- 单元素：s 长度为 1 时，检查该单字符是否在 dict 中，DP 中 i=1 仅 j=0 一种情况，正确覆盖。\n- 重复元素：word_dict 中可能有重复单词，转为 set 后自动去重，不影响正确性。\n- 整词：s 本身完全等于 dict 中某个单词，DP 中 j=0 且 s[0:n] in set 会置 dp[n]=True，正确返回 True。\n- 无法拆：如 \"catsandog\" 无任何合法切分，DP 所有 dp[i] 保持 False，返回 False。\n- 极值：s 长度 300，DP 双重循环 45000 次，完全可接受；无数值溢出风险（仅布尔与字符串操作）。\n- 负数/特殊字符：题目 s 为字符串，不涉及负数；若含非字母字符，集合精确匹配仍成立。",
+    "代码实现": "```python\ndef word_break(s: str, word_dict: list) -&gt; bool:\n    word_set = set(word_dict)\n    n = len(s)\n    dp = [False] * (n + 1)\n    dp[0] = True\n    for i in range(1, n + 1):\n        for j in range(i):\n            if dp[j] and s[j:i] in word_set:\n                dp[i] = True\n                break\n    return dp[n]\n```",
+    "自测说明": "我通过构造对抗性测试用例验证实现：\n- 公开用例：`('leetcode', ['leet','code'])` -&gt; True；`('applepenapple', ['apple','pen'])` -&gt; True；`('catsandog', ['cats','dog','sand','and','cat'])` -&gt; False，均符合预期。\n- 边界用例：`('a', [])` -&gt; False（空字典）；`('a', ['a'])` -&gt; True（单元素整词）；`('abcd', ['a','b','c','d','ab','cd'])` -&gt; True（多段拆分）；`('abcd', ['abc'])` -&gt; False（无法拆）；`('aaaa', ['a','aa','aaa'])` -&gt; True（重复字符多解）。\n- 覆盖说明：上述测试覆盖了空字典、单元素、整词、无法拆、重复字符、多段拆分等边界，未发现逻辑错误。未使用臆造的第三方测试结果，仅基于手动构造与题目示例验证。"
+  },
+  "code": "def word_break(s: str, word_dict: list) -&gt; bool:\n    word_set = set(word_dict)\n    n = len(s)\n    dp = [False] * (n + 1)\n    dp[0] = True\n    for i in range(1, n + 1):\n        for j in range(i):\n            if dp[j] and s[j:i] in word_set:\n                dp[i] = True\n                break\n    return dp[n]",
+  "rule_findings": [],
+  "checker_report": {
+    "process_ok": true,
+    "code_ok": true,
+    "pseudo_correct": false,
+    "public": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [],
+    "forensics": [],
+    "signals": {
+      "problem_id": "单词拆分",
+      "entry_point": "word_break",
+      "max_loop_depth": 2,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "n2",
+      "expected_complexity": "O(n^2)",
+      "public": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 2,
+        "passed": 2,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": []
+    },
+    "code": "def word_break(s: str, word_dict: list) -&gt; bool:\n    word_set = set(word_dict)\n    n = len(s)\n    dp = [False] * (n + 1)\n    dp[0] = True\n    for i in range(1, n + 1):\n        for j in range(i):\n            if dp[j] and s[j:i] in word_set:\n                dp[i] = True\n                break\n    return dp[n]",
+    "llm_summary": {
+      "summary": "公开与对抗测试全部通过，函数级实现正确，无状态残留问题。",
+      "process_ok": true,
+      "code_ok": true,
+      "pseudo_correct": false,
+      "root_cause": "无失败用例，代码与逻辑均正确，不存在根因问题。",
+      "debug_hints": [
+        "无需调试，可补充边界用例（如空串、超长串）做鲁棒性验证"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开与对抗测试均通过，规则层未见高置信缺陷。"
+    ],
+    "sections": {
+      "解题思路": "本题要求判断字符串 `s` 是否可以被空格拆分成若干个字典 `word_dict` 中的单词。这是一个典型的动态规划（Dynamic Programming）问题。\n我们定义 `dp[i]` 表示字符串 `s` 的前 `i` 个字符（即 `s[0:i]`）是否可以被成功拆分。初始化 `dp[0] = True`（空串总是可以被拆分）。对于 `i` 从 `1` 到 `len(s)`，我们遍历所有 `j &lt; i`，如果 `dp[j]` 为 `True` 且 `s[j:i]` 在 `word_dict` 中，则 `dp[i] = True`。最终返回 `dp[len(s)]`。\n为了快速判断子串是否在字典中，我们将 `word_dict` 转换为哈希集合（HashSet），使得单次查询为 O(1)。该算法与题目约束（长度 ≤ 300）完全匹配，且不存在“看起来对但换数据就错”的隐患，因为 DP 状态转移覆盖了所有可能的切分点。",
+      "复杂度分析": "- 时间复杂度：O(n^2 * L)，其中 n = len(s) ≤ 300，L 为字典中单词的平均长度。外层循环 i 从 1 到 n，内层循环 j 从 0 到 i-1，共约 n^2/2 次子串截取与哈希查询；子串 `s[j:i]` 的构造与哈希计算耗时 O(L)（Python 中切片为 O(L)，集合查询为 O(L) 平均）。由于 n 固定上限 300，实际为 O(n^2 * L)，可视为 O(n^2) 级别（因 L 通常远小于 n 且为常数级）。\n- 空间复杂度：O(n + m * L)，其中 n 为 dp 数组长度，m 为字典单词数，m*L 为哈希集合存储开销。dp 数组占用 O(n)，集合占用 O(m*L)。",
+      "关键边界与处理策略": "- 空输入：题目约束 `1 &lt;= len(s)`，故 s 不为空；但 `word_dict` 可能为空列表，此时任何非空 s 均返回 False，DP 自然处理（无单词可匹配）。\n- 单元素：s 长度为 1 时，检查该单字符是否在 dict 中，DP 中 i=1 仅 j=0 一种情况，正确覆盖。\n- 重复元素：word_dict 中可能有重复单词，转为 set 后自动去重，不影响正确性。\n- 整词：s 本身完全等于 dict 中某个单词，DP 中 j=0 且 s[0:n] in set 会置 dp[n]=True，正确返回 True。\n- 无法拆：如 \"catsandog\" 无任何合法切分，DP 所有 dp[i] 保持 False，返回 False。\n- 极值：s 长度 300，DP 双重循环 45000 次，完全可接受；无数值溢出风险（仅布尔与字符串操作）。\n- 负数/特殊字符：题目 s 为字符串，不涉及负数；若含非字母字符，集合精确匹配仍成立。",
+      "代码实现": "```python\ndef word_break(s: str, word_dict: list) -&gt; bool:\n    word_set = set(word_dict)\n    n = len(s)\n    dp = [False] * (n + 1)\n    dp[0] = True\n    for i in range(1, n + 1):\n        for j in range(i):\n            if dp[j] and s[j:i] in word_set:\n                dp[i] = True\n                break\n    return dp[n]\n```",
+      "自测说明": "我通过构造对抗性测试用例验证实现：\n- 公开用例：`('leetcode', ['leet','code'])` -&gt; True；`('applepenapple', ['apple','pen'])` -&gt; True；`('catsandog', ['cats','dog','sand','and','cat'])` -&gt; False，均符合预期。\n- 边界用例：`('a', [])` -&gt; False（空字典）；`('a', ['a'])` -&gt; True（单元素整词）；`('abcd', ['a','b','c','d','ab','cd'])` -&gt; True（多段拆分）；`('abcd', ['abc'])` -&gt; False（无法拆）；`('aaaa', ['a','aa','aaa'])` -&gt; True（重复字符多解）。\n- 覆盖说明：上述测试覆盖了空字典、单元素、整词、无法拆、重复字符、多段拆分等边界，未发现逻辑错误。未使用臆造的第三方测试结果，仅基于手动构造与题目示例验证。"
+    }
+  },
+  "multi_agent": true,
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "解题思路描述的DP定义、转移和哈希集合优化与代码实现一致，且公开与对抗测试均通过，无具体证据表明存在题意误读或逻辑缺陷。",
+      "evidence": "步骤内容中定义dp[i]为s[0:i]是否可拆分、初始化dp[0]=True、双重循环j&lt;i检查dp[j]且s[j:i]在set中；代码完全对应；signals显示public 3/3 passed, adversarial 2/2 passed, claimed O(n^2)与expected一致。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "suspicious",
+      "confidence": 0.7,
+      "error_types": [
+        "复杂度分析错误"
+      ],
+      "reason": "步骤声称时间复杂度为 O(n^2 * L) 并说可视为 O(n^2) 级别，但题目期望复杂度明确为 O(n^2)，且实际代码中切片 s[j:i] 为 O(i-j) 即 O(L) 级别，严格来说不是 O(n^2) 而是 O(n^2 * L)，与期望复杂度表述不一致。",
+      "evidence": "步骤内容写'时间复杂度：O(n^2 * L)... 可视为 O(n^2) 级别（因 L 通常远小于 n 且为常数级）'，而题目期望复杂度为 O(n^2)，signals 中 claimed_complexity 为 'n2'、expected_complexity 为 'O(n^2)'；代码内层 s[j:i] 切片长度随 j,i 变化，非严格 O(n^2)。",
+      "llm_verdict": "suspicious",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "该步骤对空输入、单元素、重复、整词、无法拆、极值、特殊字符等边界逐一说明，且与给出的 O(n^2) DP 实现一致，公开与对抗测试均通过，无具体缺陷依据。",
+      "evidence": "步骤内容中'word_dict 可能为空列表，此时任何非空 s 均返回 False，DP 自然处理'对应代码 word_set=set([]) 后 s[j:i] in 空集恒 False；'s 长度 300，DP 双重循环 45000 次'对应 n=300 时 i,j 两重循环约 n*(n+1)/2=45150 次；signals 显示 adversarial all_passed=true 且 rule_findings 为空。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "代码实现使用标准动态规划，双重循环枚举分割点，与题目期望的 O(n^2) 复杂度一致，公开与对抗测试均全部通过，无静态分析告警。",
+      "evidence": "signals 显示 public 3/3 passed、adversarial 2/2 passed、claimed_complexity 'n2' 与 expected 'O(n^2)' 匹配、max_loop_depth=2 对应双重循环、rule_findings 为空；代码逻辑 dp[i]=any(dp[j] and s[j:i] in word_set) 正确覆盖所有拆分可能。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "suspicious",
+      "confidence": 0.6,
+      "error_types": [
+        "测试覆盖不足导致的伪正确"
+      ],
+      "reason": "自测说明声称覆盖了空字典、单元素等边界，但未提及空字符串 s='' 这一关键边界，且对抗测试仅2个通过，覆盖说明可能不充分。",
+      "evidence": "步骤内容中边界用例列举了 ('a', []) 等，但未包含 s='' 的情况；signals 显示 adversarial total=2 passed=2，测试量偏少。",
+      "llm_verdict": "suspicious",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    }
+  ],
+  "elapsed_sec": 55.57,
+  "kind": "function",
+  "thinking": "disabled",
+  "effort": "",
+  "model": "hy4-preview",
+  "solution_source": "模型生成",
+  "code_only": false,
+  "reasoning": "",
+  "wall_sec": 55.57,
+  "mode": "algorithm"
+}</pre></details>
+    <div class="meta">来源：模型生成 · hy3/hy4-preview · 思考 关 · 服务端 55.57s</div></div></div>
+  </section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+let mode = 'algorithm';
+let timer = null;
+
+const TEXT = {
+  algorithm: {
+    desc: '题目描述',
+    entry: '入口函数名',
+    public: '公开测试用例',
+    adv: '对抗测试用例 <span class="hint">选填 —— 用来暴露"公开测过了但逻辑其实错"</span>',
+  },
+  code: {
+    desc: '需求描述',
+    entry: '入口函数名',
+    public: '测试用例',
+    adv: '边界 / 异常用例 <span class="hint">选填 —— 用来暴露"常规测过了但逻辑其实错"</span>',
+  },
+  class: {
+    desc: '需求描述（说清类的职责、各方法与状态迁移规则）',
+    entry: '默认方法名',
+    public: '测试用例 <span class="hint">同一实例上按序调用；可写 "method" 指定方法、"reset": true 重建实例</span>',
+    adv: '边界 / 状态用例 <span class="hint">选填 —— 专门试探乱序调用、非法迁移、状态未复位</span>',
+  },
+};
+
+const DEMO = {
+  algorithm: {
+    title: '字符串相加',
+    description: '给定两个非负整数字符串 num1 和 num2，返回它们和的字符串形式。\n要求：不能把整个字符串转成整数来计算。',
+    entry_point: 'add_strings',
+    complexity: 'O(n)',
+    signature: 'def add_strings(num1: str, num2: str) -> str:',
+    constraints: '1 <= len(num1), len(num2) <= 10^4；只含数字 0-9；不能有前导零（除 "0" 本身）',
+    public_tests: '[{"args": ["11","123"], "expected": "134"},\n {"args": ["0","0"], "expected": "0"}]',
+    adversarial_tests: '[{"args": ["9","1"], "expected": "10"},\n {"args": ["999","1"], "expected": "1000"},\n {"args": ["1","9"], "expected": "10"}]',
+    candidate: '',
+  },
+  code: {
+    title: '合并区间',
+    description: '实现 merge_intervals(intervals)，把有重叠的区间合并。\n输入是区间列表，每个区间为 [start, end]；返回按起点升序排列的合并后区间列表。',
+    entry_point: 'merge_intervals',
+    complexity: '',
+    signature: 'def merge_intervals(intervals: list[list[int]]) -> list[list[int]]:',
+    constraints: '区间可能为空列表；端点可为负数；相邻相接的区间（[1,4] 与 [4,5]）也应合并',
+    public_tests: '[{"args": [[[1,3],[2,6],[8,10],[15,18]]], "expected": [[1,6],[8,10],[15,18]]},\n {"args": [[[1,4],[4,5]]], "expected": [[1,5]]}]',
+    adversarial_tests: '[{"args": [[]], "expected": []},\n {"args": [[[1,4],[2,3]]], "expected": [[1,4]]},\n {"args": [[[-5,-1],[-3,2]]], "expected": [[-5,2]]}]',
+    candidate: '',
+    class_name: '',
+    init_args: '',
+    init_kwargs: '',
+  },
+  class: {
+    title: '固定窗口限流器',
+    description: '实现类 RateLimiter(limit, window_sec)。方法 allow(key, now) -> bool：\n'
+      + '在窗口 (now-window_sec, now] 内，同一 key 最多放行 limit 次，放行时记一次请求；超出返回 False。',
+    entry_point: 'allow',
+    complexity: '',
+    signature: 'class RateLimiter:\n    def __init__(self, limit: int, window_sec: float): ...\n    def allow(self, key: str, now: float) -> bool: ...',
+    constraints: '用例在同一实例上顺序执行；窗口是滑动的，(now-window_sec, now] 左开右闭；不同 key 各自计数',
+    class_name: 'RateLimiter',
+    init_args: '[2, 10.0]',
+    init_kwargs: '',
+    public_tests: '[{"method": "allow", "args": ["u1", 1.0], "expected": true},\n'
+      + ' {"method": "allow", "args": ["u1", 2.0], "expected": true},\n'
+      + ' {"method": "allow", "args": ["u1", 3.0], "expected": false},\n'
+      + ' {"method": "allow", "args": ["u2", 3.0], "expected": true}]',
+    adversarial_tests: '[{"reset": true, "method": "allow", "args": ["a", 0.0], "expected": true},\n'
+      + ' {"method": "allow", "args": ["a", 0.0], "expected": true},\n'
+      + ' {"method": "allow", "args": ["a", 0.0], "expected": false},\n'
+      + ' {"method": "allow", "args": ["a", 10.1], "expected": true}]',
+    candidate: '',
+  },
+};
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+const STATUS = {
+  ok: ['ok','通过'], wrong_answer: ['bad','答案错'], timeout: ['warn','超时'],
+  runtime_error: ['bad','运行错'], missing_entry: ['bad','找不到入口'],
+  import_error: ['bad','导入失败'], not_run: ['mute','未执行'], unserializable: ['warn','不可序列化'],
+};
+const VERDICT = {valid: ['ok','成立'], suspicious: ['warn','可疑'], flawed: ['bad','不成立']};
+
+/* ---------- 模式切换 ---------- */
+function syncTabs() {
+  document.querySelectorAll('.tabs button').forEach(b =>
+    b.classList.toggle('on', b.dataset.mode === mode));
+}
+
+function applyModeUI() {
+  const t = TEXT[mode] || TEXT.code;
+  $('lbl-desc').textContent = t.desc;
+  $('lbl-public').innerHTML = t.public;
+  $('lbl-adv').innerHTML = t.adv;
+  $('lbl-entry').textContent = t.entry;
+  const isClass = mode === 'class';
+  $('row-class').style.display = isClass ? '' : 'none';
+  $('row-class-kw').style.display = isClass ? '' : 'none';
+  $('entry_point').placeholder = isClass ? 'allow' : 'two_sum';
+}
+
+document.querySelectorAll('.tabs button').forEach(btn => {
+  btn.onclick = () => {
+    mode = btn.dataset.mode;
+    syncTabs();
+    applyModeUI();
+  };
+});
+
+const DEMO_KEYS = ['title','description','entry_point','complexity','signature',
+  'constraints','public_tests','adversarial_tests','candidate',
+  'class_name','init_args','init_kwargs'];
+
+$('demo').onclick = () => {
+  const d = DEMO[mode] || {};
+  for (const k of DEMO_KEYS) $(k).value = d[k] ?? '';
+};
+
+applyModeUI();
+
+/* ---------- 启动检查 + 模型清单 ---------- */
+let CATALOG = [];
+const specOf = id => CATALOG.find(m => m.id === (id || '').trim()) || null;
+
+function refreshEffort() {
+  const id = $('model').value.trim();
+  const spec = specOf(id);
+  const canDisable = !spec || spec.can_disable !== false;
+  const allowed = (spec && spec.efforts && spec.efforts.length) ? spec.efforts : null;
+
+  for (const opt of $('effort').options) {
+    if (opt.value === 'auto') { opt.disabled = false; continue; }
+    if (opt.value === 'off') opt.disabled = !canDisable;
+    else opt.disabled = !!allowed && !allowed.includes(opt.value);
+    if (opt.value === 'off' && !canDisable) {
+      opt.textContent = '关闭（该模型不支持）';
+    } else if (opt.value === 'off') {
+      opt.textContent = '关闭（最快）';
+    }
+  }
+  if ($('effort').selectedOptions[0]?.disabled) $('effort').value = 'auto';
+
+  const bits = [];
+  if (spec) {
+    bits.push(spec.label);
+    bits.push(`默认${spec.thinking_default === 'disabled' ? '不思考' : '思考'}`
+      + (spec.effort_default ? ` / ${spec.effort_default}` : ''));
+    if (!canDisable) bits.push('不支持关闭思考');
+    if (allowed) bits.push(`档位：${allowed.join(' / ')}`);
+  } else if (id) {
+    bits.push('自定义模型：参数按最宽松下发');
+  }
+  $('model-note').textContent = bits.join(' · ');
+}
+
+fetch('/api/config').then(r => r.json()).then(c => {
+  CATALOG = c.models || [];
+  $('model-list').innerHTML = CATALOG
+    .map(m => `<option value="${esc(m.id)}">${esc(m.label)}${m.note ? ' — ' + esc(m.note) : ''}</option>`)
+    .join('');
+  $('model').value = c.model || 'hy3';
+  // 兼容 .env 里的旧写法（disabled/enabled）
+  const legacy = {disabled: 'off', enabled: 'auto'};
+  const dflt = legacy[c.thinking_default] || c.thinking_default;
+  if (['auto', 'off', 'low', 'medium', 'high'].includes(dflt)) $('effort').value = dflt;
+  refreshEffort();
+
+  $('cfgline').textContent = `${c.model} · Key ${c.has_key ? '已配置' : '缺失'}`;
+  if (!c.has_key) {
+    $('run').disabled = true;
+    $('result').innerHTML = '<div class="err">未检测到 API Key。请在仓库根目录的 <code>.env</code> 里写入 <code>HY3_API_KEY=...</code> 后重启服务。</div>';
+  }
+}).catch(() => { $('cfgline').textContent = '配置读取失败'; });
+
+$('model').addEventListener('input', refreshEffort);
+$('model').addEventListener('change', refreshEffort);
+
+/* ---------- 骨架 ---------- */
+function skeleton() {
+  return `
+    <div id="live">
+      <div style="display:flex;align-items:center;gap:9px">
+        <span class="spin"></span>
+        <span style="font-size:13px">正在评估</span>
+        <span class="pill mute" id="now">准备</span>
+        <span style="flex:1"></span>
+        <span class="meta" style="margin:0" id="elapsed">0s</span>
+      </div>
+      <div class="stages" id="stages">
+        <span class="stg">生成解答</span><span class="stg">执行 + 规则</span>
+        <span class="stg">分步审查</span><span class="stg">汇总</span>
+      </div>
+    </div>
+    <details id="wf-box" open>
+      <summary>Agent 工作流（Checker 执行取证 · Critic 逐段裁决）</summary>
+      <div class="wf">
+        <div class="wf-col">
+          <div class="wf-h"><span class="role">Agent 1</span><span id="wf-checker-h">Checker</span></div>
+          <div class="wf-body" id="wf-checker"><div class="wf-empty">等待中…</div></div>
+        </div>
+        <div class="wf-col">
+          <div class="wf-h"><span class="role">Agent 2</span><span id="wf-critic-h">Critic</span></div>
+          <div class="wf-body" id="wf-critic"><div class="wf-empty">等待中…</div></div>
+        </div>
+      </div>
+    </details>
+    <div id="summary-out"></div>
+    <details id="think-box" open style="display:none">
+      <summary>思考过程（深度思考已开启）</summary><pre class="dump" id="think"></pre>
+    </details>
+    <details open><summary>实时生成</summary><pre class="dump" id="stream"></pre></details>
+    <div id="tests-out"></div>
+    <div id="sections-out"></div>
+    <div id="tail-out"></div>`;
+}
+
+/* ---------- 题库选择器（懒加载） ---------- */
+const PK = {problems: [], detail: null, catReady: false};
+
+async function loadProblemIndex() {
+  const cat = $('pk-cat').value, q = $('pk-q').value.trim();
+  $('pk-meta').textContent = '加载索引…';
+  try {
+    const d = await (await fetch('/api/problems?difficulty='
+      + encodeURIComponent(cat) + '&q=' + encodeURIComponent(q))).json();
+    PK.problems = d.problems || [];
+    $('pk-list').innerHTML = PK.problems.map(p =>
+      `<option value="${esc(p.id)}">${esc(p.difficulty)} · ${esc(p.title)}`
+      + `（公开${p.n_public} / 对抗${p.n_adv}${p.has_mock ? ' · 有内置解答' : ''}）</option>`
+    ).join('');
+
+    if (!PK.catReady && d.counts) {   // 难度下拉只在第一次用真实计数填充
+      $('pk-cat').innerHTML = '<option value="">全部难度</option>'
+        + Object.entries(d.counts).map(([k, v]) =>
+            `<option value="${esc(k)}">${esc(k)}（${v}）</option>`).join('');
+      PK.catReady = true;
+    }
+    const broken = (d.broken || []).length
+      ? `　⚠ ${d.broken.length} 个文件解析失败：${esc(d.broken[0])}` : '';
+    $('pk-meta').textContent = `共 ${d.total} 题` + broken;
+    PK.detail = null;
+    $('pk-prev').style.display = 'none';
+    if (PK.problems.length) loadProblemDetail();
+  } catch (e) {
+    $('pk-meta').textContent = '题库加载失败：' + e.message;
+  }
+}
+
+async function loadProblemDetail() {
+  const id = $('pk-list').value;
+  if (!id) return;
+  $('pk-meta').textContent = '读取题面…';
+  try {
+    const d = await (await fetch('/api/problem?id=' + encodeURIComponent(id))).json();
+    if (d.error) throw new Error(d.error);
+    PK.detail = d;
+    const p = d.problem || {};
+    const gt = d.ground_truth || {};
+    const edge = (p.required_edge_cases || []).join('、');
+    $('pk-prev').style.display = '';
+    $('pk-prev').innerHTML =
+      `<b>${esc(p.title || id)}</b>　${esc(p.difficulty || '')}　<code>${esc(p.entry_point || '')}</code>\n`
+      + esc((p.description || '').slice(0, 260)) + '\n'
+      + `　复杂度要求：${esc((p.expected_complexity || {}).time || '未指定')}`
+      + `　内置解答：${d.candidate_md ? '有' : '无'}`
+      + (edge ? `\n　必须覆盖的边界：${esc(edge)}` : '')
+      + (gt && gt.note ? `\n　标注：${esc(gt.note)}` : '');
+    $('pk-meta').textContent = `已载入 ${id} 的题面`;
+  } catch (e) {
+    $('pk-meta').textContent = '题面读取失败：' + e.message;
+  }
+}
+
+function applyProblem(withMock) {
+  const d = PK.detail;
+  if (!d) { $('pk-meta').textContent = '先选一道题'; return; }
+  const p = d.problem || {};
+  const j = v => JSON.stringify(v || [], null, 1);
+  const edge = p.required_edge_cases || [];
+
+  // 题库里的类级题自动切到「类级」模式，省得手填类名与构造参数
+  const isClass = (p.kind || 'function').toLowerCase() === 'class';
+  if (isClass) { mode = 'class'; syncTabs(); }
+
+  $('title').value = p.title || '';
+  $('description').value = p.description || '';
+  $('entry_point').value = p.entry_point || '';
+  $('signature').value = p.function_signature || '';
+  $('complexity').value = (p.expected_complexity || {}).time || '';
+  $('constraints').value = [p.constraints || '',
+    edge.length ? '必须覆盖的边界：' + edge.join('、') : ''].filter(Boolean).join('\n');
+  $('public_tests').value = j(p.public_tests);
+  $('adversarial_tests').value = j(p.adversarial_tests);
+  $('candidate').value = withMock ? (d.candidate_md || '') : '';
+  $('code_only').checked = false;
+  $('class_name').value = p.class_name || '';
+  $('init_args').value = (p.init_args && p.init_args.length) ? JSON.stringify(p.init_args) : '';
+  $('init_kwargs').value = (p.init_kwargs && Object.keys(p.init_kwargs).length)
+    ? JSON.stringify(p.init_kwargs) : '';
+  applyModeUI();
+
+  if (withMock && !d.candidate_md) $('pk-meta').textContent = '这道题没有内置解答，已只载入题面';
+  else $('pk-meta').textContent = `已填入：${p.title || p.id}${withMock ? '（含内置解答）' : ''}`;
+}
+
+$('picker').addEventListener('toggle', () => {
+  if ($('picker').open && !PK.problems.length) loadProblemIndex();
+});
+$('pk-cat').addEventListener('change', loadProblemIndex);
+$('pk-q').addEventListener('keydown', e => { if (e.key === 'Enter') loadProblemIndex(); });
+$('pk-refresh').addEventListener('click', loadProblemIndex);
+$('pk-list').addEventListener('change', loadProblemDetail);
+$('pk-load').addEventListener('click', () => applyProblem(false));
+$('pk-load-mock').addEventListener('click', () => applyProblem(true));
+
+/* ---------- 运行 ---------- */
+$('run').onclick = async () => {
+  const btn = $('run');
+  btn.disabled = true;
+  const t0 = Date.now();
+  const state = {raw: '', reasoning: '', got: false};
+  WF = {};
+  WFLOG = [];
+  WFIDX = new Map();
+  LAST = null;
+  $('export').disabled = true;
+
+  $('result').innerHTML = skeleton();
+  timer = setInterval(() => {
+    const el = $('elapsed');
+    if (el) el.textContent = ((Date.now() - t0) / 1000).toFixed(0) + 's';
+  }, 500);
+
+  const body = {
+    mode,
+    model: $('model').value.trim(),
+    effort: $('effort').value,
+    thinking: $('effort').value === 'off' ? 'disabled' : 'enabled',
+    title: $('title').value,
+    description: $('description').value,
+    entry_point: $('entry_point').value,
+    class_name: $('class_name').value,
+    init_args: $('init_args').value,
+    init_kwargs: $('init_kwargs').value,
+    function_signature: $('signature').value,
+    constraints: $('constraints').value,
+    expected_complexity: $('complexity').value ? {time: $('complexity').value} : {},
+    public_tests: $('public_tests').value,
+    adversarial_tests: $('adversarial_tests').value,
+    candidate: $('candidate').value,
+    code_only: $('code_only').checked,
+  };
+
+  try {
+    const resp = await fetch('/api/evaluate/stream', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body),
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}：${(await resp.text()).slice(0, 300)}`);
+
+    const reader = resp.body.getReader();
+    const dec = new TextDecoder();
+    let buf = '';
+    while (true) {
+      const {done, value} = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, {stream: true});
+      let i;
+      while ((i = buf.indexOf('\n\n')) >= 0) {
+        handleFrame(buf.slice(0, i), state);
+        buf = buf.slice(i + 2);
+      }
+    }
+    if (!state.got) throw new Error('流提前结束，未收到最终结果');
+  } catch (e) {
+    $('tail-out').innerHTML = `<div class="err"><b>评估失败</b><br>${esc(e.message)}</div>`;
+  } finally {
+    clearInterval(timer);
+    btn.disabled = false;
+    const live = $('live');
+    if (live) live.style.display = 'none';
+    const caret = document.querySelector('.caret');
+    if (caret) caret.remove();
+  }
+};
+
+function handleFrame(frame, state) {
+  let event = 'message', data = '';
+  for (const line of frame.split('\n')) {
+    if (line.startsWith('event:')) event = line.slice(6).trim();
+    else if (line.startsWith('data:')) data += line.slice(5).trim();
+  }
+  if (!data) return;
+  let obj;
+  try { obj = JSON.parse(data); } catch { obj = {raw: data}; }
+
+  switch (event) {
+    case 'agent':
+      renderAgentStep(obj);
+      break;
+    case 'stage': {
+      const stages = $('stages');
+      if (stages) {
+        [...stages.children].forEach((el, i) => {
+          el.classList.toggle('on', i === obj.index - 1);
+          if (i < obj.index - 1) el.classList.add('done');
+        });
+      }
+      const now = $('now');
+      if (now) now.textContent = obj.name;
+      break;
+    }
+    case 'reasoning_delta': {
+      state.reasoning += obj.text;
+      const box = $('think-box'), pre = $('think');
+      if (box) box.style.display = '';   // 有思考内容才显示这个区块
+      if (pre) { pre.textContent = state.reasoning; pre.scrollTop = pre.scrollHeight; }
+      break;
+    }
+    case 'delta': {
+      state.raw += obj.text;
+      const pre = $('stream');
+      if (pre) { pre.textContent = state.raw; pre.scrollTop = pre.scrollHeight; }
+      break;
+    }
+    case 'solution':
+      state.raw = obj.text;
+      break;
+    case 'tests':
+      $('tests-out').innerHTML = testsBlock(obj);
+      break;
+    case 'section':
+      $('sections-out').insertAdjacentHTML('beforeend', sectionCard(obj));
+      break;
+    case 'done':
+      state.got = true;
+      finish(obj, state);
+      break;
+    case 'error':
+      $('tail-out').innerHTML = `<div class="err"><b>服务端出错</b><br>${esc(obj.error || '')}</div>`;
+      break;
+  }
+}
+
+/* ---------- Agent 工作流 ---------- */
+let WF = {};
+
+// 有序的流程记录：同一步只保留最新状态，但保持首次出现的顺序
+let WFLOG = [];
+let WFIDX = new Map();
+
+function logAgentStep(d) {
+  const key = d.agent + '|' + d.step;
+  const rec = {
+    agent: d.agent, label: d.agent_label, step: d.step, title: d.title,
+    status: d.status, sec: d.sec,
+    input: d.input || {}, output: d.output || {}, note: d.note || '',
+  };
+  if (WFIDX.has(key)) WFLOG[WFIDX.get(key)] = rec;
+  else { WFIDX.set(key, WFLOG.length); WFLOG.push(rec); }
+}
+
+function ioBlock(obj) {
+  return Object.entries(obj || {})
+    .filter(([, v]) => v !== null && v !== undefined && v !== '')
+    .map(([k, v]) => {
+      const s = typeof v === 'string' ? v : JSON.stringify(v, null, 2);
+      const long = s.length > 90 || ['prompt', 'system_prompt', 'llm_raw'].includes(k);
+      if (long) {
+        return `<div class="io-row"><span class="io-k">${esc(k)}</span><span style="flex:1">
+          <details><summary>展开（${s.length} 字符）</summary><pre class="dump">${esc(s)}</pre></details>
+        </span></div>`;
+      }
+      return `<div class="io-row"><span class="io-k">${esc(k)}</span><span class="io-v">${esc(s)}</span></div>`;
+    }).join('');
+}
+
+function renderAgentStep(d) {
+  logAgentStep(d);
+  const isChecker = d.agent === 'checker';
+  const col = isChecker ? $('wf-checker') : $('wf-critic');
+  if (!col) return;
+  if (d.agent_label) $(isChecker ? 'wf-checker-h' : 'wf-critic-h').textContent = d.agent_label;
+
+  const key = d.agent + '|' + d.step;
+  let el = WF[key];
+  if (!el) {
+    const empty = col.querySelector('.wf-empty');
+    if (empty) empty.remove();
+    el = document.createElement('div');
+    el.className = 'wf-step';
+    el.innerHTML = `<div class="wf-top">
+        <span class="wf-name">${esc(d.title || d.step)}</span>
+        <span class="wf-sec"></span>
+      </div><div class="wf-io"></div>`;
+    col.appendChild(el);
+    WF[key] = el;
+  }
+  el.className = 'wf-step ' + (d.status || '');
+  el.querySelector('.wf-sec').textContent =
+    d.status === 'running' ? '进行中…' : (d.sec ? d.sec + 's' : '');
+  el.querySelector('.wf-io').innerHTML =
+    (d.input && Object.keys(d.input).length ? `<div class="io"><b>输入</b>${ioBlock(d.input)}</div>` : '')
+    + (d.output && Object.keys(d.output).length ? `<div class="io"><b>输出</b>${ioBlock(d.output)}</div>` : '')
+    + (d.note ? `<div class="io">${esc(d.note)}</div>` : '');
+}
+
+/* ---------- 渲染 ---------- */
+let LAST = null;
+
+function finish(d, state) {
+  LAST = {data: d, raw: state.raw || '', reasoning: state.reasoning || '',
+          log: WFLOG.slice()};
+  const btn = $('export');
+  if (btn) btn.disabled = false;
+  const yn = b => b ? '是' : '否';
+  const cr = d.checker_report || {};
+  const sum = cr.llm_summary || {};
+
+  let html = '<h2>总体结论</h2><div class="verdicts">'
+    + vcard('结果正确', yn(d.result_correct), d.result_correct, '公开测试是否全过')
+    + vcard('真实正确', yn(d.truly_correct), d.truly_correct, '公开 + 对抗测试均通过')
+    + vcard(d.code_only ? '实现成立' : '过程成立', yn(d.process_valid), d.process_valid,
+            d.code_only ? '仅审查了「代码实现」段' : '五个步骤是否都成立')
+    + vcard('伪正确', yn(d.false_positive_solution), !d.false_positive_solution,
+            '测试过了但逻辑其实有问题')
+    + '</div>';
+
+  if (d.false_positive_solution)
+    html += `<div class="banner bad"><b>判定为伪正确样本</b> —— 测试通过不代表实现成立：${esc(d.first_error_section || '过程存在缺陷')}${d.error_types?.length ? ' · ' + esc(d.error_types.join('、')) : ''}。</div>`;
+  else if (d.truly_correct && d.process_valid)
+    html += '<div class="banner ok">测试全过，且过程成立。</div>';
+  else if (!d.result_correct)
+    html += '<div class="banner bad">公开测试未通过，先把代码修对。</div>';
+  else if (!d.truly_correct)
+    html += '<div class="banner bad">公开测试过了，但对抗测试暴露了问题。</div>';
+
+  if (d.first_error_step)
+    html += `<div class="meta">首个不成立步骤：<code>${esc(d.first_error_step)}</code>（${esc(d.first_error_section)}）</div>`;
+
+  if (sum.summary || cr.debug_hints?.length) {
+    html += '<h2 style="margin-top:16px">Checker 总评</h2>';
+    if (sum.summary) html += `<div class="why">${esc(sum.summary)}</div>`;
+    if (sum.root_cause) html += `<div class="meta">根因：${esc(sum.root_cause)}</div>`;
+    if (cr.debug_hints?.length)
+      html += `<ul class="hints">${cr.debug_hints.map(h => `<li>${esc(h)}</li>`).join('')}</ul>`;
+  }
+  $('summary-out').innerHTML = html;
+
+  $('tail-out').innerHTML = `
+    <details><summary>提取到的代码</summary><pre class="dump">${esc(d.code || '（未提取到代码）')}</pre></details>
+    <details><summary>完整解答原文</summary><pre class="dump">${esc(d.raw_solution || '')}</pre></details>
+    <details><summary>原始 JSON</summary><pre class="dump">${esc(JSON.stringify(d, null, 2))}</pre></details>
+    <div class="meta">来源：${esc(d.solution_source)} · ${esc(d.backend)}/${esc(d.model || '')} · 思考 ${esc(
+      d.thinking === 'disabled' ? '关' : (d.effort ? d.effort : '开（默认深度）'))} · 服务端 ${d.elapsed_sec}s</div>`;
+}
+
+function vcard(k, val, good, tip) {
+  return `<div class="v ${good ? 'ok' : 'bad'}"><div class="k">${esc(k)}</div>
+    <div class="val">${esc(val)}</div><div class="k" style="margin-top:2px">${esc(tip)}</div></div>`;
+}
+
+function testsBlock(d) {
+  const isClass = d.kind === 'class';
+  const badge = isClass
+    ? `<span class="pill mute">类级 · ${esc(d.class_name || '')}</span>`
+    : `<span class="pill mute">函数级</span>`;
+  const entry = d.entry
+    ? `<span class="meta" style="margin:0;margin-left:8px">入口 <code>${esc(d.entry)}</code></span>` : '';
+  return `<h2 style="margin-top:16px">执行结果 ${badge}${entry}</h2>`
+    + (isClass ? '<div class="meta">用例在同一实例上按序执行；标记 <code>reset</code> 的用例会先重建实例。</div>' : '')
+    + suiteTable('公开测试', d.public) + suiteTable('对抗测试', d.adversarial);
+}
+
+function suiteTable(name, s) {
+  if (!s || !s.total) return '';
+  const withMethod = (s.failure_samples || []).some(r => r.method);
+  const rows = (s.failure_samples || []).map(r => {
+    const [cls, label] = STATUS[r.status] || ['mute', r.status];
+    return `<tr>${withMethod ? `<td class="mono">${esc(r.method || '')}</td>` : ''}<td>#${r.index}</td>
+      <td class="mono">${esc(JSON.stringify(r.args))}</td>
+      <td class="mono">${esc(JSON.stringify(r.expected))}</td>
+      <td class="mono">${esc(JSON.stringify(r.actual))}</td>
+      <td><span class="pill ${cls}">${label}</span></td></tr>`;
+  }).join('');
+  const head = `<tr>${withMethod ? '<th>方法</th>' : ''}<th>#</th><th>入参</th><th>期望</th><th>实际</th><th>状态</th></tr>`;
+  return `<div style="margin-top:10px"><span class="pill ${s.all_passed ? 'ok' : 'bad'}">${esc(name)} ${s.passed}/${s.total}</span></div>`
+    + (s.all_passed ? '' :
+      `<table><thead>${head}</thead><tbody>${rows}</tbody></table>`);
+}
+
+function sectionCard(s) {
+  const [cls, label] = VERDICT[s.verdict] || ['mute', s.verdict];
+  const tags = (s.error_types || []).filter(Boolean);
+  return `<div class="sec ${s.verdict}">
+    <div class="top">
+      <span class="name">${esc(s.section)}</span>
+      <span class="pill ${cls}">${label}</span>
+      ${s.signal_agreement && s.signal_agreement !== 'n/a' ? `<span class="pill mute">${esc(s.signal_agreement)}</span>` : ''}
+      <span class="conf">置信度 ${s.confidence}</span>
+    </div>
+    <div class="bar"><i style="width:${Math.round((s.confidence || 0) * 100)}%"></i></div>
+    <div class="why">${esc(s.reason || '—')}</div>
+    ${s.evidence ? `<div class="ev">${esc(s.evidence)}</div>` : ''}
+    ${tags.length ? `<div class="tags">${tags.map(t => `<span class="pill bad">${esc(t)}</span>`).join('')}</div>` : ''}
+  </div>`;
+}
+/* ---------- 流程记录导出 ---------- */
+
+// 表格单元格：换行压平，竖线转义，避免破表
+const mdCell = v => String(v ?? '').replace(/\r?\n+/g, ' ').split('|').join('&#124;');
+const mdFence = (s, lang) => '```' + (lang || '') + '\n' + String(s ?? '') + '\n```';
+const mdJSON = v => '`' + mdCell(JSON.stringify(v)) + '`';
+
+function mdIO(title, obj) {
+  const rows = Object.entries(obj || {})
+    .filter(([, v]) => v !== null && v !== undefined && v !== '');
+  if (!rows.length) return '';
+  const out = ['**' + title + '**', ''];
+  for (const [k, v] of rows) {
+    const s = typeof v === 'string' ? v : JSON.stringify(v, null, 2);
+    if (s.includes('\n') || s.length > 120) out.push('- ' + k + '：', '', mdFence(s), '');
+    else out.push('- ' + k + '：' + s);
+  }
+  out.push('');
+  return out.join('\n');
+}
+
+function mdSuite(name, s) {
+  if (!s || !s.total) return '### ' + name + '\n\n_（无用例）_\n';
+  const out = ['### ' + name + '：' + s.passed + '/' + s.total
+               + (s.all_passed ? '（全过）' : ''), ''];
+  const fails = s.failure_samples || [];
+  if (fails.length) {
+    const m = fails.some(r => r.method);
+    out.push('| ' + (m ? '方法 | ' : '') + '# | 入参 | 期望 | 实际 | 状态 |');
+    out.push('| ' + (m ? '--- | ' : '') + '--- | --- | --- | --- | --- |');
+    for (const r of fails) {
+      out.push('| ' + (m ? mdCell(r.method || '') + ' | ' : '')
+        + r.index + ' | ' + mdJSON(r.args) + ' | ' + mdJSON(r.expected)
+        + ' | ' + mdJSON(r.actual) + ' | ' + r.status + ' |');
+    }
+    out.push('');
+  }
+  return out.join('\n');
+}
+
+function traceMarkdown(snap) {
+  const d = snap.data || {};
+  const cr = d.checker_report || {};
+  const sum = cr.llm_summary || {};
+  const yn = b => (b === true ? '是' : (b === false ? '否' : '—'));
+  const L = [];
+
+  L.push('# 流程记录 · ' + (d.title || d.problem_id || '未命名'));
+  L.push('');
+  L.push('> 由「Hy3 过程评估与错误定位」工作台导出');
+  L.push('');
+
+  L.push('## 一、运行信息');
+  L.push('');
+  L.push('| 项 | 值 |');
+  L.push('| --- | --- |');
+  L.push('| 题目 ID | ' + mdJSON(d.problem_id || '—') + ' |');
+  L.push('| 标题 | ' + mdCell(d.title || '—') + ' |');
+  L.push('| 形态 | ' + (d.kind === 'class' ? '工程任务（类级）' : '函数级') + ' |');
+  L.push('| 难度 | ' + mdCell(d.difficulty || '—') + ' |');
+  L.push('| 模型 | ' + mdCell(d.model || '—') + ' |');
+  L.push('| 思考强度 | ' + (d.thinking === 'disabled' ? '关闭' : (d.effort || '默认')) + ' |');
+  L.push('| 解答来源 | ' + mdCell(d.solution_source || '—') + ' |');
+  L.push('| 审查范围 | ' + (d.code_only ? '仅「代码实现」段' : '完整五段') + ' |');
+  L.push('| 服务端耗时 | ' + (d.elapsed_sec ?? '—') + ' s |');
+  L.push('');
+
+  L.push('## 二、判定');
+  L.push('');
+  L.push('| 判定 | 结果 | 含义 |');
+  L.push('| --- | --- | --- |');
+  L.push('| 结果正确 | ' + yn(d.result_correct) + ' | 公开测试是否全过 |');
+  L.push('| 真实正确 | ' + yn(d.truly_correct) + ' | 公开 + 对抗测试均通过 |');
+  L.push('| 过程成立 | ' + yn(d.process_valid) + ' | 五个步骤是否都成立 |');
+  L.push('| 伪正确 | ' + yn(d.false_positive_solution) + ' | 测试过了但逻辑其实有问题 |');
+  L.push('');
+  if (d.first_error_step)
+    L.push('- 首个不成立步骤：`' + d.first_error_step + '`（' + (d.first_error_section || '—') + '）');
+  if (d.error_types && d.error_types.length)
+    L.push('- 错误类型：' + d.error_types.join('、'));
+  L.push('');
+
+  L.push('## 三、执行结果');
+  L.push('');
+  L.push(mdSuite('公开测试', cr.public || d.public));
+  L.push(mdSuite('对抗测试', cr.adversarial || d.adversarial));
+
+  L.push('## 四、Agent 工作流（按发生顺序）');
+  L.push('');
+  if (!snap.log.length) L.push('_（无记录）_', '');
+  snap.log.forEach((s, i) => {
+    L.push('### ' + (i + 1) + '. ' + (s.title || s.step)
+           + ' — ' + (s.label || s.agent) + (s.sec ? '（' + s.sec + 's）' : ''));
+    L.push('');
+    L.push('- 状态：' + (s.status || '—'));
+    L.push('');
+    const a = mdIO('输入', s.input), b = mdIO('输出', s.output);
+    if (a) L.push(a);
+    if (b) L.push(b);
+    if (s.note) L.push('> ' + s.note, '');
+  });
+
+  const sv = d.section_verdicts || [];
+  L.push('## 五、分步裁决');
+  L.push('');
+  if (!sv.length) L.push('_（无分步裁决）_', '');
+  sv.forEach(v => {
+    L.push('### ' + v.section + ' —— ' + v.verdict + '（置信度 ' + v.confidence + '）');
+    L.push('');
+    if (v.error_types && v.error_types.length) L.push('- 错误类型：' + v.error_types.join('、'));
+    L.push('- 依据：' + (v.reason || '—'));
+    if (v.evidence) L.push('- 证据：' + mdCell(v.evidence));
+    if (v.signal_agreement) L.push('- 信号一致性：' + v.signal_agreement);
+    L.push('');
+  });
+
+  L.push('## 六、Checker 总评');
+  L.push('');
+  L.push('- 总评：' + (sum.summary || '—'));
+  if (sum.root_cause) L.push('- 根因：' + sum.root_cause);
+  if (sum.pseudo_correct !== undefined) L.push('- 伪正确：' + yn(sum.pseudo_correct));
+  if (cr.debug_hints && cr.debug_hints.length) {
+    L.push('- 调试建议：');
+    cr.debug_hints.forEach(h => L.push('  - ' + h));
+  }
+  L.push('');
+
+  const fo = cr.forensics || [];
+  if (fo.length) {
+    L.push('## 七、失败用例源码级取证');
+    L.push('');
+    fo.forEach(f => {
+      L.push('- 用例 #' + f.case_index + (f.method ? ' · ' + f.method + '()' : '')
+             + '：`' + mdCell(JSON.stringify(f.args)) + '` 期望 `'
+             + mdCell(JSON.stringify(f.expected)) + '` 实际 `'
+             + mdCell(JSON.stringify(f.actual)) + '`');
+      if (f.summary) L.push('  - ' + mdCell(f.summary));
+    });
+    L.push('');
+  }
+
+  const rf = d.rule_findings || [];
+  if (rf.length) {
+    L.push('## 八、规则层发现');
+    L.push('');
+    rf.forEach(f => L.push('- [' + (f.error_type_label || f.error_type) + '] '
+                         + f.section + '（置信度 ' + f.confidence + '）：' + f.detail));
+    L.push('');
+  }
+
+  L.push('## 九、候选解答原文');
+  L.push('');
+  L.push(mdFence(snap.raw, 'markdown'));
+
+  L.push('## 十、提取到的代码');
+  L.push('');
+  L.push(mdFence(cr.code || d.code || '（未提取到代码）', 'python'));
+
+  if (snap.reasoning) {
+    L.push('## 十一、模型思考过程');
+    L.push('');
+    L.push(mdFence(snap.reasoning));
+  }
+
+  L.push('## 附录、原始 JSON');
+  L.push('');
+  L.push(mdFence(JSON.stringify(d, null, 2), 'json'));
+  return L.join('\n');
+}
+
+function downloadText(filename, text, mime) {
+  const blob = new Blob([text], {type: mime || 'text/markdown;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+$('export').onclick = () => {
+  if (!LAST) return;
+  const d = LAST.data || {};
+  const t = new Date();
+  const p = n => String(n).padStart(2, '0');
+  const stamp = '' + t.getFullYear() + p(t.getMonth() + 1) + p(t.getDate())
+    + '-' + p(t.getHours()) + p(t.getMinutes()) + p(t.getSeconds());
+  const base = String(d.title || d.problem_id || 'evaluation')
+    .replace(/[\\/:*?"<>|\s]+/g, '_').slice(0, 60);
+  downloadText(base + '-流程记录-' + stamp + '.md', traceMarkdown(LAST));
+};
+</script>
+
+
+</body></html>
