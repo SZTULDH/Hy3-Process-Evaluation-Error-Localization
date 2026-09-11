@@ -42,10 +42,11 @@ HY3_THINKING=disabled
 
 | 区域 | 说明 |
 |---|---|
-| 模式切换 | 「算法竞赛」/「代码任务」，只改提示侧重与字段文案，评估链路相同 |
+| 模式切换 | 「算法竞赛」/「代码任务」/「代码任务 · 类级」，只改提示侧重与字段文案，评估链路相同 |
 | **模型** | 24 个官方模型下拉可选，也可直接手填清单外的自定义模型名 |
 | **思考强度** | 默认 / 关闭 / 低 / 中 / 高，见第四节 |
-| 题面区 | 标题、描述、入口函数名、期望复杂度、函数签名、约束 |
+| 题面区 | 标题、描述、入口函数名（类级下为「默认方法名」）、期望复杂度、函数签名、约束 |
+| 类级专属字段 | 切到「类级」时出现：类名、构造实参（JSON 数组）、构造关键字实参（JSON 对象） |
 | 测试数据 | 公开测试（必填）、对抗测试（选填但强烈建议填） |
 | 候选解答 | 留空则由模型现生成；粘贴自己的解答则评估它 |
 | **Agent 工作流** | Checker 与 Critic 每一步的真实输入 / 输出，逐步实时展开 |
@@ -73,10 +74,44 @@ HY3_THINKING=disabled
 
 `args` 一定是数组（多参数按顺序放入）；写 `input` 也可以，会自动归一化。
 
+类级题的用例多两个可选字段（其余照旧）：
+
+```json
+[{"method": "allow", "args": ["u1", 1.0], "expected": true},
+ {"reset": true, "method": "allow", "args": ["a", 0.0], "expected": true},
+ {"method": "allow", "args": ["a", 10.1], "expected": true}]
+```
+
+| 字段 | 默认 | 说明 |
+|---|---|---|
+| `method` | 题面的「默认方法名」 | 这条用例调用哪个方法 |
+| `reset` | `false` | 该用例执行**前**重建实例，用于切断前置状态 |
+| `kwargs` | `{}` | 传给该方法的**关键字**实参 |
+
+**关键语义**：同一组用例默认**共用一个实例**、按顺序执行 —— 这正是状态机、限流器、
+缓存这类题目的考点。想让某条用例从干净状态开始，就给它加 `"reset": true`。
+
 **两个实用选项：**
 
 - **只评估代码实现**：粘贴的内容是纯代码时勾上，跳过思路/复杂度/边界的过程审查，只跑 1 次评审（快 5 倍）。适合"我就想知道这段逻辑对不对"。
 - **对抗测试**：这是识别伪正确的关键。公开测试过了但对抗没过 = 逻辑有问题。
+
+### 类级题目（kind=class）
+
+题目交付的是一个**类**而非函数。界面上的差异只有三处：
+
+1. 页签多一个「代码任务 · 类级」，切过去后出现类名 / 构造实参 / 构造关键字实参三个字段
+2. 从题库载入 `datasets/code/engineering/class/*.json` 时会**自动切到类级模式**并填好这些字段
+3. 执行结果区会标出 `类级 · RateLimiter` 与入口，失败表格多一列「方法」
+
+其余全部相同：一样走 Producer → Checker 真实执行 → 规则 → Critic 分步审查。
+
+**为什么单开一个模式**：类级题的"对错"高度依赖**跨调用的状态**。典型翻车是把每次调用
+都当成独立请求处理（限流器窗口不滑动、订单发货后仍能取消、LRU 退化成 FIFO）——
+这类缺陷往往**公开用例全过、对抗用例才暴露**，正是本项目要抓的伪正确样本。
+
+失败用例的源码级取证会**先回放同一套件里该用例之前的调用**（从最近一次 `reset` 起），
+保证断点看到的 `self` 与真实执行一致；否则单独跑一条用例会丢掉前置状态，取证结论是错的。
 
 ---
 
@@ -217,13 +252,16 @@ start → stage(生成解答) → [reasoning_delta ×N] → delta ×N → soluti
 
 ```jsonc
 {
-  "mode": "algorithm | code",
+  "mode": "algorithm | code | class",   // class = 类级（类而非函数）
   "model": "hy4-preview",           // 可选，默认取 HY3_MODEL；可填清单外的自定义名
   "effort": "auto | off | low | medium | high",   // 思考强度，默认 auto（跟随模型）
   "thinking": "disabled | enabled", // 可选，旧字段；未给 effort 时才生效
   "title": "可选",
   "description": "题面 / 需求（必填）",
-  "entry_point": "函数名",
+  "entry_point": "函数名；类级下为默认方法名",
+  "class_name": "类级必填，如 RateLimiter",
+  "init_args": "[2, 10.0]",             // 类级构造实参，JSON 数组
+  "init_kwargs": "{\"limit\": 2}",       // 类级构造关键字实参，JSON 对象，可选
   "function_signature": "def f(...):",
   "constraints": "约束文本",
   "expected_complexity": {"time": "O(n)"},
@@ -261,6 +299,13 @@ curl -N -X POST http://127.0.0.1:8787/api/evaluate/stream \
 | `app/llm/hy3.py` | 强度档位 → `thinking.type` + `reasoning_effort`；`reasoning_effort` 不再受 thinking 开关限制 |
 | `app/evaluator/pipeline.py` | 新增 `evaluate_solution()`（评估外部解答、可只审指定段落） |
 | `app/evaluator/splitter.py` | 修 `extract_code()`：围栏块 → 缩进块 → 裸代码三级回退 |
+| `webapp/server.py` | 新增 `class` 模式与类级字段；`parse_tests()` 保留 `method` / `reset`；索引带 `kind` / `class_name`；`tests` 事件带入口与题形态 |
+| `webapp/index.html` | 新增「代码任务 · 类级」页签与类级字段；从题库载入自动识别 `kind=class`；失败表格加「方法」列 |
+| `app/agents/checker.py` | `run_suite` 透传 `suite_kwargs(problem)`；类级失败用例改用 `run_forensics_case` 做状态回放取证；新增 `entry_label()` / `case_label()` |
+| `app/agents/tools.py` | 三个 LLM 工具的处理器同步透传类级参数；`run_forensics` 自动按入参回放类级状态 |
+| `app/sandbox/runner.py` | 新增 `suite_kwargs(problem)`，统一从题目 JSON 取类级参数 |
+| `app/sandbox/forensics.py` | 新增 `build_replay()` / `find_case_index()` / `run_forensics_case()`；`run_forensics()` 支持类级参数 |
+| `submodules/sandbox` | `_dbgharness.py` 新增 `resolve_target()`：入口支持 `Class.method` 与 `class_name` + 方法名；`debug_api` / `debugger` / CLI 同步透传类级参数 |
 
 **一处必须修的坑**：`solver.py` / `critic.py` / `checker.py` 里原本**硬编码** `thinking="disabled"`，
 会把 GUI 的思考开关和 `HY3_THINKING` 配置全部覆盖掉。现统一改为 `thinking_of(self.llm)`
@@ -282,7 +327,7 @@ curl -N -X POST http://127.0.0.1:8787/api/evaluate/stream \
 ## 八、已知限制
 
 1. **ground_truth 不可用** —— 数据集里的 `ground_truth` 标注的是 `mock_solution` 的预设缺陷，GUI 里自定义题目没有这个字段，所以**不能**用定位准确率那套指标。界面只展示"结果正确 / 真实正确 / 过程成立"三条与测试执行强相关的判定，它们不依赖预置答案。
-2. **源码级取证不可用** —— `submodules/sandbox` 子模块未初始化，`run_forensics` 返回 `ok=False`，失败用例拿不到执行轨迹。不崩，只是少一层证据。
+2. **源码级取证需要子模块就位** —— 取证走 `submodules/sandbox`；没跑 `git submodule update --init` 时 `run_forensics` 返回 `ok=False`，失败用例拿不到执行轨迹。不崩，只是少一层证据。类级题会自动回放前置用例，函数级题仍是直接取证。
 3. **代码执行非安全边界** —— 沙盒是子进程 + 超时 + 危险模块限制，够用但不隔离。只跑自己写的代码。
 4. **并发审查的显示顺序** —— `CRITIC_PARALLELISM > 1` 时五段按完成顺序推送，不是段落顺序。设为 1 则严格串行。
 5. **开启思考时别中途关页面** —— 服务端会继续跑完（当前不感知客户端断开后的中断）。

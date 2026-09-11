@@ -214,6 +214,7 @@
   <div class="tabs">
     <button id="tab-algo" class="on" data-mode="algorithm">算法竞赛</button>
     <button id="tab-code" data-mode="code">代码任务</button>
+    <button id="tab-class" data-mode="class">代码任务 · 类级</button>
   </div>
 
   <div class="ctl">
@@ -271,13 +272,28 @@
 
       <div class="row">
         <div>
-          <label>入口函数名</label>
+          <label id="lbl-entry">入口函数名</label>
           <input type="text" id="entry_point" placeholder="two_sum">
         </div>
         <div>
           <label>期望复杂度 <span class="hint">选填</span></label>
           <input type="text" id="complexity" placeholder="O(n)">
         </div>
+      </div>
+
+      <div class="row" id="row-class" style="display:none">
+        <div>
+          <label>类名</label>
+          <input type="text" id="class_name" placeholder="RateLimiter">
+        </div>
+        <div>
+          <label>构造实参 <span class="hint">JSON 数组</span></label>
+          <input type="text" id="init_args" placeholder="[2, 10.0]">
+        </div>
+      </div>
+      <div id="row-class-kw" style="display:none">
+        <label>构造关键字实参 <span class="hint">选填，JSON 对象</span></label>
+        <input type="text" id="init_kwargs" placeholder='{"limit": 2}'>
       </div>
 
       <label>函数签名</label>
@@ -332,13 +348,21 @@ let timer = null;
 const TEXT = {
   algorithm: {
     desc: '题目描述',
+    entry: '入口函数名',
     public: '公开测试用例',
     adv: '对抗测试用例 <span class="hint">选填 —— 用来暴露"公开测过了但逻辑其实错"</span>',
   },
   code: {
     desc: '需求描述',
+    entry: '入口函数名',
     public: '测试用例',
     adv: '边界 / 异常用例 <span class="hint">选填 —— 用来暴露"常规测过了但逻辑其实错"</span>',
+  },
+  class: {
+    desc: '需求描述（说清类的职责、各方法与状态迁移规则）',
+    entry: '默认方法名',
+    public: '测试用例 <span class="hint">同一实例上按序调用；可写 "method" 指定方法、"reset": true 重建实例</span>',
+    adv: '边界 / 状态用例 <span class="hint">选填 —— 专门试探乱序调用、非法迁移、状态未复位</span>',
   },
 };
 
@@ -364,6 +388,30 @@ const DEMO = {
     public_tests: '[{"args": [[[1,3],[2,6],[8,10],[15,18]]], "expected": [[1,6],[8,10],[15,18]]},\n {"args": [[[1,4],[4,5]]], "expected": [[1,5]]}]',
     adversarial_tests: '[{"args": [[]], "expected": []},\n {"args": [[[1,4],[2,3]]], "expected": [[1,4]]},\n {"args": [[[-5,-1],[-3,2]]], "expected": [[-5,2]]}]',
     candidate: '',
+    class_name: '',
+    init_args: '',
+    init_kwargs: '',
+  },
+  class: {
+    title: '固定窗口限流器',
+    description: '实现类 RateLimiter(limit, window_sec)。方法 allow(key, now) -> bool：\n'
+      + '在窗口 (now-window_sec, now] 内，同一 key 最多放行 limit 次，放行时记一次请求；超出返回 False。',
+    entry_point: 'allow',
+    complexity: '',
+    signature: 'class RateLimiter:\n    def __init__(self, limit: int, window_sec: float): ...\n    def allow(self, key: str, now: float) -> bool: ...',
+    constraints: '用例在同一实例上顺序执行；窗口是滑动的，(now-window_sec, now] 左开右闭；不同 key 各自计数',
+    class_name: 'RateLimiter',
+    init_args: '[2, 10.0]',
+    init_kwargs: '',
+    public_tests: '[{"method": "allow", "args": ["u1", 1.0], "expected": true},\n'
+      + ' {"method": "allow", "args": ["u1", 2.0], "expected": true},\n'
+      + ' {"method": "allow", "args": ["u1", 3.0], "expected": false},\n'
+      + ' {"method": "allow", "args": ["u2", 3.0], "expected": true}]',
+    adversarial_tests: '[{"reset": true, "method": "allow", "args": ["a", 0.0], "expected": true},\n'
+      + ' {"method": "allow", "args": ["a", 0.0], "expected": true},\n'
+      + ' {"method": "allow", "args": ["a", 0.0], "expected": false},\n'
+      + ' {"method": "allow", "args": ["a", 10.1], "expected": true}]',
+    candidate: '',
   },
 };
 
@@ -371,29 +419,47 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt
 
 const STATUS = {
   ok: ['ok','通过'], wrong_answer: ['bad','答案错'], timeout: ['warn','超时'],
-  runtime_error: ['bad','运行错'], missing_entry: ['bad','找不到函数'],
+  runtime_error: ['bad','运行错'], missing_entry: ['bad','找不到入口'],
   import_error: ['bad','导入失败'], not_run: ['mute','未执行'], unserializable: ['warn','不可序列化'],
 };
 const VERDICT = {valid: ['ok','成立'], suspicious: ['warn','可疑'], flawed: ['bad','不成立']};
 
 /* ---------- 模式切换 ---------- */
+function syncTabs() {
+  document.querySelectorAll('.tabs button').forEach(b =>
+    b.classList.toggle('on', b.dataset.mode === mode));
+}
+
+function applyModeUI() {
+  const t = TEXT[mode] || TEXT.code;
+  $('lbl-desc').textContent = t.desc;
+  $('lbl-public').innerHTML = t.public;
+  $('lbl-adv').innerHTML = t.adv;
+  $('lbl-entry').textContent = t.entry;
+  const isClass = mode === 'class';
+  $('row-class').style.display = isClass ? '' : 'none';
+  $('row-class-kw').style.display = isClass ? '' : 'none';
+  $('entry_point').placeholder = isClass ? 'allow' : 'two_sum';
+}
+
 document.querySelectorAll('.tabs button').forEach(btn => {
   btn.onclick = () => {
-    document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('on'));
-    btn.classList.add('on');
     mode = btn.dataset.mode;
-    $('lbl-desc').textContent = TEXT[mode].desc;
-    $('lbl-public').textContent = TEXT[mode].public;
-    $('lbl-adv').innerHTML = TEXT[mode].adv;
+    syncTabs();
+    applyModeUI();
   };
 });
 
+const DEMO_KEYS = ['title','description','entry_point','complexity','signature',
+  'constraints','public_tests','adversarial_tests','candidate',
+  'class_name','init_args','init_kwargs'];
+
 $('demo').onclick = () => {
-  const d = DEMO[mode];
-  for (const k of ['title','description','entry_point','complexity','signature','constraints','public_tests','adversarial_tests','candidate']) {
-    $(k).value = d[k] ?? '';
-  }
+  const d = DEMO[mode] || {};
+  for (const k of DEMO_KEYS) $(k).value = d[k] ?? '';
 };
+
+applyModeUI();
 
 /* ---------- 启动检查 + 模型清单 ---------- */
 let CATALOG = [];
@@ -555,6 +621,10 @@ function applyProblem(withMock) {
   const j = v => JSON.stringify(v || [], null, 1);
   const edge = p.required_edge_cases || [];
 
+  // 题库里的类级题自动切到「类级」模式，省得手填类名与构造参数
+  const isClass = (p.kind || 'function').toLowerCase() === 'class';
+  if (isClass) { mode = 'class'; syncTabs(); }
+
   $('title').value = p.title || '';
   $('description').value = p.description || '';
   $('entry_point').value = p.entry_point || '';
@@ -566,6 +636,11 @@ function applyProblem(withMock) {
   $('adversarial_tests').value = j(p.adversarial_tests);
   $('candidate').value = withMock ? (d.candidate_md || '') : '';
   $('code_only').checked = false;
+  $('class_name').value = p.class_name || '';
+  $('init_args').value = (p.init_args && p.init_args.length) ? JSON.stringify(p.init_args) : '';
+  $('init_kwargs').value = (p.init_kwargs && Object.keys(p.init_kwargs).length)
+    ? JSON.stringify(p.init_kwargs) : '';
+  applyModeUI();
 
   if (withMock && !d.candidate_md) $('pk-meta').textContent = '这道题没有内置解答，已只载入题面';
   else $('pk-meta').textContent = `已填入：${p.title || p.id}${withMock ? '（含内置解答）' : ''}`;
@@ -603,6 +678,9 @@ $('run').onclick = async () => {
     title: $('title').value,
     description: $('description').value,
     entry_point: $('entry_point').value,
+    class_name: $('class_name').value,
+    init_args: $('init_args').value,
+    init_kwargs: $('init_kwargs').value,
     function_signature: $('signature').value,
     constraints: $('constraints').value,
     expected_complexity: $('complexity').value ? {time: $('complexity').value} : {},
@@ -801,22 +879,32 @@ function vcard(k, val, good, tip) {
 }
 
 function testsBlock(d) {
-  return '<h2 style="margin-top:16px">执行结果</h2>'
+  const isClass = d.kind === 'class';
+  const badge = isClass
+    ? `<span class="pill mute">类级 · ${esc(d.class_name || '')}</span>`
+    : `<span class="pill mute">函数级</span>`;
+  const entry = d.entry
+    ? `<span class="meta" style="margin:0;margin-left:8px">入口 <code>${esc(d.entry)}</code></span>` : '';
+  return `<h2 style="margin-top:16px">执行结果 ${badge}${entry}</h2>`
+    + (isClass ? '<div class="meta">用例在同一实例上按序执行；标记 <code>reset</code> 的用例会先重建实例。</div>' : '')
     + suiteTable('公开测试', d.public) + suiteTable('对抗测试', d.adversarial);
 }
 
 function suiteTable(name, s) {
   if (!s || !s.total) return '';
+  const withMethod = (s.failure_samples || []).some(r => r.method);
   const rows = (s.failure_samples || []).map(r => {
     const [cls, label] = STATUS[r.status] || ['mute', r.status];
-    return `<tr><td>#${r.index}</td><td class="mono">${esc(JSON.stringify(r.args))}</td>
+    return `<tr>${withMethod ? `<td class="mono">${esc(r.method || '')}</td>` : ''}<td>#${r.index}</td>
+      <td class="mono">${esc(JSON.stringify(r.args))}</td>
       <td class="mono">${esc(JSON.stringify(r.expected))}</td>
       <td class="mono">${esc(JSON.stringify(r.actual))}</td>
       <td><span class="pill ${cls}">${label}</span></td></tr>`;
   }).join('');
+  const head = `<tr>${withMethod ? '<th>方法</th>' : ''}<th>#</th><th>入参</th><th>期望</th><th>实际</th><th>状态</th></tr>`;
   return `<div style="margin-top:10px"><span class="pill ${s.all_passed ? 'ok' : 'bad'}">${esc(name)} ${s.passed}/${s.total}</span></div>`
     + (s.all_passed ? '' :
-      `<table><thead><tr><th>#</th><th>入参</th><th>期望</th><th>实际</th><th>状态</th></tr></thead><tbody>${rows}</tbody></table>`);
+      `<table><thead>${head}</thead><tbody>${rows}</tbody></table>`);
 }
 
 function sectionCard(s) {

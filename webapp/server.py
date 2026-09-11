@@ -38,6 +38,7 @@ from app.datasets import load_problem  # noqa: E402
 from app.evaluator.pipeline import EvalPipeline, EvaluationResult  # noqa: E402
 from app.evaluator.splitter import extract_code, split_sections  # noqa: E402
 from app.llm.hy3 import Hy3LLM  # noqa: E402
+from app.agents.checker import entry_label  # noqa: E402
 from app.sandbox.runner import SuiteResult  # noqa: E402
 
 STATIC_DIR = Path(__file__).resolve().parent
@@ -56,6 +57,14 @@ CODE_FOCUS = """\
 - 测试通过但逻辑存在隐患（特殊值未处理、状态未复位、异常路径缺失、副作用）的，仍应判为不成立。
 - 第 2 段若复杂度不适用，请明确说明不适用及原因，但段落不可省略。
 - 第 3 段必须覆盖需求里隐含的边界与异常输入，并说明代码如何处理。"""
+
+CLASS_FOCUS = """\
+## 评估重点（代码任务 · 类级）
+- 题目交付的是一个**类**；用例在**同一实例**上按序调用各方法，必须判断**跨调用的状态**是否正确。
+- 重点看：状态迁移是否合法、非法调用是否被正确拒绝、需要复位时是否复位、计数/资源是否随调用累积。
+- "公开用例全过、对抗用例失败"通常意味着状态机漏了一条非法路径，或把每次调用都当成了独立请求。
+- 第 2 段若复杂度不适用，请明确说明不适用及原因，但段落不可省略。
+- 第 3 段必须覆盖状态边界：重复调用、乱序调用、超限/越界、复位时机。"""
 
 
 # ------------------------------------------------------------------ 入参处理
@@ -97,8 +106,48 @@ def parse_tests(raw: Any) -> list[dict]:
         case = {"args": args, "expected": item.get("expected")}
         if "kwargs" in item:
             case["kwargs"] = item["kwargs"]
+        # 类级用例：调用哪个方法、是否重建实例，都要原样带给沙盒
+        for extra in ("method", "reset"):
+            if extra in item:
+                case[extra] = item[extra]
         out.append(case)
     return out
+
+
+def parse_init_args(raw: Any) -> list:
+    """构造实参：JSON 数组，或 JSON Lines / 逗号分隔的多个字面量。"""
+    if raw is None:
+        return []
+    if isinstance(raw, list):
+        return raw
+    text = str(raw).strip()
+    if not text:
+        return []
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError:
+        items: list[Any] = []
+        for line in text.splitlines():
+            line = line.strip().rstrip(",")
+            if line:
+                items.append(json.loads(line))
+        return items
+    return data if isinstance(data, list) else [data]
+
+
+def parse_init_kwargs(raw: Any) -> dict:
+    """构造关键字实参：留空表示无，给了就必须是 JSON 对象。"""
+    if raw is None:
+        return {}
+    if isinstance(raw, dict):
+        return raw
+    text = str(raw).strip()
+    if not text:
+        return {}
+    data = json.loads(text)
+    if not isinstance(data, dict):
+        raise ValueError('构造关键字参数要写成 JSON 对象，例如 {"limit": 2}')
+    return data
 
 
 def normalize_candidate(raw: str) -> str:
@@ -125,23 +174,40 @@ def build_problem(payload: dict) -> dict:
     if not description:
         raise ValueError("题目描述 / 需求不能为空")
 
-    focus = ALGO_FOCUS if mode == "algorithm" else CODE_FOCUS
+    is_class = mode == "class"
+    focus = ALGO_FOCUS if mode == "algorithm" else (CLASS_FOCUS if is_class else CODE_FOCUS)
     entry = (payload.get("entry_point") or "").strip()
     signature = (payload.get("function_signature") or "").strip()
-    if not entry and signature:
+    class_name = (payload.get("class_name") or "").strip()
+    init_args = parse_init_args(payload.get("init_args"))
+    init_kwargs = parse_init_kwargs(payload.get("init_kwargs"))
+
+    if is_class:
+        if not class_name:
+            raise ValueError("类级题目必须填类名")
+        if not entry:
+            raise ValueError("类级题目必须填默认方法名（可被单条用例的 method 覆盖）")
+    elif not entry and signature:
         # 从 "def two_sum(nums, target):" 里抠函数名，省得用户重复填
         head = signature.strip()
         if head.startswith("def "):
             entry = head[4:].split("(")[0].strip()
     if not signature and entry:
-        signature = f"def {entry}(...):"
+        signature = (
+            f"class {class_name}:\n    def {entry}(self, ...): ..."
+            if is_class else f"def {entry}(...):"
+        )
 
     return {
         "id": title or f"gui-{mode}",
         "title": title or "GUI 输入",
         "difficulty": "custom",
+        "kind": "class" if is_class else "function",
         "description": f"{description}\n\n{focus}",
         "entry_point": entry,
+        "class_name": class_name or None,
+        "init_args": init_args,
+        "init_kwargs": init_kwargs,
         "function_signature": signature,
         "constraints": (payload.get("constraints") or "").strip() or "无特殊约束",
         "public_tests": payload.get("public_tests") or [],
@@ -179,10 +245,13 @@ def scan_problems(force: bool = False) -> dict:
             broken.append(f"{rel}: {type(exc).__name__}: {exc}")
             continue
         pid = str(data.get("id") or path.stem)
+        kind = str(data.get("kind") or "function").lower()
         items[pid] = {
             "id": pid,
             "title": str(data.get("title") or path.stem),
             "difficulty": str(data.get("difficulty") or path.parent.name),
+            "kind": kind,
+            "class_name": str(data.get("class_name") or ""),
             "entry_point": str(data.get("entry_point") or ""),
             "path": rel,
             "n_public": len(data.get("public_tests") or []),
@@ -198,8 +267,10 @@ def problem_index(difficulty: str = "", keyword: str = "") -> dict:
     idx = scan_problems()
     items = list(idx["items"].values())
     counts: dict[str, int] = {}
+    kinds: dict[str, int] = {}
     for it in items:
         counts[it["difficulty"]] = counts.get(it["difficulty"], 0) + 1
+        kinds[it.get("kind", "function")] = kinds.get(it.get("kind", "function"), 0) + 1
 
     if difficulty:
         items = [i for i in items if i["difficulty"] == difficulty]
@@ -208,12 +279,13 @@ def problem_index(difficulty: str = "", keyword: str = "") -> dict:
         items = [
             i for i in items
             if kw in i["title"].lower() or kw in i["id"].lower()
-            or kw in i["entry_point"].lower()
+            or kw in i["entry_point"].lower() or kw in i.get("class_name", "").lower()
         ]
     items.sort(key=lambda i: (i["difficulty"], i["id"]))
     return {
         "total": len(items),
         "counts": counts,
+        "kinds": kinds,
         "problems": items,
         "broken": idx["broken"],
     }
@@ -305,7 +377,7 @@ def run_evaluation(payload: dict) -> dict:
 
     data = result.to_dict()
     data.update(_meta(pipeline, llm, run_cfg, source, code_only, started,
-                      problem.get("mode")))
+                      problem.get("mode"), problem.get("kind")))
     return data
 
 
@@ -320,9 +392,10 @@ def _reasoning_of(pipeline: EvalPipeline, thinking: str) -> str:
 
 
 def _meta(pipeline: "EvalPipeline | None", llm: Any, run_cfg: dict, source: str,
-          code_only: bool, started: float, mode: str) -> dict:
+          code_only: bool, started: float, mode: str, kind: str = "") -> dict:
     """附加到结果上的运行元信息。"""
     return {
+        "kind": kind or "function",
         "thinking": run_cfg.get("thinking", ""),
         "effort": run_cfg.get("effort", ""),
         "backend": "mock" if llm.__class__.__name__ == "MockLLM" else "hy3",
@@ -390,12 +463,15 @@ def stream_evaluation(payload: dict) -> Iterator[bytes]:
     candidate = normalize_candidate(payload.get("candidate"))
     code_only = bool(payload.get("code_only")) and bool(candidate)
 
+    kind = (problem.get("kind") or "function").lower()
     yield _sse("start", {
         "model": run_cfg["model"],
         "thinking": thinking,
         "effort": run_cfg["effort"],
         "custom_model": run_cfg["custom_model"],
         "mode": problem.get("mode"),
+        "kind": kind,
+        "class_name": problem.get("class_name") or "",
         "title": problem.get("title"),
     })
 
@@ -431,6 +507,9 @@ def stream_evaluation(payload: dict) -> Iterator[bytes]:
         "findings": [f.to_dict() for f in report.findings],
         "code": report.code,
         "debug_hints": report.debug_hints,
+        "kind": (problem.get("kind") or "function").lower(),
+        "class_name": problem.get("class_name") or "",
+        "entry": entry_label(problem),
     })
 
     # ---- 3. 分步审查
@@ -567,7 +646,8 @@ def stream_evaluation(payload: dict) -> Iterator[bytes]:
     data = result.to_dict()
     data.update(_meta(pipeline, llm, run_cfg,
                       "用户提供" if candidate else "模型生成",
-                      code_only, started, problem.get("mode")))
+                      code_only, started, problem.get("mode"),
+                      problem.get("kind")))
     yield _sse("done", data)
 
 
