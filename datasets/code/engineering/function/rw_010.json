@@ -1,0 +1,24 @@
+{
+  "id": "rw-010",
+  "difficulty": "engineering",
+  "kind": "function",
+  "category": "engineering",
+  "title": "URL slug 生成",
+  "description": "小写；非字母数字转 -；去首尾 -；合并连续 -。",
+  "function_signature": "def slugify(title: str) -> str",
+  "entry_point": "slugify",
+  "language": "python",
+  "dependencies": [],
+  "public_tests": [
+    {"args": ["Hello World"], "expected": "hello-world"},
+    {"args": ["Foo_Bar"], "expected": "foo-bar"},
+    {"args": ["---"], "expected": ""}
+  ],
+  "adversarial_tests": [
+    {"args": [""], "expected": ""},
+    {"args": ["  A  B  "], "expected": "a-b"},
+    {"args": ["a--b"], "expected": "a-b"},
+    {"args": ["Hello!"], "expected": "hello"}
+  ],
+  "ground_truth": {"result_correct": true, "truly_correct": true, "process_valid": true, "note": "未合并连续分隔符"}
+}

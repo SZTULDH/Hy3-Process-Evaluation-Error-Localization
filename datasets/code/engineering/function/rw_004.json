@@ -1,0 +1,25 @@
+{
+  "id": "rw-004",
+  "difficulty": "engineering",
+  "kind": "function",
+  "category": "engineering",
+  "title": "解析简易 .env 行",
+  "description": "解析多行 .env：忽略空行与 # 注释；KEY=VALUE；成对引号去掉。返回 dict。",
+  "function_signature": "def parse_env(text: str) -> dict",
+  "entry_point": "parse_env",
+  "language": "python",
+  "dependencies": [],
+  "public_tests": [
+    {"args": ["A=1\nB=2"], "expected": {"A": "1", "B": "2"}},
+    {"args": ["# c\nX=y"], "expected": {"X": "y"}},
+    {"args": ["NAME=\"hello\""], "expected": {"NAME": "hello"}}
+  ],
+  "adversarial_tests": [
+    {"args": [""], "expected": {}},
+    {"args": ["\n\n# only\n"], "expected": {}},
+    {"args": ["A="], "expected": {"A": ""}},
+    {"args": ["A='b=c'"], "expected": {"A": "b=c"}},
+    {"args": ["A=1\n#B=2\nC=3"], "expected": {"A": "1", "C": "3"}}
+  ],
+  "ground_truth": {"result_correct": true, "truly_correct": true, "process_valid": true, "note": "未处理注释或引号会失败"}
+}
