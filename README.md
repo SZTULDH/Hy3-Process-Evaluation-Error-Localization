@@ -15,6 +15,24 @@
 
 测试用例通过 ≠ 逻辑正确。本项目专门针对这一痛点，设计过程级评估体系，识别“伪正确”代码。
 
+## 子项目：Sandbox Debugger
+
+本仓库通过 git submodule 引入独立能力库 [sandbox-debugger](https://github.com/SZTULDH/sandbox-debugger)（路径：`submodules/sandbox`）。
+
+它是面向 Agent 的 **Python 源码级沙盒调试与评测执行**能力，定位为可复用的通用库，不绑定本任务本体：
+
+- **源码级调试**：断点、单步、栈/变量、求值、轨迹回溯
+- **评测执行**：函数级 / 类级测试套件（`runner` + `_harness`）
+
+### 接入方式
+
+1. **MCP Server（推荐）**：`python -m app.sandbox.mcp_server`
+2. **调试 API**：`from app.sandbox import debug_api as D`
+3. **评测 API**：`from app.sandbox.runner import run_suite, run_problem`
+4. **CLI**：`python scripts/sandbox_debug.py --problem ... --run --trace 60`
+
+更多细节见子模块 README：[`submodules/sandbox/README.md`](submodules/sandbox/README.md) 或上游仓库。
+
 ## 项目状态
 
 ✅ **当前阶段：最小可运行闭环已完成（Mock 离线模式验证通过）**
@@ -66,6 +84,8 @@
 │       ├── medium/
 │       ├── hard/
 │       └── adversarial/        # 伪正确样本
+├── submodules/
+│   └── sandbox/                # git submodule → sandbox-debugger（源码级调试 + 评测执行）
 ├── scripts/
 ├── results/                    # 评测产物（latest_report.md 已纳入版本控制）
 └── requirements.txt
@@ -98,6 +118,7 @@ python -m app.main --all --backend hy3
 ## 参考
 
 - Hy3 仓库：https://github.com/Tencent-Hunyuan/Hy3
+- 子项目 sandbox-debugger：https://github.com/SZTULDH/sandbox-debugger
 - 任务核心：过程评估与错误定位（代码实现逻辑正确性）
 
 ## License
