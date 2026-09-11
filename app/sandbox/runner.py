@@ -268,21 +268,28 @@ def run_suite(
     return suite
 
 
+def suite_kwargs(problem: dict) -> dict:
+    """从题目 JSON 抽出 ``run_suite`` 需要的类级参数。
+
+    函数级题目退化成 ``kind="function"`` + 空类名，与旧行为一致；
+    调用方统一用它，避免各处漏传导致类级题全部 missing_entry。
+    """
+    return {
+        "kind": problem.get("kind") or "function",
+        "class_name": problem.get("class_name"),
+        "init_args": problem.get("init_args"),
+        "init_kwargs": problem.get("init_kwargs"),
+    }
+
+
 def run_problem(
     code: str,
     problem: dict,
     timeout: float = SANDBOX_TIMEOUT,
 ) -> dict:
     """按题目 JSON 跑 public / adversarial。"""
-    kind = problem.get("kind") or "function"
     entry = problem.get("entry_point") or ""
-    common = dict(
-        kind=kind,
-        class_name=problem.get("class_name"),
-        init_args=problem.get("init_args"),
-        init_kwargs=problem.get("init_kwargs"),
-        timeout=timeout,
-    )
+    common = dict(suite_kwargs(problem), timeout=timeout)
     pub = run_suite(code, entry, problem.get("public_tests") or [], **common)
     out = {"public": pub.to_dict()}
     adv = problem.get("adversarial_tests") or []

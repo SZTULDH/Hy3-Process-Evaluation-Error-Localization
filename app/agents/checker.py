@@ -21,8 +21,8 @@ from ..evaluator.rules import Finding, analyze
 from ..evaluator.splitter import ParsedSolution, extract_code, split_sections
 from ..llm.base import BaseLLM, ChatMessage, thinking_of
 from ..llm.mock import MockLLM
-from ..sandbox.forensics import forensic_summary, run_forensics
-from ..sandbox.runner import SuiteResult, run_suite
+from ..sandbox.forensics import forensic_summary, run_forensics_case
+from ..sandbox.runner import SuiteResult, run_suite, suite_kwargs
 from .tools import CHECKER_TOOLS, make_checker_handlers
 
 CHECKER_SYSTEM = """[ROLE=checker]
@@ -31,6 +31,9 @@ CHECKER_SYSTEM = """[ROLE=checker]
 - Producer 生成的完整解题过程与代码
 - 公开/对抗测试执行结果
 - 源码级调试轨迹（若有）
+
+若题目是类级（kind=class）：用例在**同一实例**上按序调用，观察 `self` 状态；
+"公开过、对抗挂"往往源于状态未复位或跨调用的顺序依赖，而非单次调用算错。
 
 请输出 JSON（不要其它文字）：
 {
@@ -43,6 +46,23 @@ CHECKER_SYSTEM = """[ROLE=checker]
   "failed_case_analysis": ["对失败用例的逐条分析"]
 }
 """
+
+
+def entry_label(problem: dict) -> str:
+    """入口的展示名：类级显示 ``Class.method``，函数级就是函数名。"""
+    entry = problem.get("entry_point") or ""
+    if (problem.get("kind") or "function").lower() == "class":
+        cls = problem.get("class_name") or entry
+        return f"{cls}.{entry}" if entry else cls
+    return entry
+
+
+def case_label(result) -> str:
+    """失败样本的一行标识，类级带上方法名。"""
+    head = f"#{result.index}"
+    if getattr(result, "method", None):
+        head += f" {result.method}()"
+    return f"{head} args={result.args!r}"
 
 
 @dataclass
@@ -115,7 +135,11 @@ class CheckerAgent:
 
         emit(
             "parse",
-            {"解答字符数": len(raw_solution or ""), "入口函数": problem.get("entry_point", "")},
+            {
+                "解答字符数": len(raw_solution or ""),
+                "入口": entry_label(problem),
+                "题目形态": (problem.get("kind") or "function"),
+            },
             {
                 "识别到的段落": [t for t in SECTION_TITLES if parsed.get(t) is not None],
                 "代码字符数": len(report.code),
@@ -123,27 +147,31 @@ class CheckerAgent:
         )
 
         entry = problem.get("entry_point", "")
-        public = run_suite(code, entry, problem.get("public_tests", []))
+        suite_kw = suite_kwargs(problem)
+        public = run_suite(code, entry, problem.get("public_tests", []), **suite_kw)
         emit(
             "public",
-            {"用例数": len(problem.get("public_tests", []) or [])},
+            {"用例数": len(problem.get("public_tests", []) or []),
+             "执行方式": entry_label(problem)},
             {
                 "通过": f"{public.passed}/{public.total}",
                 "失败样本": [
-                    f"#{r.index} args={r.args!r} -> {r.status}"
+                    f"{case_label(r)} -> {r.status}"
                     for r in public.results if not r.passed
                 ][:5],
             },
         )
 
-        adversarial = run_suite(code, entry, problem.get("adversarial_tests", []))
+        adversarial = run_suite(code, entry, problem.get("adversarial_tests", []),
+                                **suite_kw)
         emit(
             "adversarial",
-            {"用例数": len(problem.get("adversarial_tests", []) or [])},
+            {"用例数": len(problem.get("adversarial_tests", []) or []),
+             "执行方式": entry_label(problem)},
             {
                 "通过": f"{adversarial.passed}/{adversarial.total}",
                 "失败样本": [
-                    f"#{r.index} args={r.args!r} expected={r.expected!r} actual={r.actual!r}"
+                    f"{case_label(r)} expected={r.expected!r} actual={r.actual!r}"
                     for r in adversarial.results if not r.passed
                 ][:5],
             },
@@ -164,12 +192,16 @@ class CheckerAgent:
             },
         )
 
+        kind = (problem.get("kind") or "function").lower()
+        adv_cases = problem.get("adversarial_tests") or []
         failed = [r for r in adversarial.results if not r.passed][:3]
         for r in failed:
-            fo = run_forensics(code, entry, r.args)
+            fo = run_forensics_case(code, problem, adv_cases, r.index)
             report.forensics.append(
                 {
                     "case_index": r.index,
+                    "kind": kind,
+                    "method": r.method,
                     "args": r.args,
                     "expected": r.expected,
                     "actual": r.actual,
@@ -181,7 +213,10 @@ class CheckerAgent:
 
         emit(
             "forensics",
-            {"待取证失败用例": len(failed)},
+            {
+                "待取证失败用例": len(failed),
+                "取证方式": "类级：回放前置用例后取证" if kind == "class" else "函数级：直接取证",
+            },
             {
                 "取证条数": len(report.forensics),
                 "摘要": [f.get("summary", "")[:200] for f in report.forensics],
@@ -223,8 +258,9 @@ class CheckerAgent:
         for fo in report.forensics:
             summary = fo.get("summary") or ""
             if "trace_tail" in summary or fo.get("forensic", {}).get("ok"):
+                where = f"{fo['method']}() 的" if fo.get("method") else ""
                 hints.append(
-                    f"失败用例 args={fo.get('args')!r} 的执行轨迹已取证："
+                    f"失败用例 {where}args={fo.get('args')!r} 的执行轨迹已取证："
                     f"{summary[:160]}"
                 )
         for f in report.findings[:3]:
@@ -242,11 +278,15 @@ class CheckerAgent:
         payload = {
             "problem_id": problem.get("id"),
             "title": problem.get("title"),
+            "kind": problem.get("kind") or "function",
+            "class_name": problem.get("class_name"),
+            "entry_point": problem.get("entry_point"),
             "public": report.public.to_dict() if report.public else {},
             "adversarial": report.adversarial.to_dict() if report.adversarial else {},
             "findings": [f.to_dict() for f in report.findings[:5]],
             "forensics": [
-                {"args": f.get("args"), "summary": f.get("summary")}
+                {"method": f.get("method"), "args": f.get("args"),
+                 "summary": f.get("summary")}
                 for f in report.forensics[:3]
             ],
             "pseudo_correct": report.pseudo_correct,
@@ -301,6 +341,8 @@ class CheckerAgent:
             "problem_id": problem.get("id"),
             "title": problem.get("title"),
             "description": problem.get("description"),
+            "kind": problem.get("kind") or "function",
+            "class_name": problem.get("class_name"),
             "entry_point": problem.get("entry_point"),
             "code": report.code,
             "hint": (

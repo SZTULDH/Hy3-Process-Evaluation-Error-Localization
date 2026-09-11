@@ -89,8 +89,16 @@ def run_forensics(
     *,
     budget: float = 5.0,
     trace_limit: int = 40,
+    class_name: str | None = None,
+    init_args: list | None = None,
+    init_kwargs: dict | None = None,
+    method: str | None = None,
+    kwargs: dict | None = None,
 ) -> dict[str, Any]:
     """对单个失败用例做源码级取证。
+
+    类级目标可传 ``class_name`` / ``method``（或把 entry_point 写成
+    ``"Class.method"``），``init_args`` / ``init_kwargs`` 用于构造实例。
 
     返回可序列化 dict；失败时仍返回 {"ok": False, "error": ...}，不会抛异常。
     """
@@ -99,10 +107,96 @@ def run_forensics(
         return {"ok": False, "error": _LOAD_ERROR or "debug_api unavailable"}
     try:
         return api.run_to_error(
-            code, entry_point, args, budget=budget, trace_limit=trace_limit
+            code, entry_point, args, budget=budget, trace_limit=trace_limit,
+            class_name=class_name, init_args=init_args,
+            init_kwargs=init_kwargs, method=method, kwargs=kwargs,
         )
     except Exception as exc:  # noqa: BLE001
         return {"ok": False, "error": f"{type(exc).__name__}: {exc}"}
+
+
+# ------------------------------------------------------------------ 类级回放
+
+REPLAY_ENTRY = "__forensic_replay__"
+
+
+def _call_src(obj: str, case: dict, default_method: str) -> str:
+    """把一条用例渲染成 ``obj.method(*args, **kwargs)`` 源码。"""
+    method = case.get("method") or default_method
+    parts = [repr(a) for a in (case.get("args") or [])]
+    parts += [f"{k}={v!r}" for k, v in (case.get("kwargs") or {}).items()]
+    return f"{obj}.{method}({', '.join(parts)})"
+
+
+def _ctor_src(problem: dict, default_method: str) -> str:
+    class_name = problem.get("class_name") or default_method
+    parts = [repr(a) for a in (problem.get("init_args") or [])]
+    parts += [f"{k}={v!r}" for k, v in (problem.get("init_kwargs") or {}).items()]
+    return f"{class_name}({', '.join(parts)})"
+
+
+def build_replay(
+    code: str, problem: dict, cases: list[dict], index: int
+) -> tuple[str, str, list]:
+    """生成「回放到第 index 个用例」的包装入口。
+
+    类级用例默认共享同一实例，单独跑失败用例会丢掉前置状态——断点看到的
+    ``self`` 并非真实执行时的样子。这里把同一套件里从最近一次 ``reset: true``
+    起的用例按序回放，最后一步作为入口返回，使取证与真实执行一致。
+
+    返回 ``(源码, 入口名, 该入口的参数列表)``；函数级或下标越界时原样返回。
+    """
+    kind = (problem.get("kind") or "function").lower()
+    default_method = problem.get("entry_point") or ""
+    if kind != "class" or not cases or not 0 <= index < len(cases):
+        case = cases[index] if 0 <= index < len(cases) else {}
+        return code, default_method, list(case.get("args") or [])
+
+    ctor = _ctor_src(problem, default_method)
+    start = 0
+    for i in range(index, -1, -1):
+        if cases[i].get("reset"):
+            start = i
+            break
+
+    lines = [f"def {REPLAY_ENTRY}():", f"    obj = {ctor}"]
+    for i in range(start, index + 1):
+        case = cases[i]
+        if i > start and case.get("reset"):
+            lines.append(f"    obj = {ctor}")
+        call = _call_src("obj", case, default_method)
+        if i < index:
+            # 前置用例即便抛异常也继续回放：取证关注的是最后一步的状态
+            lines += ["    try:", f"        {call}",
+                      "    except BaseException:", "        pass"]
+        else:
+            lines.append(f"    return {call}")
+    return code + "\n\n" + "\n".join(lines) + "\n", REPLAY_ENTRY, []
+
+
+def find_case_index(cases: list[dict], args: list | None,
+                    method: str | None = None) -> int | None:
+    """按 args / method 反查用例下标，供 LLM 工具按入参取证时使用。"""
+    for i, case in enumerate(cases or []):
+        if list(case.get("args") or []) == list(args or []):
+            if method is None or (case.get("method") or None) == method:
+                return i
+    return None
+
+
+def run_forensics_case(
+    code: str,
+    problem: dict,
+    cases: list[dict],
+    index: int,
+    *,
+    budget: float = 5.0,
+    trace_limit: int = 40,
+) -> dict[str, Any]:
+    """按题目语义对一个失败用例取证：类级会先回放前置用例状态。"""
+    source, entry, entry_args = build_replay(code, problem, cases, index)
+    return run_forensics(source, entry, entry_args,
+                         budget=budget, trace_limit=trace_limit)
 
 
 def forensic_summary(forensic: dict[str, Any], max_steps: int = 8) -> str:
