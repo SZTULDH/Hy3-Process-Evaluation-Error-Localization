@@ -1,0 +1,24 @@
+{
+  "id": "rw-012",
+  "difficulty": "engineering",
+  "kind": "function",
+  "category": "engineering",
+  "title": "分页切片",
+  "description": "page 从 1 开始；非法 page/size 或越界返回 []。",
+  "function_signature": "def paginate(items: list, page: int, size: int) -> list",
+  "entry_point": "paginate",
+  "language": "python",
+  "dependencies": [],
+  "public_tests": [
+    {"args": [[1,2,3,4,5], 1, 2], "expected": [1,2]},
+    {"args": [[1,2,3,4,5], 2, 2], "expected": [3,4]},
+    {"args": [[1,2,3], 2, 2], "expected": [3]}
+  ],
+  "adversarial_tests": [
+    {"args": [[1,2], 3, 2], "expected": []},
+    {"args": [[1,2], 0, 2], "expected": []},
+    {"args": [[1,2], 1, 0], "expected": []},
+    {"args": [[], 1, 10], "expected": []}
+  ],
+  "ground_truth": {"result_correct": true, "truly_correct": true, "process_valid": true, "note": "page 从 0 起算是常见错误"}
+}

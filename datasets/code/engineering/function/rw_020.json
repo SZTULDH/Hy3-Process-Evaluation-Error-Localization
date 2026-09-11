@@ -1,0 +1,25 @@
+{
+  "id": "rw-020",
+  "difficulty": "engineering",
+  "kind": "function",
+  "category": "engineering",
+  "title": "是否应重试的错误分类",
+  "description": "timeout/429/502/503/504 可重试（大小写不敏感）。",
+  "function_signature": "def should_retry(error_code: str) -> bool",
+  "entry_point": "should_retry",
+  "language": "python",
+  "dependencies": [],
+  "public_tests": [
+    {"args": ["timeout"], "expected": true},
+    {"args": ["429"], "expected": true},
+    {"args": ["400"], "expected": false}
+  ],
+  "adversarial_tests": [
+    {"args": ["TIMEOUT"], "expected": true},
+    {"args": ["503"], "expected": true},
+    {"args": ["504"], "expected": true},
+    {"args": ["404"], "expected": false},
+    {"args": ["validation"], "expected": false}
+  ],
+  "ground_truth": {"result_correct": true, "truly_correct": true, "process_valid": true, "note": "大小写或漏网关码"}
+}

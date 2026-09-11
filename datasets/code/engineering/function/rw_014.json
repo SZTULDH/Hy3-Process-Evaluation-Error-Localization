@@ -1,0 +1,24 @@
+{
+  "id": "rw-014",
+  "difficulty": "engineering",
+  "kind": "function",
+  "category": "engineering",
+  "title": "比较语义化版本",
+  "description": "比较主.次.修订，缺段视为 0，返回 -1/0/1。",
+  "function_signature": "def cmp_semver(a: str, b: str) -> int",
+  "entry_point": "cmp_semver",
+  "language": "python",
+  "dependencies": [],
+  "public_tests": [
+    {"args": ["1.2.3", "1.2.4"], "expected": -1},
+    {"args": ["2.0.0", "1.9.9"], "expected": 1},
+    {"args": ["1.0.0", "1.0.0"], "expected": 0}
+  ],
+  "adversarial_tests": [
+    {"args": ["1.2", "1.2.0"], "expected": 0},
+    {"args": ["1", "1.0.0"], "expected": 0},
+    {"args": ["1.10.0", "1.2.0"], "expected": 1},
+    {"args": ["0.0.1", "0.0.1"], "expected": 0}
+  ],
+  "ground_truth": {"result_correct": true, "truly_correct": true, "process_valid": true, "note": "字符串比较会在 1.10 vs 1.2 失败"}
+}

@@ -1,0 +1,23 @@
+{
+  "id": "rw-013",
+  "difficulty": "engineering",
+  "kind": "function",
+  "category": "engineering",
+  "title": "稳定去重",
+  "description": "去重并保持首次出现顺序。",
+  "function_signature": "def unique_keep_order(items: list) -> list",
+  "entry_point": "unique_keep_order",
+  "language": "python",
+  "dependencies": [],
+  "public_tests": [
+    {"args": [[1,2,1,3]], "expected": [1,2,3]},
+    {"args": [["a","a","b"]], "expected": ["a","b"]},
+    {"args": [[]], "expected": []}
+  ],
+  "adversarial_tests": [
+    {"args": [[1,1,1]], "expected": [1]},
+    {"args": [[3,2,1,2,3]], "expected": [3,2,1]},
+    {"args": [[0, false]], "expected": [0, false]}
+  ],
+  "ground_truth": {"result_correct": true, "truly_correct": true, "process_valid": true, "note": "0 与 False 易混淆"}
+}

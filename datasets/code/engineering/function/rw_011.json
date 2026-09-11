@@ -1,0 +1,25 @@
+{
+  "id": "rw-011",
+  "difficulty": "engineering",
+  "kind": "function",
+  "category": "engineering",
+  "title": "解析时长字符串",
+  "description": "解析 1h30m15s 等为总秒数；同单位最多一次；非法返回 null。",
+  "function_signature": "def parse_duration(s: str) -> int | None",
+  "entry_point": "parse_duration",
+  "language": "python",
+  "dependencies": [],
+  "public_tests": [
+    {"args": ["1h30m"], "expected": 5400},
+    {"args": ["45s"], "expected": 45},
+    {"args": ["2h"], "expected": 7200}
+  ],
+  "adversarial_tests": [
+    {"args": ["1h30m15s"], "expected": 5415},
+    {"args": ["30m1h"], "expected": 5400},
+    {"args": [""], "expected": null},
+    {"args": ["1d"], "expected": null},
+    {"args": ["1h1h"], "expected": null}
+  ],
+  "ground_truth": {"result_correct": true, "truly_correct": true, "process_valid": true, "note": "重复单位与未知单位需拒绝"}
+}
