@@ -1,0 +1,28 @@
+{
+  "id": "eng-cls-002",
+  "kind": "class",
+  "difficulty": "engineering",
+  "category": "engineering",
+  "title": "订单状态机",
+  "description": "类 Order：状态 created->paid->shipped->done；created/paid 可 cancel 到 cancelled。方法 pay/ship/complete/cancel 成功返回 True，非法返回 False。",
+  "class_name": "Order",
+  "entry_point": "pay",
+  "init_args": [],
+  "language": "python",
+  "dependencies": [],
+  "public_tests": [
+    {"method": "pay", "args": [], "expected": true},
+    {"method": "ship", "args": [], "expected": true},
+    {"method": "complete", "args": [], "expected": true}
+  ],
+  "adversarial_tests": [
+    {"reset": true, "method": "ship", "args": [], "expected": false},
+    {"reset": true, "method": "pay", "args": [], "expected": true},
+    {"method": "cancel", "args": [], "expected": true},
+    {"method": "pay", "args": [], "expected": false},
+    {"reset": true, "method": "pay", "args": [], "expected": true},
+    {"method": "ship", "args": [], "expected": true},
+    {"method": "cancel", "args": [], "expected": false}
+  ],
+  "ground_truth": {"result_correct": true, "truly_correct": true, "process_valid": true, "note": "shipped 后仍允许 cancel 是错误"}
+}

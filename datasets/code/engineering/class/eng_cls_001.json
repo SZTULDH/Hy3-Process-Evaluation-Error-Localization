@@ -1,0 +1,26 @@
+{
+  "id": "eng-cls-001",
+  "kind": "class",
+  "difficulty": "engineering",
+  "category": "engineering",
+  "title": "固定窗口限流器",
+  "description": "实现类 RateLimiter(limit, window_sec)。allow(key, now)->bool：窗口 (now-window_sec, now] 内同 key 最多 limit 次为 True 并记一次。",
+  "class_name": "RateLimiter",
+  "entry_point": "allow",
+  "init_args": [2, 10.0],
+  "language": "python",
+  "dependencies": [],
+  "public_tests": [
+    {"method": "allow", "args": ["u1", 1.0], "expected": true},
+    {"method": "allow", "args": ["u1", 2.0], "expected": true},
+    {"method": "allow", "args": ["u1", 3.0], "expected": false},
+    {"method": "allow", "args": ["u2", 3.0], "expected": true}
+  ],
+  "adversarial_tests": [
+    {"reset": true, "method": "allow", "args": ["a", 0.0], "expected": true},
+    {"method": "allow", "args": ["a", 0.0], "expected": true},
+    {"method": "allow", "args": ["a", 0.0], "expected": false},
+    {"method": "allow", "args": ["a", 10.1], "expected": true}
+  ],
+  "ground_truth": {"result_correct": true, "truly_correct": true, "process_valid": true, "note": "窗口未滑动会在 10.1 仍拒绝"}
+}

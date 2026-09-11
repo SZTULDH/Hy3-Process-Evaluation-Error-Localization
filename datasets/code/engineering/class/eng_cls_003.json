@@ -1,0 +1,29 @@
+{
+  "id": "eng-cls-003",
+  "kind": "class",
+  "difficulty": "engineering",
+  "category": "engineering",
+  "title": "简易 LRU 缓存",
+  "description": "类 LRUCache(capacity)。get(key)->value 或 None；put(key, value)->None。容量满时淘汰最久未使用。get/put 都算使用。",
+  "class_name": "LRUCache",
+  "entry_point": "get",
+  "init_args": [2],
+  "language": "python",
+  "dependencies": [],
+  "public_tests": [
+    {"method": "put", "args": [1, "a"], "expected": null},
+    {"method": "put", "args": [2, "b"], "expected": null},
+    {"method": "get", "args": [1], "expected": "a"},
+    {"method": "put", "args": [3, "c"], "expected": null},
+    {"method": "get", "args": [2], "expected": null}
+  ],
+  "adversarial_tests": [
+    {"reset": true, "method": "put", "args": [1, 1], "expected": null},
+    {"method": "put", "args": [2, 2], "expected": null},
+    {"method": "get", "args": [1], "expected": 1},
+    {"method": "put", "args": [3, 3], "expected": null},
+    {"method": "get", "args": [2], "expected": null},
+    {"method": "get", "args": [3], "expected": 3}
+  ],
+  "ground_truth": {"result_correct": true, "truly_correct": true, "process_valid": true, "note": "FIFO 而非 LRU 会在 get 后再 put 时淘汰错误键"}
+}
