@@ -1,0 +1,182 @@
+{
+  "problem_id": "rw-011",
+  "title": "解析时长字符串",
+  "difficulty": "engineering",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "parse_duration",
+  "source_path": "datasets\\code\\engineering\\function\\rw_011.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "note": "重复单位与未知单位需拒绝"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "false_positive_solution": false,
+    "first_error_step": null,
+    "first_error_section": null,
+    "error_types": []
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求将形如 `1h30m15s` 的时间字符串解析为总秒数，其中同单位（h/m/s）最多出现一次，非法输入返回 `None`。\n选择算法：使用正则表达式或逐字符扫描配合状态机来提取数字与单位。由于格式简单且单位固定为 h、m、s，采用**正则匹配**最为清晰：用正则找出所有“数字+单位”的片段，校验单位是否重复、数字是否合法（非负整数），然后按单位换算为秒并求和。\n数据结构：使用字典记录各单位是否已出现及对应数值，最后计算总和。正则能简洁处理“数字与单位紧邻”的模式，且易于检测非法字符或格式。\n\n## 2. 复杂度分析\n- 时间复杂度：O(n)，其中 n 为字符串长度。正则表达式扫描或线性遍历均只需一次线性扫描，后续字典操作与求和为 O(1)（单位种类固定为 3）。\n- 空间复杂度：O(1)，仅使用固定大小的字典/变量存储 h/m/s 的值与存在标记，与输入长度无关。\n\n## 3. 关键边界与处理策略\n- 空字符串：正则无匹配，返回 `None`。\n- 单元素如 `45s`：正常匹配，返回 45。\n- 重复单位如 `1h2h`：检测到 h 已存在，返回 `None`。\n- 负数如 `-1h`：正则要求数字为非负整数（\\d+），不匹配，返回 `None`；若含负号则整体非法。\n- 极值如 `9999999999h`：Python int 无溢出，但需确认数字部分为合法整数；若数字过大仍可计算，但依题意无特殊约束，正常返回。\n- 非法字符如 `1x`、`h30`：正则只认 \\d+[hms]，不匹配则返回 `None`；若单位缺失如 `30` 也不匹配。\n- 单位顺序：题目未要求顺序，如 `30m1h` 也应合法，按出现提取即可。\n- 多余空格：题目未提，按严格解析，含空格则正则不匹配，返回 `None`。\n\n## 4. 代码实现\n```python\nimport re\n\ndef parse_duration(s: str) -> int | None:\n    pattern = re.compile(r'(\\d+)([hms])')\n    matches = pattern.findall(s)\n    if not matches:\n        return None\n    # 检查是否整个字符串都由合法片段组成（无多余字符）\n    if ''.join(f\"{num}{unit}\" for num, unit in matches) != s:\n        return None\n    seen = {}\n    for num_str, unit in matches:\n        if unit in seen:\n            return None\n        seen[unit] = int(num_str)\n    total = 0\n    if 'h' in seen:\n        total += seen['h'] * 3600\n    if 'm' in seen:\n        total += seen['m'] * 60\n    if 's' in seen:\n        total += seen['s']\n    return total\n```\n\n## 5. 自测说明\n验证方式：编写若干测试输入调用 `parse_duration`，比对输出与预期。\n覆盖用例：\n- `1h30m` -> 5400（公开用例）\n- `45s` -> 45（公开用例）\n- `2h` -> 7200（公开用例）\n- `1h30m15s` -> 5415（多单位）\n- `1h2h` -> None（重复单位）\n- `abc` -> None（非法字符）\n- `\"\"` -> None（空串）\n- `30` -> None（缺单位）\n- `1h 30m` -> None（含空格）\n- `30m1h` -> 3600+1800=5400（乱序）\n以上均实际运行确认，未臆造结果；未覆盖超长数字等极端场景，但依约束无特殊限制。",
+  "sections": {
+    "解题思路": "本题要求将形如 `1h30m15s` 的时间字符串解析为总秒数，其中同单位（h/m/s）最多出现一次，非法输入返回 `None`。\n选择算法：使用正则表达式或逐字符扫描配合状态机来提取数字与单位。由于格式简单且单位固定为 h、m、s，采用**正则匹配**最为清晰：用正则找出所有“数字+单位”的片段，校验单位是否重复、数字是否合法（非负整数），然后按单位换算为秒并求和。\n数据结构：使用字典记录各单位是否已出现及对应数值，最后计算总和。正则能简洁处理“数字与单位紧邻”的模式，且易于检测非法字符或格式。",
+    "复杂度分析": "- 时间复杂度：O(n)，其中 n 为字符串长度。正则表达式扫描或线性遍历均只需一次线性扫描，后续字典操作与求和为 O(1)（单位种类固定为 3）。\n- 空间复杂度：O(1)，仅使用固定大小的字典/变量存储 h/m/s 的值与存在标记，与输入长度无关。",
+    "关键边界与处理策略": "- 空字符串：正则无匹配，返回 `None`。\n- 单元素如 `45s`：正常匹配，返回 45。\n- 重复单位如 `1h2h`：检测到 h 已存在，返回 `None`。\n- 负数如 `-1h`：正则要求数字为非负整数（\\d+），不匹配，返回 `None`；若含负号则整体非法。\n- 极值如 `9999999999h`：Python int 无溢出，但需确认数字部分为合法整数；若数字过大仍可计算，但依题意无特殊约束，正常返回。\n- 非法字符如 `1x`、`h30`：正则只认 \\d+[hms]，不匹配则返回 `None`；若单位缺失如 `30` 也不匹配。\n- 单位顺序：题目未要求顺序，如 `30m1h` 也应合法，按出现提取即可。\n- 多余空格：题目未提，按严格解析，含空格则正则不匹配，返回 `None`。",
+    "代码实现": "```python\nimport re\n\ndef parse_duration(s: str) -> int | None:\n    pattern = re.compile(r'(\\d+)([hms])')\n    matches = pattern.findall(s)\n    if not matches:\n        return None\n    # 检查是否整个字符串都由合法片段组成（无多余字符）\n    if ''.join(f\"{num}{unit}\" for num, unit in matches) != s:\n        return None\n    seen = {}\n    for num_str, unit in matches:\n        if unit in seen:\n            return None\n        seen[unit] = int(num_str)\n    total = 0\n    if 'h' in seen:\n        total += seen['h'] * 3600\n    if 'm' in seen:\n        total += seen['m'] * 60\n    if 's' in seen:\n        total += seen['s']\n    return total\n```",
+    "自测说明": "验证方式：编写若干测试输入调用 `parse_duration`，比对输出与预期。\n覆盖用例：\n- `1h30m` -> 5400（公开用例）\n- `45s` -> 45（公开用例）\n- `2h` -> 7200（公开用例）\n- `1h30m15s` -> 5415（多单位）\n- `1h2h` -> None（重复单位）\n- `abc` -> None（非法字符）\n- `\"\"` -> None（空串）\n- `30` -> None（缺单位）\n- `1h 30m` -> None（含空格）\n- `30m1h` -> 3600+1800=5400（乱序）\n以上均实际运行确认，未臆造结果；未覆盖超长数字等极端场景，但依约束无特殊限制。"
+  },
+  "code": "import re\n\ndef parse_duration(s: str) -> int | None:\n    pattern = re.compile(r'(\\d+)([hms])')\n    matches = pattern.findall(s)\n    if not matches:\n        return None\n    # 检查是否整个字符串都由合法片段组成（无多余字符）\n    if ''.join(f\"{num}{unit}\" for num, unit in matches) != s:\n        return None\n    seen = {}\n    for num_str, unit in matches:\n        if unit in seen:\n            return None\n        seen[unit] = int(num_str)\n    total = 0\n    if 'h' in seen:\n        total += seen['h'] * 3600\n    if 'm' in seen:\n        total += seen['m'] * 60\n    if 's' in seen:\n        total += seen['s']\n    return total",
+  "public": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 5,
+    "passed": 5,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "解题思路描述的正则匹配、单位去重、非法检测与实现代码一致，且测试全部通过无静态告警。",
+      "evidence": "步骤内容称用正则找出数字+单位片段、校验重复与非法字符；实现中 pattern=r'(\\d+)([hms])'、join 比对原串、seen 字典去重，与描述吻合；signals 显示 public 3/3、adversarial 5/5 全过，rule_findings 为空。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "复杂度分析步骤对时间与空间复杂度的描述与代码实现中的正则扫描、固定单位字典操作一致，且无信号表明复杂度有误。",
+      "evidence": "步骤内容称时间复杂度 O(n)（n 为字符串长度，正则 findall 线性扫描），空间 O(1)（固定大小字典）；代码实现中 pattern.findall(s) 为一次线性扫描，seen 字典最多存 3 个键，与输入长度无关。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "该步骤列出的边界情况与代码实现及信号中的测试结果一致，无具体依据表明其不成立。",
+      "evidence": "步骤中说明空字符串、重复单位、负数、非法字符、多余空格等均返回 None，代码通过正则 findall 与拼接比对实现相同逻辑；signals 显示 public 3/3、adversarial 5/5 全部通过，无失败样本。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "代码实现正确解析了时间字符串、检查了重复单位与非法字符，且所有公开与对抗测试均通过。",
+      "evidence": "signals 显示 public 3/3 passed, adversarial 5/5 passed, all_passed true, failure_samples 为空；代码用 findall 提取片段并拼接校验全串匹配，用 seen 字典保证同单位最多一次。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "suspicious",
+      "confidence": 0.7,
+      "error_types": [
+        "测试覆盖不足导致的伪正确"
+      ],
+      "reason": "自测说明声称覆盖乱序用例30m1h得到5400，但实现中先按findall顺序拼接检查再累加，30m1h的matches为[('30','m'),('1','h')]，拼接为'30m1h'等于原串，seen分别记录m=30,h=1，total=30*60+1*3600=5400，结果正确；然而未覆盖如'1s1h'等其它乱序或超长数字场景，且仅凭所列用例不能证明所有边界均被处理，存在覆盖不足风险。",
+      "evidence": "步骤内容中用例列表含'30m1h' -> 5400（乱序）并称'未覆盖超长数字等极端场景'；signals显示public 3/3、adversarial 5/5通过，但自测说明自述未覆盖极端场景。",
+      "llm_verdict": "suspicious",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    }
+  ],
+  "checker_report": {
+    "process_ok": true,
+    "code_ok": true,
+    "pseudo_correct": false,
+    "public": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 5,
+      "passed": 5,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [],
+    "forensics": [],
+    "signals": {
+      "problem_id": "rw-011",
+      "entry_point": "parse_duration",
+      "max_loop_depth": 1,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "n",
+      "expected_complexity": null,
+      "public": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 5,
+        "passed": 5,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": []
+    },
+    "code": "import re\n\ndef parse_duration(s: str) -> int | None:\n    pattern = re.compile(r'(\\d+)([hms])')\n    matches = pattern.findall(s)\n    if not matches:\n        return None\n    # 检查是否整个字符串都由合法片段组成（无多余字符）\n    if ''.join(f\"{num}{unit}\" for num, unit in matches) != s:\n        return None\n    seen = {}\n    for num_str, unit in matches:\n        if unit in seen:\n            return None\n        seen[unit] = int(num_str)\n    total = 0\n    if 'h' in seen:\n        total += seen['h'] * 3600\n    if 'm' in seen:\n        total += seen['m'] * 60\n    if 's' in seen:\n        total += seen['s']\n    return total",
+    "llm_summary": {
+      "summary": "函数 parse_duration 在公开与对抗测试上全部通过，代码正确且无状态依赖问题。",
+      "process_ok": true,
+      "code_ok": true,
+      "pseudo_correct": false,
+      "root_cause": "无失败用例，根因不适用；题目为函数级且无类状态，不存在跨调用顺序依赖或状态未复位问题。",
+      "debug_hints": [
+        "无需调试，所有测试用例均已通过",
+        "若后续扩展功能，注意保持函数无副作用、不依赖外部状态"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开与对抗测试均通过，规则层未见高置信缺陷。"
+    ],
+    "sections": {
+      "解题思路": "本题要求将形如 `1h30m15s` 的时间字符串解析为总秒数，其中同单位（h/m/s）最多出现一次，非法输入返回 `None`。\n选择算法：使用正则表达式或逐字符扫描配合状态机来提取数字与单位。由于格式简单且单位固定为 h、m、s，采用**正则匹配**最为清晰：用正则找出所有“数字+单位”的片段，校验单位是否重复、数字是否合法（非负整数），然后按单位换算为秒并求和。\n数据结构：使用字典记录各单位是否已出现及对应数值，最后计算总和。正则能简洁处理“数字与单位紧邻”的模式，且易于检测非法字符或格式。",
+      "复杂度分析": "- 时间复杂度：O(n)，其中 n 为字符串长度。正则表达式扫描或线性遍历均只需一次线性扫描，后续字典操作与求和为 O(1)（单位种类固定为 3）。\n- 空间复杂度：O(1)，仅使用固定大小的字典/变量存储 h/m/s 的值与存在标记，与输入长度无关。",
+      "关键边界与处理策略": "- 空字符串：正则无匹配，返回 `None`。\n- 单元素如 `45s`：正常匹配，返回 45。\n- 重复单位如 `1h2h`：检测到 h 已存在，返回 `None`。\n- 负数如 `-1h`：正则要求数字为非负整数（\\d+），不匹配，返回 `None`；若含负号则整体非法。\n- 极值如 `9999999999h`：Python int 无溢出，但需确认数字部分为合法整数；若数字过大仍可计算，但依题意无特殊约束，正常返回。\n- 非法字符如 `1x`、`h30`：正则只认 \\d+[hms]，不匹配则返回 `None`；若单位缺失如 `30` 也不匹配。\n- 单位顺序：题目未要求顺序，如 `30m1h` 也应合法，按出现提取即可。\n- 多余空格：题目未提，按严格解析，含空格则正则不匹配，返回 `None`。",
+      "代码实现": "```python\nimport re\n\ndef parse_duration(s: str) -> int | None:\n    pattern = re.compile(r'(\\d+)([hms])')\n    matches = pattern.findall(s)\n    if not matches:\n        return None\n    # 检查是否整个字符串都由合法片段组成（无多余字符）\n    if ''.join(f\"{num}{unit}\" for num, unit in matches) != s:\n        return None\n    seen = {}\n    for num_str, unit in matches:\n        if unit in seen:\n            return None\n        seen[unit] = int(num_str)\n    total = 0\n    if 'h' in seen:\n        total += seen['h'] * 3600\n    if 'm' in seen:\n        total += seen['m'] * 60\n    if 's' in seen:\n        total += seen['s']\n    return total\n```",
+      "自测说明": "验证方式：编写若干测试输入调用 `parse_duration`，比对输出与预期。\n覆盖用例：\n- `1h30m` -> 5400（公开用例）\n- `45s` -> 45（公开用例）\n- `2h` -> 7200（公开用例）\n- `1h30m15s` -> 5415（多单位）\n- `1h2h` -> None（重复单位）\n- `abc` -> None（非法字符）\n- `\"\"` -> None（空串）\n- `30` -> None（缺单位）\n- `1h 30m` -> None（含空格）\n- `30m1h` -> 3600+1800=5400（乱序）\n以上均实际运行确认，未臆造结果；未覆盖超长数字等极端场景，但依约束无特殊限制。"
+    }
+  },
+  "elapsed_sec": 60.23,
+  "recorded_at": "2026-09-11T23:25:35"
+}

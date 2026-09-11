@@ -1,0 +1,188 @@
+{
+  "problem_id": "adversarial-006",
+  "title": "缺失的区间（边界遗漏）",
+  "difficulty": "adversarial",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "find_missing_ranges",
+  "source_path": "datasets\\code\\adversarial\\find_missing_ranges.json",
+  "ground_truth": {
+    "result_correct": false,
+    "truly_correct": false,
+    "process_valid": false,
+    "first_error_step": "step_3_edge_cases",
+    "error_types": [
+      "边界处理缺失",
+      "实现逻辑缺陷"
+    ],
+    "note": "遗漏 lower 之前与 upper 之后的缺失区间。"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "false_positive_solution": false,
+    "first_error_step": null,
+    "first_error_section": null,
+    "error_types": []
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求在有序无重复整数数组 `nums` 中，找出给定范围 `[lower, upper]` 内所有未被数组覆盖的缺失区间。由于数组本身有序且无重复，我们可以采用**线性扫描（双指针/游标推进）**的策略：维护一个当前待检查的起点 `next`（初始为 `lower`），遍历 `nums` 中的每个数 `num`。若 `num > next`，说明 `[next, num-1]` 是缺失区间，将其加入结果；随后将 `next` 更新为 `num + 1`。遍历结束后，若 `next <= upper`，则 `[next, upper]` 也是缺失区间。该算法只需一次遍历，利用数组有序性避免额外查找，直观且高效。\n\n## 2. 复杂度分析\n- 时间复杂度：O(n)，其中 n 为 `nums` 的长度。我们只对数组进行一次线性扫描，每次迭代执行常数级操作，因此总时间为 O(n)。\n- 空间复杂度：O(m)，其中 m 为缺失区间的数量（最坏情况下 m 可达 n+1，例如数组元素全部紧密相邻但整体偏移时）。结果列表用于存储输出，不计入额外辅助空间则为 O(1) 辅助，但按输出规模计为 O(m)。\n\n## 3. 关键边界与处理策略\n- **空输入 `nums` 为空**：直接返回 `[[lower, upper]]`（若 `lower <= upper`），如公开用例 `[[], 1, 1] -> [[1,1]]`。\n- **单元素数组**：如 `nums=[5], lower=1, upper=10`，扫描后得 `[1,4]` 和 `[6,10]`；若 `nums=[1], lower=1, upper=1` 则无缺失，返回 `[]`。\n- **重复元素**：题目明确无重复，无需去重处理。\n- **负数与极值**：`lower/upper` 可达 ±10^9，使用 Python 整型无溢出问题；比较与加减直接使用整数运算。\n- **`lower == upper`**：若该值不在 `nums` 中，返回 `[[lower, upper]]`；若在，返回 `[]`。\n- **数组元素超出范围**：如 `nums` 含小于 `lower` 或大于 `upper` 的值，扫描时通过 `num > next` 和末尾 `next <= upper` 判断自然跳过越界部分，仅统计 `[lower, upper]` 内缺失。\n- **数组完全覆盖范围**：如 `nums=[1,2,3], lower=1, upper=3`，返回 `[]`。\n\n## 4. 代码实现\n```python\ndef find_missing_ranges(nums: list, lower: int, upper: int) -> list:\n    res = []\n    next_val = lower\n    for num in nums:\n        if num < next_val:\n            continue\n        if num > next_val:\n            res.append([next_val, num - 1])\n        next_val = num + 1\n        if next_val > upper:\n            break\n    if next_val <= upper:\n        res.append([next_val, upper])\n    return res\n```\n\n## 5. 自测说明\n我依据题目公开用例及边界情形构造了本地测试进行验证：\n- 公开用例1：`nums=[0,1,3,50,75], lower=0, upper=99` → 输出 `[[2,2],[4,49],[51,74],[76,99]]`，与期望一致。\n- 公开用例2：`nums=[], lower=1, upper=1` → 输出 `[[1,1]]`，与期望一致。\n- 边界：空数组且 `lower<upper`（如 `[], 1, 5` → `[[1,5]]`）；单元素在范围内（`[5], 1, 10` → `[[1,4],[6,10]]`）；完全覆盖（`[1,2,3], 1, 3` → `[]`）；含越界元素（`[-5,0,5], 1, 4` → `[[1,4]]`）；`lower==upper` 且缺失（`[], 0, 0` → `[[0,0]]`）。\n验证覆盖：公开用例、空输入、单元素、越界元素、完全覆盖、等值边界。未测试超大规模性能（但算法为 O(n) 可线性扩展），未使用随机压力测试，仅基于上述确定性用例确认逻辑正确。",
+  "sections": {
+    "解题思路": "本题要求在有序无重复整数数组 `nums` 中，找出给定范围 `[lower, upper]` 内所有未被数组覆盖的缺失区间。由于数组本身有序且无重复，我们可以采用**线性扫描（双指针/游标推进）**的策略：维护一个当前待检查的起点 `next`（初始为 `lower`），遍历 `nums` 中的每个数 `num`。若 `num > next`，说明 `[next, num-1]` 是缺失区间，将其加入结果；随后将 `next` 更新为 `num + 1`。遍历结束后，若 `next <= upper`，则 `[next, upper]` 也是缺失区间。该算法只需一次遍历，利用数组有序性避免额外查找，直观且高效。",
+    "复杂度分析": "- 时间复杂度：O(n)，其中 n 为 `nums` 的长度。我们只对数组进行一次线性扫描，每次迭代执行常数级操作，因此总时间为 O(n)。\n- 空间复杂度：O(m)，其中 m 为缺失区间的数量（最坏情况下 m 可达 n+1，例如数组元素全部紧密相邻但整体偏移时）。结果列表用于存储输出，不计入额外辅助空间则为 O(1) 辅助，但按输出规模计为 O(m)。",
+    "关键边界与处理策略": "- **空输入 `nums` 为空**：直接返回 `[[lower, upper]]`（若 `lower <= upper`），如公开用例 `[[], 1, 1] -> [[1,1]]`。\n- **单元素数组**：如 `nums=[5], lower=1, upper=10`，扫描后得 `[1,4]` 和 `[6,10]`；若 `nums=[1], lower=1, upper=1` 则无缺失，返回 `[]`。\n- **重复元素**：题目明确无重复，无需去重处理。\n- **负数与极值**：`lower/upper` 可达 ±10^9，使用 Python 整型无溢出问题；比较与加减直接使用整数运算。\n- **`lower == upper`**：若该值不在 `nums` 中，返回 `[[lower, upper]]`；若在，返回 `[]`。\n- **数组元素超出范围**：如 `nums` 含小于 `lower` 或大于 `upper` 的值，扫描时通过 `num > next` 和末尾 `next <= upper` 判断自然跳过越界部分，仅统计 `[lower, upper]` 内缺失。\n- **数组完全覆盖范围**：如 `nums=[1,2,3], lower=1, upper=3`，返回 `[]`。",
+    "代码实现": "```python\ndef find_missing_ranges(nums: list, lower: int, upper: int) -> list:\n    res = []\n    next_val = lower\n    for num in nums:\n        if num < next_val:\n            continue\n        if num > next_val:\n            res.append([next_val, num - 1])\n        next_val = num + 1\n        if next_val > upper:\n            break\n    if next_val <= upper:\n        res.append([next_val, upper])\n    return res\n```",
+    "自测说明": "我依据题目公开用例及边界情形构造了本地测试进行验证：\n- 公开用例1：`nums=[0,1,3,50,75], lower=0, upper=99` → 输出 `[[2,2],[4,49],[51,74],[76,99]]`，与期望一致。\n- 公开用例2：`nums=[], lower=1, upper=1` → 输出 `[[1,1]]`，与期望一致。\n- 边界：空数组且 `lower<upper`（如 `[], 1, 5` → `[[1,5]]`）；单元素在范围内（`[5], 1, 10` → `[[1,4],[6,10]]`）；完全覆盖（`[1,2,3], 1, 3` → `[]`）；含越界元素（`[-5,0,5], 1, 4` → `[[1,4]]`）；`lower==upper` 且缺失（`[], 0, 0` → `[[0,0]]`）。\n验证覆盖：公开用例、空输入、单元素、越界元素、完全覆盖、等值边界。未测试超大规模性能（但算法为 O(n) 可线性扩展），未使用随机压力测试，仅基于上述确定性用例确认逻辑正确。"
+  },
+  "code": "def find_missing_ranges(nums: list, lower: int, upper: int) -> list:\n    res = []\n    next_val = lower\n    for num in nums:\n        if num < next_val:\n            continue\n        if num > next_val:\n            res.append([next_val, num - 1])\n        next_val = num + 1\n        if next_val > upper:\n            break\n    if next_val <= upper:\n        res.append([next_val, upper])\n    return res",
+  "public": {
+    "total": 2,
+    "passed": 2,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 4,
+    "passed": 4,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "解题思路描述的线性扫描策略与代码实现一致，且测试全部通过，复杂度符合O(n)要求。",
+      "evidence": "步骤内容描述维护next起点、遍历nums、num>next时记录[next,num-1]、更新next=num+1、末尾补[next,upper]；代码实现完全对应；signals显示public和adversarial测试均all_passed=true，claimed_complexity为n与expected一致。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "复杂度分析步骤对时间和空间复杂度的描述与代码实现及题目期望一致，且测试全部通过无矛盾证据。",
+      "evidence": "步骤内容称时间复杂度 O(n) 因单次线性扫描常数操作；代码为单层 for 循环无嵌套，signals 显示 max_loop_depth=1、claimed_complexity=n、expected_complexity=O(n)、public 与 adversarial 测试均 all_passed=true；空间复杂度 O(m) 描述与结果列表 res 存储输出相符。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "该步骤对空输入、单元素、重复、极值、lower==upper、越界元素及全覆盖等边界情况的说明与代码实现逻辑一致，且测试全部通过。",
+      "evidence": "步骤称空输入返回[[lower,upper]]，代码next_val=lower且nums为空时末尾append[lower,upper]；称数组越界通过num<next_val跳过，代码有if num<next_val: continue；signals显示public与adversarial测试均all_passed=true。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "代码实现与题目要求在逻辑、边界和复杂度上均一致，且所有公开与对抗测试均通过。",
+      "evidence": "signals 显示 public 2/2 passed、adversarial 4/4 passed、all_passed true、failure_samples 为空；代码遍历 nums 一次（O(n)），用 next_val 跟踪下界，处理了 num<next_val 跳过、num>next_val 补区间、循环后补尾区间，与闭区间缺失区间定义一致。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "suspicious",
+      "confidence": 0.6,
+      "error_types": [
+        "测试覆盖不足导致的伪正确"
+      ],
+      "reason": "自测说明中列出的用例均为确定性小规模用例且全部通过，但未进行随机压力测试或超大规模性能验证，仅凭有限用例确认逻辑正确，存在测试覆盖不足导致伪正确的风险。",
+      "evidence": "步骤内容写明'未测试超大规模性能（但算法为 O(n) 可线性扩展），未使用随机压力测试，仅基于上述确定性用例确认逻辑正确'；signals 显示 public 2/2、adversarial 4/4 通过，但自测说明本身承认覆盖有限。",
+      "llm_verdict": "suspicious",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    }
+  ],
+  "checker_report": {
+    "process_ok": true,
+    "code_ok": true,
+    "pseudo_correct": false,
+    "public": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 4,
+      "passed": 4,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [],
+    "forensics": [],
+    "signals": {
+      "problem_id": "adversarial-006",
+      "entry_point": "find_missing_ranges",
+      "max_loop_depth": 1,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "n",
+      "expected_complexity": "O(n)",
+      "public": {
+        "total": 2,
+        "passed": 2,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 4,
+        "passed": 4,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": []
+    },
+    "code": "def find_missing_ranges(nums: list, lower: int, upper: int) -> list:\n    res = []\n    next_val = lower\n    for num in nums:\n        if num < next_val:\n            continue\n        if num > next_val:\n            res.append([next_val, num - 1])\n        next_val = num + 1\n        if next_val > upper:\n            break\n    if next_val <= upper:\n        res.append([next_val, upper])\n    return res",
+    "llm_summary": {
+      "summary": "公开与对抗测试全部通过，代码正确但伪代码/思路描述被标记为不正确。",
+      "process_ok": false,
+      "code_ok": true,
+      "pseudo_correct": false,
+      "root_cause": "代码本身在所有测试（公开+对抗）中均通过，但解题过程中的伪代码或算法描述存在错误或与实际代码不一致，导致 pseudo_correct 被判为 false。",
+      "debug_hints": [
+        "核对解题过程中的伪代码/文字描述是否与最终提交代码逻辑一致",
+        "重点检查边界条件（如空输入、单元素、整数溢出、闭开区间处理）在描述中是否被准确表达",
+        "若伪代码仅为示意，应补充与代码等价的精确步骤说明"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开与对抗测试均通过，规则层未见高置信缺陷。"
+    ],
+    "sections": {
+      "解题思路": "本题要求在有序无重复整数数组 `nums` 中，找出给定范围 `[lower, upper]` 内所有未被数组覆盖的缺失区间。由于数组本身有序且无重复，我们可以采用**线性扫描（双指针/游标推进）**的策略：维护一个当前待检查的起点 `next`（初始为 `lower`），遍历 `nums` 中的每个数 `num`。若 `num > next`，说明 `[next, num-1]` 是缺失区间，将其加入结果；随后将 `next` 更新为 `num + 1`。遍历结束后，若 `next <= upper`，则 `[next, upper]` 也是缺失区间。该算法只需一次遍历，利用数组有序性避免额外查找，直观且高效。",
+      "复杂度分析": "- 时间复杂度：O(n)，其中 n 为 `nums` 的长度。我们只对数组进行一次线性扫描，每次迭代执行常数级操作，因此总时间为 O(n)。\n- 空间复杂度：O(m)，其中 m 为缺失区间的数量（最坏情况下 m 可达 n+1，例如数组元素全部紧密相邻但整体偏移时）。结果列表用于存储输出，不计入额外辅助空间则为 O(1) 辅助，但按输出规模计为 O(m)。",
+      "关键边界与处理策略": "- **空输入 `nums` 为空**：直接返回 `[[lower, upper]]`（若 `lower <= upper`），如公开用例 `[[], 1, 1] -> [[1,1]]`。\n- **单元素数组**：如 `nums=[5], lower=1, upper=10`，扫描后得 `[1,4]` 和 `[6,10]`；若 `nums=[1], lower=1, upper=1` 则无缺失，返回 `[]`。\n- **重复元素**：题目明确无重复，无需去重处理。\n- **负数与极值**：`lower/upper` 可达 ±10^9，使用 Python 整型无溢出问题；比较与加减直接使用整数运算。\n- **`lower == upper`**：若该值不在 `nums` 中，返回 `[[lower, upper]]`；若在，返回 `[]`。\n- **数组元素超出范围**：如 `nums` 含小于 `lower` 或大于 `upper` 的值，扫描时通过 `num > next` 和末尾 `next <= upper` 判断自然跳过越界部分，仅统计 `[lower, upper]` 内缺失。\n- **数组完全覆盖范围**：如 `nums=[1,2,3], lower=1, upper=3`，返回 `[]`。",
+      "代码实现": "```python\ndef find_missing_ranges(nums: list, lower: int, upper: int) -> list:\n    res = []\n    next_val = lower\n    for num in nums:\n        if num < next_val:\n            continue\n        if num > next_val:\n            res.append([next_val, num - 1])\n        next_val = num + 1\n        if next_val > upper:\n            break\n    if next_val <= upper:\n        res.append([next_val, upper])\n    return res\n```",
+      "自测说明": "我依据题目公开用例及边界情形构造了本地测试进行验证：\n- 公开用例1：`nums=[0,1,3,50,75], lower=0, upper=99` → 输出 `[[2,2],[4,49],[51,74],[76,99]]`，与期望一致。\n- 公开用例2：`nums=[], lower=1, upper=1` → 输出 `[[1,1]]`，与期望一致。\n- 边界：空数组且 `lower<upper`（如 `[], 1, 5` → `[[1,5]]`）；单元素在范围内（`[5], 1, 10` → `[[1,4],[6,10]]`）；完全覆盖（`[1,2,3], 1, 3` → `[]`）；含越界元素（`[-5,0,5], 1, 4` → `[[1,4]]`）；`lower==upper` 且缺失（`[], 0, 0` → `[[0,0]]`）。\n验证覆盖：公开用例、空输入、单元素、越界元素、完全覆盖、等值边界。未测试超大规模性能（但算法为 O(n) 可线性扩展），未使用随机压力测试，仅基于上述确定性用例确认逻辑正确。"
+    }
+  },
+  "elapsed_sec": 76.35,
+  "recorded_at": "2026-09-11T23:05:48"
+}

@@ -1,0 +1,555 @@
+{
+  "problem_id": "medium-001",
+  "title": "两数之和",
+  "difficulty": "medium",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "two_sum",
+  "source_path": "datasets\\code\\medium\\two_sum.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": false,
+    "process_valid": false,
+    "first_error_step": "step_2_complexity",
+    "error_types": [
+      "算法选择错误",
+      "复杂度分析错误"
+    ],
+    "note": "暴力 O(n^2) 不满足 O(n)"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": false,
+    "process_valid": false,
+    "false_positive_solution": true,
+    "first_error_step": "step_3_edge_cases",
+    "first_error_section": "关键边界与处理策略",
+    "error_types": [
+      "边界处理缺失",
+      "测试覆盖不足导致的伪正确",
+      "描述与实现不一致",
+      "实现逻辑缺陷"
+    ]
+  },
+  "raw_solution": "## 1. 解题思路\n选择哈希表（字典）作为核心数据结构，配合一次遍历实现。遍历数组时，对于每个元素 nums[i]，计算补数 complement = target - nums[i]；若补数已在哈希表中，说明之前遍历过的某个下标 j 满足 nums[j] + nums[i] = target，直接返回 [j, i]；否则将当前值与其下标存入哈希表。该算法只需一次线性扫描，天然满足题目期望的 O(n) 时间复杂度，且利用哈希表将查找补数的操作降为平均 O(1)。\n\n## 2. 复杂度分析\n时间复杂度：O(n)。推理依据：对长度为 n 的数组进行单次遍历，每次遍历中哈希表的插入与查询操作平均时间复杂度为 O(1)，因此总时间开销与 n 成正比。\n空间复杂度：O(n)。推理依据：最坏情况下（如无解或解在末尾），哈希表中需存储全部 n 个元素的值与下标映射，占用空间随 n 线性增长。\n\n## 3. 关键边界与处理策略\n- 空输入：题目约束 n >= 2，不会出现空列表；若防御性考虑可返回空列表，但依约束无需处理。\n- 单元素：约束 n >= 2，不会出现；若出现则无两数之和，返回空。\n- 重复元素：如 [3,3] target=6，遍历到第二个 3 时补数 3 已在表中（存的是第一个 3 的下标 0），返回 [0,1]，正确处理。\n- 负数：哈希表以数值为键，负数同样可正确计算补数并匹配，无特殊影响。\n- 极值：数值可能很大或很小，Python  int 无溢出问题，哈希表正常工作。\n- 无解情况：题目保证有解（公开用例及常规设定），若遍历结束未找到则不会返回；依约束不做额外处理。\n- 多解情况：返回最先遇到的合法下标对（即遍历顺序中首次匹配），符合示例预期。\n\n## 4. 代码实现\n```python\ndef two_sum(nums: list, target: int):\n    seen = {}\n    for i, num in enumerate(nums):\n        complement = target - num\n        if complement in seen:\n            return [seen[complement], i]\n        seen[num] = i\n    return []\n```\n\n## 5. 自测说明\n验证方式：使用题目提供的公开测试用例在 Python 环境中直接调用函数比对输出；另构造含负数、重复元素、较大数值的用例（如 [-1, -2, -3, -4] target=-6 期望 [1,3]；[10,20,30] target=50 期望 [1,2]）进行手工执行验证。\n验证覆盖范围：覆盖了公开示例中的基础场景、重复元素场景、负数场景及多元素场景；未覆盖极端大规模 n=10^4 的性能压测（仅理论分析 O(n) 可行），未使用自动化测试框架，未臆造未实际运行的测试结果。",
+  "sections": {
+    "解题思路": "选择哈希表（字典）作为核心数据结构，配合一次遍历实现。遍历数组时，对于每个元素 nums[i]，计算补数 complement = target - nums[i]；若补数已在哈希表中，说明之前遍历过的某个下标 j 满足 nums[j] + nums[i] = target，直接返回 [j, i]；否则将当前值与其下标存入哈希表。该算法只需一次线性扫描，天然满足题目期望的 O(n) 时间复杂度，且利用哈希表将查找补数的操作降为平均 O(1)。",
+    "复杂度分析": "时间复杂度：O(n)。推理依据：对长度为 n 的数组进行单次遍历，每次遍历中哈希表的插入与查询操作平均时间复杂度为 O(1)，因此总时间开销与 n 成正比。\n空间复杂度：O(n)。推理依据：最坏情况下（如无解或解在末尾），哈希表中需存储全部 n 个元素的值与下标映射，占用空间随 n 线性增长。",
+    "关键边界与处理策略": "- 空输入：题目约束 n >= 2，不会出现空列表；若防御性考虑可返回空列表，但依约束无需处理。\n- 单元素：约束 n >= 2，不会出现；若出现则无两数之和，返回空。\n- 重复元素：如 [3,3] target=6，遍历到第二个 3 时补数 3 已在表中（存的是第一个 3 的下标 0），返回 [0,1]，正确处理。\n- 负数：哈希表以数值为键，负数同样可正确计算补数并匹配，无特殊影响。\n- 极值：数值可能很大或很小，Python  int 无溢出问题，哈希表正常工作。\n- 无解情况：题目保证有解（公开用例及常规设定），若遍历结束未找到则不会返回；依约束不做额外处理。\n- 多解情况：返回最先遇到的合法下标对（即遍历顺序中首次匹配），符合示例预期。",
+    "代码实现": "```python\ndef two_sum(nums: list, target: int):\n    seen = {}\n    for i, num in enumerate(nums):\n        complement = target - num\n        if complement in seen:\n            return [seen[complement], i]\n        seen[num] = i\n    return []\n```",
+    "自测说明": "验证方式：使用题目提供的公开测试用例在 Python 环境中直接调用函数比对输出；另构造含负数、重复元素、较大数值的用例（如 [-1, -2, -3, -4] target=-6 期望 [1,3]；[10,20,30] target=50 期望 [1,2]）进行手工执行验证。\n验证覆盖范围：覆盖了公开示例中的基础场景、重复元素场景、负数场景及多元素场景；未覆盖极端大规模 n=10^4 的性能压测（仅理论分析 O(n) 可行），未使用自动化测试框架，未臆造未实际运行的测试结果。"
+  },
+  "code": "def two_sum(nums: list, target: int):\n    seen = {}\n    for i, num in enumerate(nums):\n        complement = target - num\n        if complement in seen:\n            return [seen[complement], i]\n        seen[num] = i\n    return []",
+  "public": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 2,
+    "passed": 1,
+    "failed": 1,
+    "all_passed": false,
+    "failure_samples": [
+      {
+        "index": 0,
+        "args": [
+          [
+            0,
+            0,
+            0
+          ],
+          1
+        ],
+        "expected": -1,
+        "status": "wrong_answer",
+        "actual": [],
+        "error": "",
+        "duration_ms": 0.058
+      }
+    ]
+  },
+  "rule_findings": [
+    {
+      "section": "代码实现",
+      "error_type": "FALSE_POSITIVE",
+      "error_type_label": "测试覆盖不足导致的伪正确",
+      "detail": "公开测试全部通过（3/3），但对抗测试 1/2 失败——典型的“结果看似正确、实现逻辑有缺陷”的伪正确样本。",
+      "evidence": "[{'index': 0, 'args': [[0, 0, 0], 1], 'expected': -1, 'status': 'wrong_answer', 'actual': [], 'error': '', 'duration_ms': 0.058}]",
+      "confidence": 0.95,
+      "source": "rule"
+    }
+  ],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "suspicious",
+      "confidence": 0.7,
+      "error_types": [
+        "描述与实现不一致"
+      ],
+      "reason": "解题思路描述未提及无解时返回什么，而实现返回空列表，对抗测试期望-1，说明思路描述与实现/题目约定存在不一致。",
+      "evidence": "步骤内容称'直接返回 [j, i]'且未说明无解返回值；代码实现为 return []；对抗测试 args=[[0,0,0],1] expected=-1 而 actual=[]",
+      "llm_verdict": "suspicious",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "valid",
+      "confidence": 1.0,
+      "error_types": [],
+      "reason": "该步骤对时间与空间复杂度的分析基于单次遍历和哈希表平均O(1)操作，与代码实现一致且符合题目O(n)期望，不受对抗测试失败影响。",
+      "evidence": "步骤内容称'对长度为n的数组进行单次遍历，每次遍历中哈希表的插入与查询操作平均时间复杂度为O(1)，因此总时间开销与n成正比'；代码实现为单层for循环+字典操作；signals中max_loop_depth=1, claimed_complexity='n', expected_complexity='O(n)'。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "flawed",
+      "confidence": 0.95,
+      "error_types": [
+        "边界处理缺失",
+        "描述与实现不一致"
+      ],
+      "reason": "该步骤声称题目保证有解且无解情况依约束不做处理，但对抗测试显示无解输入[0,0,0] target=1时期望返回-1而实现返回[]，说明无解边界未被正确处理且描述与实现/信号不一致。",
+      "evidence": "步骤内容写'无解情况：题目保证有解...依约束不做额外处理'；signals中adversarial failure_samples: args [[0,0,0],1], expected -1, actual []",
+      "llm_verdict": "flawed",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "flawed",
+      "confidence": 0.95,
+      "error_types": [
+        "测试覆盖不足导致的伪正确",
+        "实现逻辑缺陷"
+      ],
+      "reason": "公开测试全部通过（3/3），但对抗测试 1/2 失败——典型的“结果看似正确、实现逻辑有缺陷”的伪正确样本。 Critic 补充：对抗测试显示输入[0,0,0]和target=1时期望返回-1但实际返回[]，说明未处理无解时返回-1的约定或类似边界，实现与预期行为不一致。",
+      "evidence": "[{'index': 0, 'args': [[0, 0, 0], 1], 'expected': -1, 'status': 'wrong_answer', 'actual': [], 'error': '', 'duration_ms': 0.058}]",
+      "llm_verdict": "flawed",
+      "rule_types": [
+        "测试覆盖不足导致的伪正确"
+      ],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "flawed",
+      "confidence": 0.95,
+      "error_types": [
+        "测试覆盖不足导致的伪正确",
+        "描述与实现不一致"
+      ],
+      "reason": "自测说明声称覆盖了重复元素等场景且未臆造结果，但对抗测试显示 [0,0,0] target=1 返回 [] 而期望 -1，说明其手工构造用例未覆盖无解返回约定且实际存在未发现的失败。",
+      "evidence": "signals 中 adversarial failure_samples: {'index': 0, 'args': [[0, 0, 0], 1], 'expected': -1, 'status': 'wrong_answer', 'actual': []}；步骤内容称'另构造含负数、重复元素...用例...进行手工执行验证'且'未臆造未实际运行的测试结果'，但公开测试全过而对抗测试失败，证明自测覆盖不足且描述与真实执行信号不一致。",
+      "llm_verdict": "flawed",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    }
+  ],
+  "checker_report": {
+    "process_ok": false,
+    "code_ok": false,
+    "pseudo_correct": true,
+    "public": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 2,
+      "passed": 1,
+      "failed": 1,
+      "all_passed": false,
+      "failure_samples": [
+        {
+          "index": 0,
+          "args": [
+            [
+              0,
+              0,
+              0
+            ],
+            1
+          ],
+          "expected": -1,
+          "status": "wrong_answer",
+          "actual": [],
+          "error": "",
+          "duration_ms": 0.058
+        }
+      ]
+    },
+    "findings": [
+      {
+        "section": "代码实现",
+        "error_type": "FALSE_POSITIVE",
+        "error_type_label": "测试覆盖不足导致的伪正确",
+        "detail": "公开测试全部通过（3/3），但对抗测试 1/2 失败——典型的“结果看似正确、实现逻辑有缺陷”的伪正确样本。",
+        "evidence": "[{'index': 0, 'args': [[0, 0, 0], 1], 'expected': -1, 'status': 'wrong_answer', 'actual': [], 'error': '', 'duration_ms': 0.058}]",
+        "confidence": 0.95,
+        "source": "rule"
+      }
+    ],
+    "forensics": [
+      {
+        "case_index": 0,
+        "kind": "function",
+        "method": null,
+        "args": [
+          [
+            0,
+            0,
+            0
+          ],
+          1
+        ],
+        "expected": -1,
+        "actual": [],
+        "status": "wrong_answer",
+        "forensic": {
+          "ok": true,
+          "status": "returned",
+          "result": "[]",
+          "error": "",
+          "traceback": "",
+          "steps": 15,
+          "used_seconds": 0.002,
+          "trace_tail": {
+            "total_steps": 15,
+            "truncated": false,
+            "steps": [
+              {
+                "n": 1,
+                "line": 2,
+                "func": "two_sum",
+                "depth": 1,
+                "locals": {
+                  "nums": "[0, 0, 0]",
+                  "target": "1"
+                },
+                "ts_ms": 47237805.84,
+                "stdout": ""
+              },
+              {
+                "n": 2,
+                "line": 3,
+                "func": "two_sum",
+                "depth": 1,
+                "locals": {
+                  "nums": "[0, 0, 0]",
+                  "target": "1",
+                  "seen": "{}"
+                },
+                "ts_ms": 47237805.882,
+                "stdout": ""
+              },
+              {
+                "n": 3,
+                "line": 4,
+                "func": "two_sum",
+                "depth": 1,
+                "locals": {
+                  "nums": "[0, 0, 0]",
+                  "target": "1",
+                  "seen": "{}",
+                  "i": "0",
+                  "num": "0"
+                },
+                "ts_ms": 47237805.907,
+                "stdout": ""
+              },
+              {
+                "n": 4,
+                "line": 5,
+                "func": "two_sum",
+                "depth": 1,
+                "locals": {
+                  "nums": "[0, 0, 0]",
+                  "target": "1",
+                  "seen": "{}",
+                  "i": "0",
+                  "num": "0",
+                  "complement": "1"
+                },
+                "ts_ms": 47237805.923,
+                "stdout": ""
+              },
+              {
+                "n": 5,
+                "line": 7,
+                "func": "two_sum",
+                "depth": 1,
+                "locals": {
+                  "nums": "[0, 0, 0]",
+                  "target": "1",
+                  "seen": "{}",
+                  "i": "0",
+                  "num": "0",
+                  "complement": "1"
+                },
+                "ts_ms": 47237805.938,
+                "stdout": ""
+              },
+              {
+                "n": 6,
+                "line": 3,
+                "func": "two_sum",
+                "depth": 1,
+                "locals": {
+                  "nums": "[0, 0, 0]",
+                  "target": "1",
+                  "seen": "{0: 0}",
+                  "i": "0",
+                  "num": "0",
+                  "complement": "1"
+                },
+                "ts_ms": 47237805.954,
+                "stdout": ""
+              },
+              {
+                "n": 7,
+                "line": 4,
+                "func": "two_sum",
+                "depth": 1,
+                "locals": {
+                  "nums": "[0, 0, 0]",
+                  "target": "1",
+                  "seen": "{0: 0}",
+                  "i": "1",
+                  "num": "0",
+                  "complement": "1"
+                },
+                "ts_ms": 47237805.967,
+                "stdout": ""
+              },
+              {
+                "n": 8,
+                "line": 5,
+                "func": "two_sum",
+                "depth": 1,
+                "locals": {
+                  "nums": "[0, 0, 0]",
+                  "target": "1",
+                  "seen": "{0: 0}",
+                  "i": "1",
+                  "num": "0",
+                  "complement": "1"
+                },
+                "ts_ms": 47237805.979,
+                "stdout": ""
+              },
+              {
+                "n": 9,
+                "line": 7,
+                "func": "two_sum",
+                "depth": 1,
+                "locals": {
+                  "nums": "[0, 0, 0]",
+                  "target": "1",
+                  "seen": "{0: 0}",
+                  "i": "1",
+                  "num": "0",
+                  "complement": "1"
+                },
+                "ts_ms": 47237806.521,
+                "stdout": ""
+              },
+              {
+                "n": 10,
+                "line": 3,
+                "func": "two_sum",
+                "depth": 1,
+                "locals": {
+                  "nums": "[0, 0, 0]",
+                  "target": "1",
+                  "seen": "{0: 1}",
+                  "i": "1",
+                  "num": "0",
+                  "complement": "1"
+                },
+                "ts_ms": 47237806.55,
+                "stdout": ""
+              },
+              {
+                "n": 11,
+                "line": 4,
+                "func": "two_sum",
+                "depth": 1,
+                "locals": {
+                  "nums": "[0, 0, 0]",
+                  "target": "1",
+                  "seen": "{0: 1}",
+                  "i": "2",
+                  "num": "0",
+                  "complement": "1"
+                },
+                "ts_ms": 47237806.563,
+                "stdout": ""
+              },
+              {
+                "n": 12,
+                "line": 5,
+                "func": "two_sum",
+                "depth": 1,
+                "locals": {
+                  "nums": "[0, 0, 0]",
+                  "target": "1",
+                  "seen": "{0: 1}",
+                  "i": "2",
+                  "num": "0",
+                  "complement": "1"
+                },
+                "ts_ms": 47237806.576,
+                "stdout": ""
+              },
+              {
+                "n": 13,
+                "line": 7,
+                "func": "two_sum",
+                "depth": 1,
+                "locals": {
+                  "nums": "[0, 0, 0]",
+                  "target": "1",
+                  "seen": "{0: 1}",
+                  "i": "2",
+                  "num": "0",
+                  "complement": "1"
+                },
+                "ts_ms": 47237806.601,
+                "stdout": ""
+              },
+              {
+                "n": 14,
+                "line": 3,
+                "func": "two_sum",
+                "depth": 1,
+                "locals": {
+                  "nums": "[0, 0, 0]",
+                  "target": "1",
+                  "seen": "{0: 2}",
+                  "i": "2",
+                  "num": "0",
+                  "complement": "1"
+                },
+                "ts_ms": 47237806.617,
+                "stdout": ""
+              },
+              {
+                "n": 15,
+                "line": 8,
+                "func": "two_sum",
+                "depth": 1,
+                "locals": {
+                  "nums": "[0, 0, 0]",
+                  "target": "1",
+                  "seen": "{0: 2}",
+                  "i": "2",
+                  "num": "0",
+                  "complement": "1"
+                },
+                "ts_ms": 47237806.63,
+                "stdout": ""
+              }
+            ]
+          }
+        },
+        "summary": "status=returned\nresult='[]'\ntrace_tail:\n  L5 two_sum locals={'nums': '[0, 0, 0]', 'target': '1', 'seen': '{0: 0}', 'i': '1', 'num': '0', 'complement': '1'}\n  L7 two_sum locals={'nums': '[0, 0, 0]', 'target': '1', 'seen': '{0: 0}', 'i': '1', 'num': '0', 'complement': '1'}\n  L3 two_sum locals={'nums': '[0, 0, 0]', 'target': '1', 'seen': '{0: 1}', 'i': '1', 'num': '0', 'complement': '1'}\n  L4 two_sum locals={'nums': '[0, 0, 0]', 'target': '1', 'seen': '{0: 1}', 'i': '2', 'num': '0', 'complement': '1'}\n  L5 two_sum locals={'nums': '[0, 0, 0]', 'target': '1', 'seen': '{0: 1}', 'i': '2', 'num': '0', 'complement': '1'}\n  L7 two_sum locals={'nums': '[0, 0, 0]', 'target': '1', 'seen': '{0: 1}', 'i': '2', 'num': '0', 'complement': '1'}\n  L3 two_sum locals={'nums': '[0, 0, 0]', 'target': '1', 'seen': '{0: 2}', 'i': '2', 'num': '0', 'complement': '1'}\n  L8 two_sum locals={'nums': '[0, 0, 0]', 'target': '1', 'seen': '{0: 2}', 'i': '2', 'num': '0', 'complement': '1'}"
+      }
+    ],
+    "signals": {
+      "problem_id": "medium-001",
+      "entry_point": "two_sum",
+      "max_loop_depth": 1,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "n",
+      "expected_complexity": "O(n)",
+      "public": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 2,
+        "passed": 1,
+        "failed": 1,
+        "all_passed": false,
+        "failure_samples": [
+          {
+            "index": 0,
+            "args": [
+              [
+                0,
+                0,
+                0
+              ],
+              1
+            ],
+            "expected": -1,
+            "status": "wrong_answer",
+            "actual": [],
+            "error": "",
+            "duration_ms": 0.058
+          }
+        ]
+      },
+      "rule_findings": [
+        {
+          "section": "代码实现",
+          "error_type": "FALSE_POSITIVE",
+          "error_type_label": "测试覆盖不足导致的伪正确",
+          "detail": "公开测试全部通过（3/3），但对抗测试 1/2 失败——典型的“结果看似正确、实现逻辑有缺陷”的伪正确样本。",
+          "evidence": "[{'index': 0, 'args': [[0, 0, 0], 1], 'expected': -1, 'status': 'wrong_answer', 'actual': [], 'error': '', 'duration_ms': 0.058}]",
+          "confidence": 0.95,
+          "source": "rule"
+        }
+      ]
+    },
+    "code": "def two_sum(nums: list, target: int):\n    seen = {}\n    for i, num in enumerate(nums):\n        complement = target - num\n        if complement in seen:\n            return [seen[complement], i]\n        seen[num] = i\n    return []",
+    "llm_summary": {
+      "summary": "公开测试全过但对抗测试暴露缺陷：无解时未返回 -1 而是返回空列表，且重复元素处理逻辑有误导致伪正确。",
+      "process_ok": false,
+      "code_ok": false,
+      "pseudo_correct": true,
+      "root_cause": "函数在无两数和等于 target 时未按要求返回 -1，而是返回了空列表 []；同时从 trace 看 seen 字典在 i=1 时已存 {0:0} 却仍继续找 complement=1 未命中，说明对‘无解返回 -1’的分支缺失，且可能误将‘找到重复0但complement不对’当成可返回空列表的情形。",
+      "debug_hints": [
+        "在循环结束后显式 return -1，而不是依赖隐式返回或返回空列表",
+        "检查 nums=[0,0,0], target=1 场景：complement=1 始终不在 seen 中，应走无解分支返回 -1",
+        "确认题目约定：无解返回 -1（或题目指定值），而非空列表/None",
+        "补充对抗用例：全相同元素且 target 不等于两倍元素值、空数组、单元素数组"
+      ],
+      "failed_case_analysis": [
+        "对抗用例 index=0: args=[[0,0,0], 1], expected=-1, actual=[]。nums 全为 0，target=1，任意两数和为 0≠1，无解。代码遍历完 seen={0:2} 后未返回 -1 而返回了 []，违反题目返回约定，属错误答案。"
+      ]
+    },
+    "debug_hints": [
+      "公开测试通过但对抗失败：优先检查边界归一化、空/单元素、类型边界，并用 sandbox-debugger 在失败入参上下断点观察局部变量。",
+      "失败用例 args=[[0, 0, 0], 1] 的执行轨迹已取证：status=returned\nresult='[]'\ntrace_tail:\n  L5 two_sum locals={'nums': '[0, 0, 0]', 'target': '1', 'seen': '{0: 0}', 'i': '1', 'num': '0', 'complement': '1'}\n  L7",
+      "[FALSE_POSITIVE] 公开测试全部通过（3/3），但对抗测试 1/2 失败——典型的“结果看似正确、实现逻辑有缺陷”的伪正确样本。"
+    ],
+    "sections": {
+      "解题思路": "选择哈希表（字典）作为核心数据结构，配合一次遍历实现。遍历数组时，对于每个元素 nums[i]，计算补数 complement = target - nums[i]；若补数已在哈希表中，说明之前遍历过的某个下标 j 满足 nums[j] + nums[i] = target，直接返回 [j, i]；否则将当前值与其下标存入哈希表。该算法只需一次线性扫描，天然满足题目期望的 O(n) 时间复杂度，且利用哈希表将查找补数的操作降为平均 O(1)。",
+      "复杂度分析": "时间复杂度：O(n)。推理依据：对长度为 n 的数组进行单次遍历，每次遍历中哈希表的插入与查询操作平均时间复杂度为 O(1)，因此总时间开销与 n 成正比。\n空间复杂度：O(n)。推理依据：最坏情况下（如无解或解在末尾），哈希表中需存储全部 n 个元素的值与下标映射，占用空间随 n 线性增长。",
+      "关键边界与处理策略": "- 空输入：题目约束 n >= 2，不会出现空列表；若防御性考虑可返回空列表，但依约束无需处理。\n- 单元素：约束 n >= 2，不会出现；若出现则无两数之和，返回空。\n- 重复元素：如 [3,3] target=6，遍历到第二个 3 时补数 3 已在表中（存的是第一个 3 的下标 0），返回 [0,1]，正确处理。\n- 负数：哈希表以数值为键，负数同样可正确计算补数并匹配，无特殊影响。\n- 极值：数值可能很大或很小，Python  int 无溢出问题，哈希表正常工作。\n- 无解情况：题目保证有解（公开用例及常规设定），若遍历结束未找到则不会返回；依约束不做额外处理。\n- 多解情况：返回最先遇到的合法下标对（即遍历顺序中首次匹配），符合示例预期。",
+      "代码实现": "```python\ndef two_sum(nums: list, target: int):\n    seen = {}\n    for i, num in enumerate(nums):\n        complement = target - num\n        if complement in seen:\n            return [seen[complement], i]\n        seen[num] = i\n    return []\n```",
+      "自测说明": "验证方式：使用题目提供的公开测试用例在 Python 环境中直接调用函数比对输出；另构造含负数、重复元素、较大数值的用例（如 [-1, -2, -3, -4] target=-6 期望 [1,3]；[10,20,30] target=50 期望 [1,2]）进行手工执行验证。\n验证覆盖范围：覆盖了公开示例中的基础场景、重复元素场景、负数场景及多元素场景；未覆盖极端大规模 n=10^4 的性能压测（仅理论分析 O(n) 可行），未使用自动化测试框架，未臆造未实际运行的测试结果。"
+    }
+  },
+  "elapsed_sec": 62.99,
+  "recorded_at": "2026-09-11T22:35:10"
+}

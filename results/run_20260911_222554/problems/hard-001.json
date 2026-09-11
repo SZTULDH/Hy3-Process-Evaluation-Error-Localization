@@ -1,0 +1,184 @@
+{
+  "problem_id": "hard-001",
+  "title": "无重复字符的最长子串",
+  "difficulty": "hard",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "length_of_longest_substring",
+  "source_path": "datasets\\code\\hard\\length_of_longest_substring.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": false,
+    "process_valid": false,
+    "first_error_step": "step_4_implementation",
+    "error_types": [
+      "实现逻辑缺陷",
+      "状态管理错误"
+    ],
+    "note": "伪正确样本：边界讨论是完整的，缺陷纯粹在实现——遇到重复字符时 left 只右移一位，而不是持续收缩到重复字符之后。经典用例 abba 与 pwwkew 会暴露该问题。"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "false_positive_solution": false,
+    "first_error_step": null,
+    "first_error_section": null,
+    "error_types": []
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求找出字符串中不含重复字符的最长连续子串的长度。采用滑动窗口（双指针）算法配合哈希表（字典）来记录每个字符最近一次出现的索引。左指针 `left` 表示当前无重复子串的起始位置，右指针 `right` 遍历字符串。当遇到已出现且索引不小于 `left` 的字符时，将 `left` 移动到该字符上次出现位置的下一位，以保证窗口内无重复。每次迭代更新窗口长度 `right - left + 1` 的最大值。该算法只需一次线性扫描，适用于本题 10^5 长度约束，且能自然处理各种字符分布。\n\n## 2. 复杂度分析\n时间复杂度：O(n)，其中 n 为字符串长度。右指针遍历每个字符一次，左指针最多移动 n 次，字典操作平均 O(1)，总体线性。\n空间复杂度：O(min(n, m))，其中 m 为字符集大小（可打印 ASCII 共 95 个，故 m=95）。字典存储窗口内字符的最近索引，最多存储 min(n, 95) 个条目，可视为 O(1) 或 O(n) 上界。\n\n## 3. 关键边界与处理策略\n- 空输入 `s = \"\"`：长度为 0，直接返回 0，循环不执行。\n- 单元素如 `\"a\"`：窗口长度 1，返回 1。\n- 全重复如 `\"bbbbb\"`：每次遇重复左指针右移，最大长度保持 1。\n- 无重复如 `\"abc\"`：左指针不动，最大长度为字符串长度。\n- 重复但间隔远如 `\"abca\"`：遇第二个 'a' 时上次索引 0 >= left=0，left 变 1，窗口 \"bca\" 长 3。\n- 特殊/可打印 ASCII 字符（含空格、标点、数字）：字典以字符为键，均支持，无需额外处理。\n- 极值长度 10^5：滑动窗口 O(n) 可承受，字典大小受限字符集不爆内存。\n\n## 4. 代码实现\n```python\ndef length_of_longest_substring(s: str) -> int:\n    last_pos = {}\n    left = 0\n    max_len = 0\n    for right, ch in enumerate(s):\n        if ch in last_pos and last_pos[ch] >= left:\n            left = last_pos[ch] + 1\n        last_pos[ch] = right\n        cur_len = right - left + 1\n        if cur_len > max_len:\n            max_len = cur_len\n    return max_len\n```\n\n## 5. 自测说明\n我使用本地 Python 解释器运行了上述函数，并构造了以下用例进行验证：公开示例 `abcabcbb`→3、`bbbbb`→1、`\"\"`→0；补充用例 `\"a\"`→1、`\"abc\"`→3、`\"abca\"`→3、`\"pwwkew\"`→3、`\" \"`→1、`\"au\"`→2、`\"dvdf\"`→3。所有输出与预期一致。验证覆盖了空串、单字符、全重复、部分重复、含空格、常规无重复及典型 LeetCode 样例，但未覆盖极端 10^5 长度的性能压测（仅理论分析 O(n) 可行），也未使用随机大规模数据实测。",
+  "sections": {
+    "解题思路": "本题要求找出字符串中不含重复字符的最长连续子串的长度。采用滑动窗口（双指针）算法配合哈希表（字典）来记录每个字符最近一次出现的索引。左指针 `left` 表示当前无重复子串的起始位置，右指针 `right` 遍历字符串。当遇到已出现且索引不小于 `left` 的字符时，将 `left` 移动到该字符上次出现位置的下一位，以保证窗口内无重复。每次迭代更新窗口长度 `right - left + 1` 的最大值。该算法只需一次线性扫描，适用于本题 10^5 长度约束，且能自然处理各种字符分布。",
+    "复杂度分析": "时间复杂度：O(n)，其中 n 为字符串长度。右指针遍历每个字符一次，左指针最多移动 n 次，字典操作平均 O(1)，总体线性。\n空间复杂度：O(min(n, m))，其中 m 为字符集大小（可打印 ASCII 共 95 个，故 m=95）。字典存储窗口内字符的最近索引，最多存储 min(n, 95) 个条目，可视为 O(1) 或 O(n) 上界。",
+    "关键边界与处理策略": "- 空输入 `s = \"\"`：长度为 0，直接返回 0，循环不执行。\n- 单元素如 `\"a\"`：窗口长度 1，返回 1。\n- 全重复如 `\"bbbbb\"`：每次遇重复左指针右移，最大长度保持 1。\n- 无重复如 `\"abc\"`：左指针不动，最大长度为字符串长度。\n- 重复但间隔远如 `\"abca\"`：遇第二个 'a' 时上次索引 0 >= left=0，left 变 1，窗口 \"bca\" 长 3。\n- 特殊/可打印 ASCII 字符（含空格、标点、数字）：字典以字符为键，均支持，无需额外处理。\n- 极值长度 10^5：滑动窗口 O(n) 可承受，字典大小受限字符集不爆内存。",
+    "代码实现": "```python\ndef length_of_longest_substring(s: str) -> int:\n    last_pos = {}\n    left = 0\n    max_len = 0\n    for right, ch in enumerate(s):\n        if ch in last_pos and last_pos[ch] >= left:\n            left = last_pos[ch] + 1\n        last_pos[ch] = right\n        cur_len = right - left + 1\n        if cur_len > max_len:\n            max_len = cur_len\n    return max_len\n```",
+    "自测说明": "我使用本地 Python 解释器运行了上述函数，并构造了以下用例进行验证：公开示例 `abcabcbb`→3、`bbbbb`→1、`\"\"`→0；补充用例 `\"a\"`→1、`\"abc\"`→3、`\"abca\"`→3、`\"pwwkew\"`→3、`\" \"`→1、`\"au\"`→2、`\"dvdf\"`→3。所有输出与预期一致。验证覆盖了空串、单字符、全重复、部分重复、含空格、常规无重复及典型 LeetCode 样例，但未覆盖极端 10^5 长度的性能压测（仅理论分析 O(n) 可行），也未使用随机大规模数据实测。"
+  },
+  "code": "def length_of_longest_substring(s: str) -> int:\n    last_pos = {}\n    left = 0\n    max_len = 0\n    for right, ch in enumerate(s):\n        if ch in last_pos and last_pos[ch] >= left:\n            left = last_pos[ch] + 1\n        last_pos[ch] = right\n        cur_len = right - left + 1\n        if cur_len > max_len:\n            max_len = cur_len\n    return max_len",
+  "public": {
+    "total": 5,
+    "passed": 5,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "解题思路描述的滑动窗口加哈希表方法与代码实现一致，且测试全部通过，复杂度符合O(n)要求。",
+      "evidence": "步骤内容说明用left/right双指针和字典记录最近索引，遇重复且索引>=left时移动left；代码for right,ch in enumerate(s)中if ch in last_pos and last_pos[ch]>=left: left=last_pos[ch]+1，并更新max_len；signals显示public 5/5、adversarial 3/3全通过，claimed_complexity为n与expected一致。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "复杂度分析描述与滑动窗口实现一致，右指针遍历一次、左指针最多移动n次、字典操作均摊O(1)，空间为窗口内字符索引最多min(n,95)，符合O(n)时间期望。",
+      "evidence": "步骤内容称'右指针遍历每个字符一次，左指针最多移动 n 次，字典操作平均 O(1)，总体线性'；代码为单层for循环枚举right，left仅递增不回退，last_pos字典读写；signals显示max_loop_depth=1、claimed_complexity=n、expected_complexity=O(n)且测试全通过。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "该步骤列举的边界情况与处理策略与代码实现一致，且测试全部通过，无具体依据表明其不成立。",
+      "evidence": "步骤中描述空输入返回0、单元素返回1、全重复保持1、无重复返回长度、'abca'左指针变1窗口长3，均与代码逻辑（last_pos判断、left更新、max_len计算）及signals中public/adversarial全通过相符。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.98,
+      "error_types": [],
+      "reason": "代码实现使用滑动窗口与哈希表记录字符最后位置，逻辑正确且通过全部公开与对抗测试，符合O(n)复杂度要求。",
+      "evidence": "signals中public:5/5 passed, adversarial:3/3 passed, all_passed:true, claimed_complexity:n与expected_complexity:O(n)一致；代码遍历一次字符串，left仅前进不后退，无嵌套循环。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "自测说明如实描述了所构造的测试用例、覆盖范围及未覆盖的性能压测，与信号中公开和对抗测试全部通过一致，无描述与实现不一致或幻觉。",
+      "evidence": "步骤内容列出用例 abcabcbb→3、bbbbb→1、''→0、'a'→1、'abc'→3、'abca'→3、'pwwkew'→3、' '→1、'au'→2、'dvdf'→3；signals 显示 public 5/5 passed、adversarial 3/3 passed、all_passed true，且步骤明确承认未做 10^5 压测仅理论分析 O(n)。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    }
+  ],
+  "checker_report": {
+    "process_ok": true,
+    "code_ok": true,
+    "pseudo_correct": false,
+    "public": {
+      "total": 5,
+      "passed": 5,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [],
+    "forensics": [],
+    "signals": {
+      "problem_id": "hard-001",
+      "entry_point": "length_of_longest_substring",
+      "max_loop_depth": 1,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "n",
+      "expected_complexity": "O(n)",
+      "public": {
+        "total": 5,
+        "passed": 5,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": []
+    },
+    "code": "def length_of_longest_substring(s: str) -> int:\n    last_pos = {}\n    left = 0\n    max_len = 0\n    for right, ch in enumerate(s):\n        if ch in last_pos and last_pos[ch] >= left:\n            left = last_pos[ch] + 1\n        last_pos[ch] = right\n        cur_len = right - left + 1\n        if cur_len > max_len:\n            max_len = cur_len\n    return max_len",
+    "llm_summary": {
+      "summary": "公开与对抗测试全部通过，函数实现正确，无状态或顺序依赖问题。",
+      "process_ok": true,
+      "code_ok": true,
+      "pseudo_correct": false,
+      "root_cause": "无失败用例，代码逻辑与边界处理均正确。",
+      "debug_hints": [
+        "无需调试，可补充极端长串或全同字符用例做压力验证。"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开与对抗测试均通过，规则层未见高置信缺陷。"
+    ],
+    "sections": {
+      "解题思路": "本题要求找出字符串中不含重复字符的最长连续子串的长度。采用滑动窗口（双指针）算法配合哈希表（字典）来记录每个字符最近一次出现的索引。左指针 `left` 表示当前无重复子串的起始位置，右指针 `right` 遍历字符串。当遇到已出现且索引不小于 `left` 的字符时，将 `left` 移动到该字符上次出现位置的下一位，以保证窗口内无重复。每次迭代更新窗口长度 `right - left + 1` 的最大值。该算法只需一次线性扫描，适用于本题 10^5 长度约束，且能自然处理各种字符分布。",
+      "复杂度分析": "时间复杂度：O(n)，其中 n 为字符串长度。右指针遍历每个字符一次，左指针最多移动 n 次，字典操作平均 O(1)，总体线性。\n空间复杂度：O(min(n, m))，其中 m 为字符集大小（可打印 ASCII 共 95 个，故 m=95）。字典存储窗口内字符的最近索引，最多存储 min(n, 95) 个条目，可视为 O(1) 或 O(n) 上界。",
+      "关键边界与处理策略": "- 空输入 `s = \"\"`：长度为 0，直接返回 0，循环不执行。\n- 单元素如 `\"a\"`：窗口长度 1，返回 1。\n- 全重复如 `\"bbbbb\"`：每次遇重复左指针右移，最大长度保持 1。\n- 无重复如 `\"abc\"`：左指针不动，最大长度为字符串长度。\n- 重复但间隔远如 `\"abca\"`：遇第二个 'a' 时上次索引 0 >= left=0，left 变 1，窗口 \"bca\" 长 3。\n- 特殊/可打印 ASCII 字符（含空格、标点、数字）：字典以字符为键，均支持，无需额外处理。\n- 极值长度 10^5：滑动窗口 O(n) 可承受，字典大小受限字符集不爆内存。",
+      "代码实现": "```python\ndef length_of_longest_substring(s: str) -> int:\n    last_pos = {}\n    left = 0\n    max_len = 0\n    for right, ch in enumerate(s):\n        if ch in last_pos and last_pos[ch] >= left:\n            left = last_pos[ch] + 1\n        last_pos[ch] = right\n        cur_len = right - left + 1\n        if cur_len > max_len:\n            max_len = cur_len\n    return max_len\n```",
+      "自测说明": "我使用本地 Python 解释器运行了上述函数，并构造了以下用例进行验证：公开示例 `abcabcbb`→3、`bbbbb`→1、`\"\"`→0；补充用例 `\"a\"`→1、`\"abc\"`→3、`\"abca\"`→3、`\"pwwkew\"`→3、`\" \"`→1、`\"au\"`→2、`\"dvdf\"`→3。所有输出与预期一致。验证覆盖了空串、单字符、全重复、部分重复、含空格、常规无重复及典型 LeetCode 样例，但未覆盖极端 10^5 长度的性能压测（仅理论分析 O(n) 可行），也未使用随机大规模数据实测。"
+    }
+  },
+  "elapsed_sec": 53.27,
+  "recorded_at": "2026-09-11T22:49:23"
+}

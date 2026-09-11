@@ -1,0 +1,224 @@
+{
+  "problem_id": "hard-010",
+  "title": "编辑距离",
+  "difficulty": "hard",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "min_distance",
+  "source_path": "datasets\\code\\hard\\min_distance.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "first_error_step": null,
+    "error_types": [],
+    "note": "正确对照样本"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": false,
+    "false_positive_solution": true,
+    "first_error_step": "step_2_complexity",
+    "first_error_section": "复杂度分析",
+    "error_types": [
+      "复杂度分析错误",
+      "描述与实现不一致"
+    ]
+  },
+  "raw_solution": "## 1. 解题思路\n本题是经典的编辑距离（Edit Distance）问题，要求计算将 `word1` 转换成 `word2` 所需的最少单字符编辑操作次数（插入、删除、替换）。采用动态规划（Dynamic Programming）算法，定义 `dp[i][j]` 表示 `word1` 的前 `i` 个字符转换到 `word2` 的前 `j` 个字符所需的最少操作数。状态转移考虑三种操作：若当前字符相同则无需操作（`dp[i][j] = dp[i-1][j-1]`）；否则取替换（`dp[i-1][j-1]+1`）、删除（`dp[i-1][j]+1`）、插入（`dp[i][j-1]+1`）的最小值。该算法天然契合最优子结构与重叠子问题特性，且约束长度 500 时 O(mn) 完全可行。\n\n## 2. 复杂度分析\n时间复杂度：O(m*n)，其中 m = len(word1)，n = len(word2)。需填充 (m+1)*(n+1) 的二维 DP 表，每个单元计算为 O(1)。\n空间复杂度：O(m*n)，用于存储 (m+1) 行 (n+1) 列的 DP 数组；若优化为一维滚动数组可降至 O(min(m,n))，但此处为清晰直接实现二维，仍满足 500 长度内存限制。\n\n## 3. 关键边界与处理策略\n- 空输入 `word1=''` 或 `word2=''`：初始化 `dp[0][j]=j`（全插入）、`dp[i][0]=i`（全删除），自然覆盖示例 `['', 'a'] -> 1`。\n- 单元素：如 `word1='a', word2=''`，由初始化得 `dp[1][0]=1`；`word1='a', word2='a'` 得 0。\n- 重复元素：DP 逐字符比对，重复不影响转移逻辑，如 `'aaa'` 到 `'aa'` 为 1 次删除。\n- 负数/非字母：题目限定字符串，无负数；若含任意字符仍按字符不等处理。\n- 极值：长度 500 时 DP 表 251001 项，Python 整型与列表可轻松承载，无溢出风险。\n\n## 4. 代码实现\n```python\ndef min_distance(word1: str, word2: str) -> int:\n    m, n = len(word1), len(word2)\n    dp = [[0] * (n + 1) for _ in range(m + 1)]\n    for i in range(m + 1):\n        dp[i][0] = i\n    for j in range(n + 1):\n        dp[0][j] = j\n    for i in range(1, m + 1):\n        for j in range(1, n + 1):\n            if word1[i - 1] == word2[j - 1]:\n                dp[i][j] = dp[i - 1][j - 1]\n            else:\n                dp[i][j] = min(dp[i - 1][j - 1], dp[i - 1][j], dp[i][j - 1]) + 1\n    return dp[m][n]\n```\n\n## 5. 自测说明\n我依据题目给出的三个公开测试用例在脑内/纸面推演验证：\n- `horse`->`ros`：DP 表末位为 3，与期望一致。\n- `intention`->`execution`：推演得 5，与期望一致。\n- `''`->`a`：初始化 `dp[0][1]=1`，返回 1，与期望一致。\n验证覆盖：空串、非空不等长、公开样例；未覆盖随机压力测试与长度 500 边界实测，但算法逻辑与复杂度保证正确性。",
+  "sections": {
+    "解题思路": "本题是经典的编辑距离（Edit Distance）问题，要求计算将 `word1` 转换成 `word2` 所需的最少单字符编辑操作次数（插入、删除、替换）。采用动态规划（Dynamic Programming）算法，定义 `dp[i][j]` 表示 `word1` 的前 `i` 个字符转换到 `word2` 的前 `j` 个字符所需的最少操作数。状态转移考虑三种操作：若当前字符相同则无需操作（`dp[i][j] = dp[i-1][j-1]`）；否则取替换（`dp[i-1][j-1]+1`）、删除（`dp[i-1][j]+1`）、插入（`dp[i][j-1]+1`）的最小值。该算法天然契合最优子结构与重叠子问题特性，且约束长度 500 时 O(mn) 完全可行。",
+    "复杂度分析": "时间复杂度：O(m*n)，其中 m = len(word1)，n = len(word2)。需填充 (m+1)*(n+1) 的二维 DP 表，每个单元计算为 O(1)。\n空间复杂度：O(m*n)，用于存储 (m+1) 行 (n+1) 列的 DP 数组；若优化为一维滚动数组可降至 O(min(m,n))，但此处为清晰直接实现二维，仍满足 500 长度内存限制。",
+    "关键边界与处理策略": "- 空输入 `word1=''` 或 `word2=''`：初始化 `dp[0][j]=j`（全插入）、`dp[i][0]=i`（全删除），自然覆盖示例 `['', 'a'] -> 1`。\n- 单元素：如 `word1='a', word2=''`，由初始化得 `dp[1][0]=1`；`word1='a', word2='a'` 得 0。\n- 重复元素：DP 逐字符比对，重复不影响转移逻辑，如 `'aaa'` 到 `'aa'` 为 1 次删除。\n- 负数/非字母：题目限定字符串，无负数；若含任意字符仍按字符不等处理。\n- 极值：长度 500 时 DP 表 251001 项，Python 整型与列表可轻松承载，无溢出风险。",
+    "代码实现": "```python\ndef min_distance(word1: str, word2: str) -> int:\n    m, n = len(word1), len(word2)\n    dp = [[0] * (n + 1) for _ in range(m + 1)]\n    for i in range(m + 1):\n        dp[i][0] = i\n    for j in range(n + 1):\n        dp[0][j] = j\n    for i in range(1, m + 1):\n        for j in range(1, n + 1):\n            if word1[i - 1] == word2[j - 1]:\n                dp[i][j] = dp[i - 1][j - 1]\n            else:\n                dp[i][j] = min(dp[i - 1][j - 1], dp[i - 1][j], dp[i][j - 1]) + 1\n    return dp[m][n]\n```",
+    "自测说明": "我依据题目给出的三个公开测试用例在脑内/纸面推演验证：\n- `horse`->`ros`：DP 表末位为 3，与期望一致。\n- `intention`->`execution`：推演得 5，与期望一致。\n- `''`->`a`：初始化 `dp[0][1]=1`，返回 1，与期望一致。\n验证覆盖：空串、非空不等长、公开样例；未覆盖随机压力测试与长度 500 边界实测，但算法逻辑与复杂度保证正确性。"
+  },
+  "code": "def min_distance(word1: str, word2: str) -> int:\n    m, n = len(word1), len(word2)\n    dp = [[0] * (n + 1) for _ in range(m + 1)]\n    for i in range(m + 1):\n        dp[i][0] = i\n    for j in range(n + 1):\n        dp[0][j] = j\n    for i in range(1, m + 1):\n        for j in range(1, n + 1):\n            if word1[i - 1] == word2[j - 1]:\n                dp[i][j] = dp[i - 1][j - 1]\n            else:\n                dp[i][j] = min(dp[i - 1][j - 1], dp[i - 1][j], dp[i][j - 1]) + 1\n    return dp[m][n]",
+  "public": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [
+    {
+      "section": "复杂度分析",
+      "error_type": "COMPLEXITY",
+      "error_type_label": "复杂度分析错误",
+      "detail": "声称时间复杂度 n，但代码中检测到最大循环嵌套深度为 2，实际下界约为 n2。",
+      "evidence": "AST 静态分析：max_loop_depth=2, recursive=False",
+      "confidence": 0.7,
+      "source": "rule"
+    }
+  ],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "解题思路正确描述了编辑距离的动态规划解法、状态定义与转移，且明确给出了 O(mn) 复杂度，与题目期望一致。",
+      "evidence": "步骤内容中写明'采用动态规划…定义 dp[i][j]…状态转移考虑三种操作…约束长度 500 时 O(mn) 完全可行'，与代码实现及题目期望复杂度 O(mn) 相符；signals 中的复杂度分析错误是针对'声称时间复杂度 n'的 rule_findings，并非本步骤内容。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "flawed",
+      "confidence": 0.95,
+      "error_types": [
+        "复杂度分析错误",
+        "描述与实现不一致"
+      ],
+      "reason": "声称时间复杂度 n，但代码中检测到最大循环嵌套深度为 2，实际下界约为 n2。 Critic 补充：步骤中写的时间复杂度是 O(m*n) 且空间 O(m*n)，但 signals 显示 claimed_complexity 为 'n' 且 rule_findings 指出声称时间复杂度 n 与实际二维循环不符，说明该步骤描述与提交信息/实际声明不一致。",
+      "evidence": "AST 静态分析：max_loop_depth=2, recursive=False",
+      "llm_verdict": "flawed",
+      "rule_types": [
+        "复杂度分析错误"
+      ],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "该步骤对空输入、单元素、重复元素、非字母及极值长度的边界描述与代码实现一致，且测试全部通过，无具体依据判定其不成立。",
+      "evidence": "步骤内容：空输入初始化 dp[0][j]=j、dp[i][0]=i 与代码 for i: dp[i][0]=i; for j: dp[0][j]=j 一致；单元素 'a'->'' 得 1、'a'->'a' 得 0 与代码逻辑一致；重复元素 'aaa'->'aa' 为 1 次删除符合 DP 转移；极值长度 500 时 DP 表 251001 项在 Python 中无溢出风险。signals 中 public 与 adversarial 测试均 all_passed=true，无失败样本。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "代码实现本身是标准的编辑距离动态规划解法，逻辑正确且测试全部通过，复杂度分析错误属于其他步骤的问题而非本代码实现步骤。",
+      "evidence": "public 测试 3/3 通过，adversarial 测试 3/3 通过；代码使用二维 DP 表，i 和 j 双重循环，正确计算 min_distance，无实现逻辑缺陷。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "suspicious",
+      "confidence": 0.8,
+      "error_types": [
+        "测试覆盖不足导致的伪正确",
+        "描述与实现不一致"
+      ],
+      "reason": "自测说明声称算法逻辑与复杂度保证正确性且未覆盖压力测试，但静态信号显示其声称复杂度为 n 与实际 O(mn) 不符，且自测仅依赖三个样例推演，未实测边界，存在描述与实现不一致及测试不足风险。",
+      "evidence": "步骤内容写'未覆盖随机压力测试与长度 500 边界实测，但算法逻辑与复杂度保证正确性'；signals 中 rule_findings 指出 claimed_complexity='n' 而 expected='O(mn)' 且 max_loop_depth=2，说明复杂度描述错误；public/adversarial 虽全过但自测说明本身未做这些实测。",
+      "llm_verdict": "suspicious",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    }
+  ],
+  "checker_report": {
+    "process_ok": false,
+    "code_ok": true,
+    "pseudo_correct": true,
+    "public": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [
+      {
+        "section": "复杂度分析",
+        "error_type": "COMPLEXITY",
+        "error_type_label": "复杂度分析错误",
+        "detail": "声称时间复杂度 n，但代码中检测到最大循环嵌套深度为 2，实际下界约为 n2。",
+        "evidence": "AST 静态分析：max_loop_depth=2, recursive=False",
+        "confidence": 0.7,
+        "source": "rule"
+      }
+    ],
+    "forensics": [],
+    "signals": {
+      "problem_id": "hard-010",
+      "entry_point": "min_distance",
+      "max_loop_depth": 2,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "n",
+      "expected_complexity": "O(mn)",
+      "public": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": [
+        {
+          "section": "复杂度分析",
+          "error_type": "COMPLEXITY",
+          "error_type_label": "复杂度分析错误",
+          "detail": "声称时间复杂度 n，但代码中检测到最大循环嵌套深度为 2，实际下界约为 n2。",
+          "evidence": "AST 静态分析：max_loop_depth=2, recursive=False",
+          "confidence": 0.7,
+          "source": "rule"
+        }
+      ]
+    },
+    "code": "def min_distance(word1: str, word2: str) -> int:\n    m, n = len(word1), len(word2)\n    dp = [[0] * (n + 1) for _ in range(m + 1)]\n    for i in range(m + 1):\n        dp[i][0] = i\n    for j in range(n + 1):\n        dp[0][j] = j\n    for i in range(1, m + 1):\n        for j in range(1, n + 1):\n            if word1[i - 1] == word2[j - 1]:\n                dp[i][j] = dp[i - 1][j - 1]\n            else:\n                dp[i][j] = min(dp[i - 1][j - 1], dp[i - 1][j], dp[i][j - 1]) + 1\n    return dp[m][n]",
+    "llm_summary": {
+      "summary": "代码功能正确通过全部测试，但复杂度分析声称 O(n) 与实际 O(n^2) 不符。",
+      "process_ok": false,
+      "code_ok": true,
+      "pseudo_correct": true,
+      "root_cause": "解题过程中复杂度分析部分错误地将双重循环（max_loop_depth=2）的编辑距离 DP 算法时间复杂度写为 O(n)，实际应为 O(n*m) 或 O(n^2)。",
+      "debug_hints": [
+        "修正复杂度分析描述：将时间复杂度改为 O(n*m)（或当 n=m 时 O(n^2)），空间复杂度根据实现说明为 O(n*m) 或优化后 O(min(n,m))。",
+        "检查代码中是否存在对循环嵌套层数的误判，确认 DP 填表确为两层循环。"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开测试通过但对抗失败：优先检查边界归一化、空/单元素、类型边界，并用 sandbox-debugger 在失败入参上下断点观察局部变量。",
+      "[COMPLEXITY] 声称时间复杂度 n，但代码中检测到最大循环嵌套深度为 2，实际下界约为 n2。"
+    ],
+    "sections": {
+      "解题思路": "本题是经典的编辑距离（Edit Distance）问题，要求计算将 `word1` 转换成 `word2` 所需的最少单字符编辑操作次数（插入、删除、替换）。采用动态规划（Dynamic Programming）算法，定义 `dp[i][j]` 表示 `word1` 的前 `i` 个字符转换到 `word2` 的前 `j` 个字符所需的最少操作数。状态转移考虑三种操作：若当前字符相同则无需操作（`dp[i][j] = dp[i-1][j-1]`）；否则取替换（`dp[i-1][j-1]+1`）、删除（`dp[i-1][j]+1`）、插入（`dp[i][j-1]+1`）的最小值。该算法天然契合最优子结构与重叠子问题特性，且约束长度 500 时 O(mn) 完全可行。",
+      "复杂度分析": "时间复杂度：O(m*n)，其中 m = len(word1)，n = len(word2)。需填充 (m+1)*(n+1) 的二维 DP 表，每个单元计算为 O(1)。\n空间复杂度：O(m*n)，用于存储 (m+1) 行 (n+1) 列的 DP 数组；若优化为一维滚动数组可降至 O(min(m,n))，但此处为清晰直接实现二维，仍满足 500 长度内存限制。",
+      "关键边界与处理策略": "- 空输入 `word1=''` 或 `word2=''`：初始化 `dp[0][j]=j`（全插入）、`dp[i][0]=i`（全删除），自然覆盖示例 `['', 'a'] -> 1`。\n- 单元素：如 `word1='a', word2=''`，由初始化得 `dp[1][0]=1`；`word1='a', word2='a'` 得 0。\n- 重复元素：DP 逐字符比对，重复不影响转移逻辑，如 `'aaa'` 到 `'aa'` 为 1 次删除。\n- 负数/非字母：题目限定字符串，无负数；若含任意字符仍按字符不等处理。\n- 极值：长度 500 时 DP 表 251001 项，Python 整型与列表可轻松承载，无溢出风险。",
+      "代码实现": "```python\ndef min_distance(word1: str, word2: str) -> int:\n    m, n = len(word1), len(word2)\n    dp = [[0] * (n + 1) for _ in range(m + 1)]\n    for i in range(m + 1):\n        dp[i][0] = i\n    for j in range(n + 1):\n        dp[0][j] = j\n    for i in range(1, m + 1):\n        for j in range(1, n + 1):\n            if word1[i - 1] == word2[j - 1]:\n                dp[i][j] = dp[i - 1][j - 1]\n            else:\n                dp[i][j] = min(dp[i - 1][j - 1], dp[i - 1][j], dp[i][j - 1]) + 1\n    return dp[m][n]\n```",
+      "自测说明": "我依据题目给出的三个公开测试用例在脑内/纸面推演验证：\n- `horse`->`ros`：DP 表末位为 3，与期望一致。\n- `intention`->`execution`：推演得 5，与期望一致。\n- `''`->`a`：初始化 `dp[0][1]=1`，返回 1，与期望一致。\n验证覆盖：空串、非空不等长、公开样例；未覆盖随机压力测试与长度 500 边界实测，但算法逻辑与复杂度保证正确性。"
+    }
+  },
+  "elapsed_sec": 61.95,
+  "recorded_at": "2026-09-11T22:58:14"
+}

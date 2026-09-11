@@ -1,0 +1,184 @@
+{
+  "problem_id": "medium-014",
+  "title": "爬楼梯方法数",
+  "difficulty": "medium",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "climb_stairs_ways",
+  "source_path": "datasets\\code\\medium\\climb_stairs_ways.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "first_error_step": null,
+    "error_types": [],
+    "note": "正确对照样本"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "false_positive_solution": false,
+    "first_error_step": null,
+    "first_error_section": null,
+    "error_types": []
+  },
+  "raw_solution": "## 1. 解题思路\n本题是经典的爬楼梯问题，每次可以走 1 步或 2 步，求走到第 n 级楼梯的方法总数。该问题具有最优子结构：到达第 n 级楼梯的最后一步要么是从第 n-1 级走 1 步，要么是从第 n-2 级走 2 步，因此方法数满足斐波那契递推关系 f(n) = f(n-1) + f(n-2)，其中 f(1)=1, f(2)=2。由于 n 最大为 45，直接使用动态规划（或迭代递推）即可在线性时间内求解，无需矩阵快速幂等高级优化。使用两个变量滚动记录前两项即可将空间优化到常数级。\n\n## 2. 复杂度分析\n时间复杂度：O(n)，需要循环计算从第 3 项到第 n 项的每一项，共 n-2 次迭代，每次为 O(1) 加法。\n空间复杂度：O(1)，仅使用固定数量的整型变量（prev, curr 等）保存中间状态，与输入规模 n 无关。\n\n## 3. 关键边界与处理策略\n- n = 1：只有 1 级楼梯，只能走 1 步，方法数为 1，直接返回 1。\n- n = 2：可以一次走 2 步或两次走 1 步，方法数为 2，直接返回 2。\n- 最小输入 n = 1（题目约束下不会小于 1），无需处理 0 或负数。\n- 最大输入 n = 45：结果在 int 范围内（f(45)=1836311903），Python int 无溢出问题，正常计算即可。\n- 无重复元素或特殊值问题，输入为单一整数。\n\n## 4. 代码实现\n```python\ndef climb_stairs_ways(n: int) -> int:\n    if n == 1:\n        return 1\n    if n == 2:\n        return 2\n    prev, curr = 1, 2\n    for _ in range(3, n + 1):\n        prev, curr = curr, prev + curr\n    return curr\n```\n\n## 5. 自测说明\n我通过手动代入公开测试用例验证：n=1 返回 1，n=2 返回 2，n=3 时循环一次得 prev=2,curr=3 返回 3，与示例期望一致。此外验证了 n=4 得 5、n=5 得 8 符合斐波那契规律，并确认 n=45 时返回 1836311903 未发生溢出。验证覆盖题目给出的全部公开用例及边界 n=1、n=2、n=45，未使用自动化测试框架，仅为人工推算核对。",
+  "sections": {
+    "解题思路": "本题是经典的爬楼梯问题，每次可以走 1 步或 2 步，求走到第 n 级楼梯的方法总数。该问题具有最优子结构：到达第 n 级楼梯的最后一步要么是从第 n-1 级走 1 步，要么是从第 n-2 级走 2 步，因此方法数满足斐波那契递推关系 f(n) = f(n-1) + f(n-2)，其中 f(1)=1, f(2)=2。由于 n 最大为 45，直接使用动态规划（或迭代递推）即可在线性时间内求解，无需矩阵快速幂等高级优化。使用两个变量滚动记录前两项即可将空间优化到常数级。",
+    "复杂度分析": "时间复杂度：O(n)，需要循环计算从第 3 项到第 n 项的每一项，共 n-2 次迭代，每次为 O(1) 加法。\n空间复杂度：O(1)，仅使用固定数量的整型变量（prev, curr 等）保存中间状态，与输入规模 n 无关。",
+    "关键边界与处理策略": "- n = 1：只有 1 级楼梯，只能走 1 步，方法数为 1，直接返回 1。\n- n = 2：可以一次走 2 步或两次走 1 步，方法数为 2，直接返回 2。\n- 最小输入 n = 1（题目约束下不会小于 1），无需处理 0 或负数。\n- 最大输入 n = 45：结果在 int 范围内（f(45)=1836311903），Python int 无溢出问题，正常计算即可。\n- 无重复元素或特殊值问题，输入为单一整数。",
+    "代码实现": "```python\ndef climb_stairs_ways(n: int) -> int:\n    if n == 1:\n        return 1\n    if n == 2:\n        return 2\n    prev, curr = 1, 2\n    for _ in range(3, n + 1):\n        prev, curr = curr, prev + curr\n    return curr\n```",
+    "自测说明": "我通过手动代入公开测试用例验证：n=1 返回 1，n=2 返回 2，n=3 时循环一次得 prev=2,curr=3 返回 3，与示例期望一致。此外验证了 n=4 得 5、n=5 得 8 符合斐波那契规律，并确认 n=45 时返回 1836311903 未发生溢出。验证覆盖题目给出的全部公开用例及边界 n=1、n=2、n=45，未使用自动化测试框架，仅为人工推算核对。"
+  },
+  "code": "def climb_stairs_ways(n: int) -> int:\n    if n == 1:\n        return 1\n    if n == 2:\n        return 2\n    prev, curr = 1, 2\n    for _ in range(3, n + 1):\n        prev, curr = curr, prev + curr\n    return curr",
+  "public": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 2,
+    "passed": 2,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "解题思路正确描述了爬楼梯问题的递推关系、边界条件及线性时间迭代实现，与代码实现和测试结果一致。",
+      "evidence": "步骤内容指出 f(n)=f(n-1)+f(n-2), f(1)=1, f(2)=2，使用滚动变量空间优化；代码用 prev,curr 迭代实现 O(n)；signals 显示 public 3/3、adversarial 2/2 全部通过，claimed_complexity 为 n 与 expected O(n) 相符。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "valid",
+      "confidence": 0.98,
+      "error_types": [],
+      "reason": "复杂度分析步骤对时间和空间复杂度的描述与代码实现及信号中的期望复杂度一致，且无错误类型适用。",
+      "evidence": "步骤内容称时间复杂度 O(n)（循环 n-2 次每次 O(1)），空间 O(1)（固定变量）；代码使用 for _ in range(3, n+1) 单循环与 prev/curr 变量；signals 显示 claimed_complexity 为 n、expected_complexity 为 O(n)、测试全通过、无 rule_findings。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "该步骤对 n=1、n=2 的边界处理及最大输入 n=45 的说明与代码实现和测试结果一致，无错误。",
+      "evidence": "步骤称 n=1 返回 1、n=2 返回 2，代码 if n==1: return 1; if n==2: return 2；signals 显示 public 3/3、adversarial 2/2 全部通过；f(45)=1836311903 在 int 范围内且 Python 无溢出。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "代码实现使用迭代动态规划正确计算爬楼梯方法数，边界 n=1 和 n=2 已处理，循环从 3 到 n 符合 O(n) 复杂度，且所有公开与对抗测试均通过。",
+      "evidence": "signals 中 public: passed 3/3, adversarial: passed 2/2, all_passed true；代码对 n=1 返回 1、n=2 返回 2，循环 range(3, n+1) 更新 prev/curr 为斐波那契式递推，与题意一致。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "suspicious",
+      "confidence": 0.7,
+      "error_types": [
+        "测试覆盖不足导致的伪正确"
+      ],
+      "reason": "自测说明仅依赖人工推算和少量用例（n=1,2,3,4,5,45），未覆盖如 n=0 或负数等潜在边界，且未使用自动化测试，虽公开与对抗测试全过但自测过程本身覆盖不足。",
+      "evidence": "步骤内容称'验证覆盖题目给出的全部公开用例及边界 n=1、n=2、n=45，未使用自动化测试框架，仅为人工推算核对'；signals 中 public 3/3、adversarial 2/2 通过，但自测说明未提及 n=0 或非正整数输入。",
+      "llm_verdict": "suspicious",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    }
+  ],
+  "checker_report": {
+    "process_ok": true,
+    "code_ok": true,
+    "pseudo_correct": false,
+    "public": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [],
+    "forensics": [],
+    "signals": {
+      "problem_id": "medium-014",
+      "entry_point": "climb_stairs_ways",
+      "max_loop_depth": 1,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "n",
+      "expected_complexity": "O(n)",
+      "public": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 2,
+        "passed": 2,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": []
+    },
+    "code": "def climb_stairs_ways(n: int) -> int:\n    if n == 1:\n        return 1\n    if n == 2:\n        return 2\n    prev, curr = 1, 2\n    for _ in range(3, n + 1):\n        prev, curr = curr, prev + curr\n    return curr",
+    "llm_summary": {
+      "summary": "公开与对抗测试全部通过，代码功能正确，但伪代码正确性标记为false需确认。",
+      "process_ok": true,
+      "code_ok": true,
+      "pseudo_correct": false,
+      "root_cause": "测试全绿但输入中 pseudo_correct 字段为 false，可能是 Producer 未提交伪代码或伪代码与实现不一致的标注问题，而非代码逻辑错误。",
+      "debug_hints": [
+        "检查 Producer 是否提供了伪代码以及伪代码是否准确描述 climb_stairs_ways 的递推逻辑",
+        "若伪代码缺失或错误，应补充或修正伪代码以匹配已通过测试的实现"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开与对抗测试均通过，规则层未见高置信缺陷。"
+    ],
+    "sections": {
+      "解题思路": "本题是经典的爬楼梯问题，每次可以走 1 步或 2 步，求走到第 n 级楼梯的方法总数。该问题具有最优子结构：到达第 n 级楼梯的最后一步要么是从第 n-1 级走 1 步，要么是从第 n-2 级走 2 步，因此方法数满足斐波那契递推关系 f(n) = f(n-1) + f(n-2)，其中 f(1)=1, f(2)=2。由于 n 最大为 45，直接使用动态规划（或迭代递推）即可在线性时间内求解，无需矩阵快速幂等高级优化。使用两个变量滚动记录前两项即可将空间优化到常数级。",
+      "复杂度分析": "时间复杂度：O(n)，需要循环计算从第 3 项到第 n 项的每一项，共 n-2 次迭代，每次为 O(1) 加法。\n空间复杂度：O(1)，仅使用固定数量的整型变量（prev, curr 等）保存中间状态，与输入规模 n 无关。",
+      "关键边界与处理策略": "- n = 1：只有 1 级楼梯，只能走 1 步，方法数为 1，直接返回 1。\n- n = 2：可以一次走 2 步或两次走 1 步，方法数为 2，直接返回 2。\n- 最小输入 n = 1（题目约束下不会小于 1），无需处理 0 或负数。\n- 最大输入 n = 45：结果在 int 范围内（f(45)=1836311903），Python int 无溢出问题，正常计算即可。\n- 无重复元素或特殊值问题，输入为单一整数。",
+      "代码实现": "```python\ndef climb_stairs_ways(n: int) -> int:\n    if n == 1:\n        return 1\n    if n == 2:\n        return 2\n    prev, curr = 1, 2\n    for _ in range(3, n + 1):\n        prev, curr = curr, prev + curr\n    return curr\n```",
+      "自测说明": "我通过手动代入公开测试用例验证：n=1 返回 1，n=2 返回 2，n=3 时循环一次得 prev=2,curr=3 返回 3，与示例期望一致。此外验证了 n=4 得 5、n=5 得 8 符合斐波那契规律，并确认 n=45 时返回 1836311903 未发生溢出。验证覆盖题目给出的全部公开用例及边界 n=1、n=2、n=45，未使用自动化测试框架，仅为人工推算核对。"
+    }
+  },
+  "elapsed_sec": 45.0,
+  "recorded_at": "2026-09-11T22:47:29"
+}

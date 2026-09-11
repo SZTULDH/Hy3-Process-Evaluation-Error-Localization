@@ -1,0 +1,185 @@
+{
+  "problem_id": "adversarial-008",
+  "title": "排序数组去重计数（过程跳步）",
+  "difficulty": "adversarial",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "count_unique_sorted",
+  "source_path": "datasets\\code\\adversarial\\count_unique_sorted.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": false,
+    "first_error_step": "step_2_complexity",
+    "error_types": [
+      "复杂度分析错误",
+      "算法选择错误"
+    ],
+    "note": "结果对但用了 O(n) 额外空间，且未利用有序性；声称 O(1) 空间错误。"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "false_positive_solution": false,
+    "first_error_step": null,
+    "first_error_section": null,
+    "error_types": []
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求对有序数组 nums 进行去重并返回剩余元素个数。由于数组已经有序，重复元素必然相邻，因此可以使用双指针（快慢指针）算法：慢指针 `i` 指向当前已确认不重复部分的最后一个位置，快指针 `j` 从 1 开始遍历数组。当 `nums[j] != nums[i]` 时，说明遇到了新元素，将慢指针后移并更新其值（或直接计数）。因为题目不要求返回数组、只要求返回个数，我们甚至可以只统计不重复元素的个数而不修改原数组：用变量 `count` 记录个数，初始为 0（或 1 若非空），遍历时若当前元素与前一个不同则计数加一。该算法只需一次线性扫描，适用于本题有序且长度最多 10^4 的约束。\n\n## 2. 复杂度分析\n时间复杂度：O(n)，其中 n = len(nums)。我们只使用了一次 for 循环遍历数组，每个元素被访问常数次，因此为线性时间。\n空间复杂度：O(1)。只使用了固定数量的额外变量（如计数器、循环索引），与输入规模无关。\n\n## 3. 关键边界与处理策略\n- 空输入（len(nums) == 0）：直接返回 0，避免访问 nums[0] 越界。\n- 单元素（len(nums) == 1）：无重复可能，返回 1。\n- 全部元素相同（如 [2,2,2]）：遍历时无新元素，计数保持为 1。\n- 负数与零：有序数组可能包含负数（如 [-3,-3,0,1]），比较逻辑 `!=` 对整数通用，正常处理。\n- 极值（如 10^4 个全不同元素）：计数等于 n，算法仍为 O(n) 且不会溢出（Python int 无限制）。\n- 已排序保证：题目明确 nums 有序，无需额外排序；若未排序则本算法不适用，但依题意不需处理。\n\n## 4. 代码实现\n```python\ndef count_unique_sorted(nums: list) -> int:\n    if not nums:\n        return 0\n    count = 1\n    for j in range(1, len(nums)):\n        if nums[j] != nums[j - 1]:\n            count += 1\n    return count\n```\n\n## 5. 自测说明\n我通过以下方式验证实现：\n1. 使用题目公开测试用例：`[[1,1,2]]` 调用得 2；`[[0,0,1,1,1,2,2,3,3,4]]` 调用得 5，与期望一致。\n2. 手动构造边界用例：空列表 `[]` 返回 0；单元素 `[5]` 返回 1；全同 `[7,7,7]` 返回 1；含负数 `[-2,-2,0,0,3]` 返回 3；全不同 `[1,2,3]` 返回 3。\n3. 验证覆盖范围：覆盖了空、单元素、全重复、部分重复、含负数、全不同及公开样例，未进行大规模随机压力测试，但逻辑简单且已覆盖主要分支。",
+  "sections": {
+    "解题思路": "本题要求对有序数组 nums 进行去重并返回剩余元素个数。由于数组已经有序，重复元素必然相邻，因此可以使用双指针（快慢指针）算法：慢指针 `i` 指向当前已确认不重复部分的最后一个位置，快指针 `j` 从 1 开始遍历数组。当 `nums[j] != nums[i]` 时，说明遇到了新元素，将慢指针后移并更新其值（或直接计数）。因为题目不要求返回数组、只要求返回个数，我们甚至可以只统计不重复元素的个数而不修改原数组：用变量 `count` 记录个数，初始为 0（或 1 若非空），遍历时若当前元素与前一个不同则计数加一。该算法只需一次线性扫描，适用于本题有序且长度最多 10^4 的约束。",
+    "复杂度分析": "时间复杂度：O(n)，其中 n = len(nums)。我们只使用了一次 for 循环遍历数组，每个元素被访问常数次，因此为线性时间。\n空间复杂度：O(1)。只使用了固定数量的额外变量（如计数器、循环索引），与输入规模无关。",
+    "关键边界与处理策略": "- 空输入（len(nums) == 0）：直接返回 0，避免访问 nums[0] 越界。\n- 单元素（len(nums) == 1）：无重复可能，返回 1。\n- 全部元素相同（如 [2,2,2]）：遍历时无新元素，计数保持为 1。\n- 负数与零：有序数组可能包含负数（如 [-3,-3,0,1]），比较逻辑 `!=` 对整数通用，正常处理。\n- 极值（如 10^4 个全不同元素）：计数等于 n，算法仍为 O(n) 且不会溢出（Python int 无限制）。\n- 已排序保证：题目明确 nums 有序，无需额外排序；若未排序则本算法不适用，但依题意不需处理。",
+    "代码实现": "```python\ndef count_unique_sorted(nums: list) -> int:\n    if not nums:\n        return 0\n    count = 1\n    for j in range(1, len(nums)):\n        if nums[j] != nums[j - 1]:\n            count += 1\n    return count\n```",
+    "自测说明": "我通过以下方式验证实现：\n1. 使用题目公开测试用例：`[[1,1,2]]` 调用得 2；`[[0,0,1,1,1,2,2,3,3,4]]` 调用得 5，与期望一致。\n2. 手动构造边界用例：空列表 `[]` 返回 0；单元素 `[5]` 返回 1；全同 `[7,7,7]` 返回 1；含负数 `[-2,-2,0,0,3]` 返回 3；全不同 `[1,2,3]` 返回 3。\n3. 验证覆盖范围：覆盖了空、单元素、全重复、部分重复、含负数、全不同及公开样例，未进行大规模随机压力测试，但逻辑简单且已覆盖主要分支。"
+  },
+  "code": "def count_unique_sorted(nums: list) -> int:\n    if not nums:\n        return 0\n    count = 1\n    for j in range(1, len(nums)):\n        if nums[j] != nums[j - 1]:\n            count += 1\n    return count",
+  "public": {
+    "total": 2,
+    "passed": 2,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 2,
+    "passed": 2,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "解题思路正确描述了利用有序数组相邻去重、单次线性扫描统计个数的双指针/计数方法，与代码实现及O(n)复杂度一致，且测试全部通过。",
+      "evidence": "步骤内容指出'用变量 count 记录个数...遍历时若当前元素与前一个不同则计数加一'，代码实现为 count=1 且 for j in range(1,len(nums)) 比较 nums[j]!=nums[j-1] 后 count+=1；signals 显示 public 和 adversarial 测试均 all_passed=true，claimed_complexity 为 n 与 expected O(n) 相符。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "valid",
+      "confidence": 0.98,
+      "error_types": [],
+      "reason": "步骤中的复杂度分析与代码实现一致：单次 for 循环遍历数组为 O(n)，仅用固定变量为 O(1)，且信号显示测试全通过无异常。",
+      "evidence": "代码实现为 for j in range(1, len(nums)) 单次循环，使用 count 和 j 等固定变量；signals 中 claimed_complexity 为 n、expected_complexity 为 O(n)、public 与 adversarial 测试均 all_passed=true。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "该步骤对空输入、单元素、全同、负数零、极值、已排序等边界与策略的描述与代码实现及执行信号一致且正确。",
+      "evidence": "代码实现中 `if not nums: return 0` 对应空输入返回0；`count=1` 及循环从 j=1 开始对应单元素返回1、全同保持1；signals 显示 public 与 adversarial 测试全部通过（all_passed: true），无失败样本。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "代码实现使用单指针遍历有序数组统计相邻不同元素个数，逻辑正确且时间复杂度为O(n)，测试全部通过。",
+      "evidence": "signals中public和adversarial测试均all_passed=true，failed=0；代码仅用一层for循环，max_loop_depth=1，claimed_complexity=n与expected_complexity=O(n)一致。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "自测说明中列举的用例与实现逻辑一致，公开与对抗测试均全部通过，且覆盖了主要边界分支，无证据表明该步骤描述不成立。",
+      "evidence": "signals 显示 public 2/2 passed、adversarial 2/2 passed、all_passed true；步骤内容中手动构造 []->0、[5]->1、[7,7,7]->1、[-2,-2,0,0,3]->3、[1,2,3]->3 与代码逻辑（空返回0，否则遍历比较相邻元素计数）吻合。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    }
+  ],
+  "checker_report": {
+    "process_ok": true,
+    "code_ok": true,
+    "pseudo_correct": false,
+    "public": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [],
+    "forensics": [],
+    "signals": {
+      "problem_id": "adversarial-008",
+      "entry_point": "count_unique_sorted",
+      "max_loop_depth": 1,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "n",
+      "expected_complexity": "O(n)",
+      "public": {
+        "total": 2,
+        "passed": 2,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 2,
+        "passed": 2,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": []
+    },
+    "code": "def count_unique_sorted(nums: list) -> int:\n    if not nums:\n        return 0\n    count = 1\n    for j in range(1, len(nums)):\n        if nums[j] != nums[j - 1]:\n            count += 1\n    return count",
+    "llm_summary": {
+      "summary": "公开与对抗测试全部通过，代码正确，但伪代码/过程存在跳步未完整描述去重逻辑。",
+      "process_ok": false,
+      "code_ok": true,
+      "pseudo_correct": false,
+      "root_cause": "解题过程（伪代码或步骤说明）跳过了排序数组去重的关键比较/计数步骤，虽最终代码正确实现了功能，但过程描述不完整导致 pseudo_correct 为 false。",
+      "debug_hints": [
+        "检查解题过程中的伪代码或分步说明，补全对相邻元素比较与唯一计数递增的描述",
+        "确保过程说明覆盖空数组、单元素、全重复等边界情况的处理逻辑"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开与对抗测试均通过，规则层未见高置信缺陷。"
+    ],
+    "sections": {
+      "解题思路": "本题要求对有序数组 nums 进行去重并返回剩余元素个数。由于数组已经有序，重复元素必然相邻，因此可以使用双指针（快慢指针）算法：慢指针 `i` 指向当前已确认不重复部分的最后一个位置，快指针 `j` 从 1 开始遍历数组。当 `nums[j] != nums[i]` 时，说明遇到了新元素，将慢指针后移并更新其值（或直接计数）。因为题目不要求返回数组、只要求返回个数，我们甚至可以只统计不重复元素的个数而不修改原数组：用变量 `count` 记录个数，初始为 0（或 1 若非空），遍历时若当前元素与前一个不同则计数加一。该算法只需一次线性扫描，适用于本题有序且长度最多 10^4 的约束。",
+      "复杂度分析": "时间复杂度：O(n)，其中 n = len(nums)。我们只使用了一次 for 循环遍历数组，每个元素被访问常数次，因此为线性时间。\n空间复杂度：O(1)。只使用了固定数量的额外变量（如计数器、循环索引），与输入规模无关。",
+      "关键边界与处理策略": "- 空输入（len(nums) == 0）：直接返回 0，避免访问 nums[0] 越界。\n- 单元素（len(nums) == 1）：无重复可能，返回 1。\n- 全部元素相同（如 [2,2,2]）：遍历时无新元素，计数保持为 1。\n- 负数与零：有序数组可能包含负数（如 [-3,-3,0,1]），比较逻辑 `!=` 对整数通用，正常处理。\n- 极值（如 10^4 个全不同元素）：计数等于 n，算法仍为 O(n) 且不会溢出（Python int 无限制）。\n- 已排序保证：题目明确 nums 有序，无需额外排序；若未排序则本算法不适用，但依题意不需处理。",
+      "代码实现": "```python\ndef count_unique_sorted(nums: list) -> int:\n    if not nums:\n        return 0\n    count = 1\n    for j in range(1, len(nums)):\n        if nums[j] != nums[j - 1]:\n            count += 1\n    return count\n```",
+      "自测说明": "我通过以下方式验证实现：\n1. 使用题目公开测试用例：`[[1,1,2]]` 调用得 2；`[[0,0,1,1,1,2,2,3,3,4]]` 调用得 5，与期望一致。\n2. 手动构造边界用例：空列表 `[]` 返回 0；单元素 `[5]` 返回 1；全同 `[7,7,7]` 返回 1；含负数 `[-2,-2,0,0,3]` 返回 3；全不同 `[1,2,3]` 返回 3。\n3. 验证覆盖范围：覆盖了空、单元素、全重复、部分重复、含负数、全不同及公开样例，未进行大规模随机压力测试，但逻辑简单且已覆盖主要分支。"
+    }
+  },
+  "elapsed_sec": 43.87,
+  "recorded_at": "2026-09-11T23:07:37"
+}

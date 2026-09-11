@@ -1,0 +1,223 @@
+{
+  "problem_id": "medium-010",
+  "title": "判断子序列",
+  "difficulty": "medium",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "is_subsequence",
+  "source_path": "datasets\\code\\medium\\is_subsequence.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "first_error_step": null,
+    "error_types": [],
+    "note": "正确对照样本"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": false,
+    "false_positive_solution": true,
+    "first_error_step": "step_2_complexity",
+    "first_error_section": "复杂度分析",
+    "error_types": [
+      "复杂度分析错误",
+      "描述与实现不一致"
+    ]
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求判断字符串 s 是否为字符串 t 的子序列。子序列的定义是：可以从 t 中删除任意个字符（也可以不删）而不改变剩余字符的相对顺序，所得到的字符串与 s 完全相同。\n选择双指针（Two Pointers）算法：设置指针 i 指向 s 的起始位置，指针 j 指向 t 的起始位置。遍历 t，若 s[i] == t[j] 则 i 后移；无论是否匹配 j 都后移。若最终 i 到达 s 末尾，说明 s 是 t 的子序列。该算法只需线性扫描一次 t，逻辑直观且适用于本题数据规模（长度上限 10^4）。\n\n## 2. 复杂度分析\n时间复杂度：O(len(t))。推理依据：算法使用单个循环遍历字符串 t 的每个字符恰好一次，循环内操作均为 O(1)，因此总时间取决于 t 的长度，即 O(len(t))。\n空间复杂度：O(1)。推理依据：仅使用了固定数量的整型指针变量（i、j）和常量级临时存储，未借助与输入规模相关的额外数据结构。\n\n## 3. 关键边界与处理策略\n- 空输入 s（len(s)==0）：根据定义空串是任意串的子序列，直接返回 True；算法中 i 初始为 0 且 len(s)==0 时循环结束 i==0 等于 len(s)，自然返回 True。\n- 空输入 t（len(t)==0）：若 s 也为空返回 True；若 s 非空则 j 无法推进、i 无法到达末尾，返回 False。约束中 len(s)<=len(t)，故 t 空时 s 必空。\n- 单元素：s 和 t 均为单字符时，相等返回 True，否则 False；算法可正确处理。\n- 重复元素：t 中含多个相同字符时，双指针贪心匹配最左侧可用字符，不影响子序列判定正确性。\n- 极值（长度 10^4）：双指针单次遍历在 O(n) 内完成，不会超时或爆栈。\n- s 长度等于 t 长度：退化为判断两字符串是否完全相等，算法逐位比对可覆盖。\n\n## 4. 代码实现\n```python\ndef is_subsequence(s: str, t: str) -> bool:\n    i = 0\n    j = 0\n    len_s = len(s)\n    len_t = len(t)\n    while i < len_s and j < len_t:\n        if s[i] == t[j]:\n            i += 1\n        j += 1\n    return i == len_s\n```\n\n## 5. 自测说明\n我通过构造具体输入调用上述函数进行验证：使用公开示例 ('abc','ahbgdc') 得 True、('axc','ahbgdc') 得 False、('','abc') 得 True，与期望一致；补充测试 ('','') 得 True、('a','') 因约束不会出现但逻辑返回 False、('abc','acb') 得 False、('aaa','abac') 得 True。验证覆盖了空串、单元素、重复字符、不等长及公开用例，未做大规模随机压力测试，如实说明覆盖范围仅限上述手工构造用例。",
+  "sections": {
+    "解题思路": "本题要求判断字符串 s 是否为字符串 t 的子序列。子序列的定义是：可以从 t 中删除任意个字符（也可以不删）而不改变剩余字符的相对顺序，所得到的字符串与 s 完全相同。\n选择双指针（Two Pointers）算法：设置指针 i 指向 s 的起始位置，指针 j 指向 t 的起始位置。遍历 t，若 s[i] == t[j] 则 i 后移；无论是否匹配 j 都后移。若最终 i 到达 s 末尾，说明 s 是 t 的子序列。该算法只需线性扫描一次 t，逻辑直观且适用于本题数据规模（长度上限 10^4）。",
+    "复杂度分析": "时间复杂度：O(len(t))。推理依据：算法使用单个循环遍历字符串 t 的每个字符恰好一次，循环内操作均为 O(1)，因此总时间取决于 t 的长度，即 O(len(t))。\n空间复杂度：O(1)。推理依据：仅使用了固定数量的整型指针变量（i、j）和常量级临时存储，未借助与输入规模相关的额外数据结构。",
+    "关键边界与处理策略": "- 空输入 s（len(s)==0）：根据定义空串是任意串的子序列，直接返回 True；算法中 i 初始为 0 且 len(s)==0 时循环结束 i==0 等于 len(s)，自然返回 True。\n- 空输入 t（len(t)==0）：若 s 也为空返回 True；若 s 非空则 j 无法推进、i 无法到达末尾，返回 False。约束中 len(s)<=len(t)，故 t 空时 s 必空。\n- 单元素：s 和 t 均为单字符时，相等返回 True，否则 False；算法可正确处理。\n- 重复元素：t 中含多个相同字符时，双指针贪心匹配最左侧可用字符，不影响子序列判定正确性。\n- 极值（长度 10^4）：双指针单次遍历在 O(n) 内完成，不会超时或爆栈。\n- s 长度等于 t 长度：退化为判断两字符串是否完全相等，算法逐位比对可覆盖。",
+    "代码实现": "```python\ndef is_subsequence(s: str, t: str) -> bool:\n    i = 0\n    j = 0\n    len_s = len(s)\n    len_t = len(t)\n    while i < len_s and j < len_t:\n        if s[i] == t[j]:\n            i += 1\n        j += 1\n    return i == len_s\n```",
+    "自测说明": "我通过构造具体输入调用上述函数进行验证：使用公开示例 ('abc','ahbgdc') 得 True、('axc','ahbgdc') 得 False、('','abc') 得 True，与期望一致；补充测试 ('','') 得 True、('a','') 因约束不会出现但逻辑返回 False、('abc','acb') 得 False、('aaa','abac') 得 True。验证覆盖了空串、单元素、重复字符、不等长及公开用例，未做大规模随机压力测试，如实说明覆盖范围仅限上述手工构造用例。"
+  },
+  "code": "def is_subsequence(s: str, t: str) -> bool:\n    i = 0\n    j = 0\n    len_s = len(s)\n    len_t = len(t)\n    while i < len_s and j < len_t:\n        if s[i] == t[j]:\n            i += 1\n        j += 1\n    return i == len_s",
+  "public": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 2,
+    "passed": 2,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [
+    {
+      "section": "复杂度分析",
+      "error_type": "COMPLEXITY",
+      "error_type_label": "复杂度分析错误",
+      "detail": "声称时间复杂度 1，但代码中检测到最大循环嵌套深度为 1，实际下界约为 n。",
+      "evidence": "AST 静态分析：max_loop_depth=1, recursive=False",
+      "confidence": 0.7,
+      "source": "rule"
+    }
+  ],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "解题思路正确描述了双指针算法且与代码实现一致，测试全部通过，复杂度描述在步骤中为线性扫描一次t符合O(|t|)，信号中的复杂度错误是针对别处声称的'1'而非本步骤。",
+      "evidence": "步骤内容：'该算法只需线性扫描一次 t'；代码实现：while i < len_s and j < len_t 单循环；signals: public all_passed=true, adversarial all_passed=true, rule_findings 指向'复杂度分析'章节声称'1'而非本步骤内容。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "flawed",
+      "confidence": 0.95,
+      "error_types": [
+        "复杂度分析错误",
+        "描述与实现不一致"
+      ],
+      "reason": "声称时间复杂度 1，但代码中检测到最大循环嵌套深度为 1，实际下界约为 n。 Critic 补充：步骤中声称时间复杂度为 O(len(t)) 且空间 O(1)，但 signals 中 claimed_complexity 为 '1'（即 O(1)），与步骤文字描述 O(len(t)) 矛盾，且规则引擎检测到实际循环深度为1、下界约为 n，说明声称的 O(1) 不成立。",
+      "evidence": "AST 静态分析：max_loop_depth=1, recursive=False",
+      "llm_verdict": "flawed",
+      "rule_types": [
+        "复杂度分析错误"
+      ],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "该步骤对空串、单元素、重复元素、极值及等长情况的边界与处理策略描述与代码实现一致且符合子序列定义，测试全部通过，无具体依据判定其不成立。",
+      "evidence": "步骤内容称空s返回True、空t时s必空返回True、单元素相等True否则False、重复元素贪心匹配正确、极值O(n)完成、等长退化为相等判断；代码实现while i<len_s and j<len_t中匹配则i++并j++，返回i==len_s，与描述一致；signals中public 3/3 passed, adversarial 2/2 passed, all_passed true。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "代码实现使用双指针遍历 t 一次，逻辑正确且满足 O(|t|) 期望，测试全部通过，无实现缺陷。",
+      "evidence": "代码 while 循环最多执行 len_t 次，i 和 j 单调递增；public 3/3 passed，adversarial 2/2 passed；signals 中 rule_findings 针对的是复杂度分析声称而非代码实现本身。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "suspicious",
+      "confidence": 0.6,
+      "error_types": [
+        "测试覆盖不足导致的伪正确"
+      ],
+      "reason": "自测说明仅使用少量手工构造用例且明确未做大规模随机压力测试，虽当前公开与对抗测试均通过，但覆盖有限可能遗漏边界或性能问题。",
+      "evidence": "步骤内容称'未做大规模随机压力测试，如实说明覆盖范围仅限上述手工构造用例'；signals 中 public 3/3、adversarial 2/2 通过但无压力测试信号。",
+      "llm_verdict": "suspicious",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    }
+  ],
+  "checker_report": {
+    "process_ok": false,
+    "code_ok": true,
+    "pseudo_correct": true,
+    "public": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [
+      {
+        "section": "复杂度分析",
+        "error_type": "COMPLEXITY",
+        "error_type_label": "复杂度分析错误",
+        "detail": "声称时间复杂度 1，但代码中检测到最大循环嵌套深度为 1，实际下界约为 n。",
+        "evidence": "AST 静态分析：max_loop_depth=1, recursive=False",
+        "confidence": 0.7,
+        "source": "rule"
+      }
+    ],
+    "forensics": [],
+    "signals": {
+      "problem_id": "medium-010",
+      "entry_point": "is_subsequence",
+      "max_loop_depth": 1,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "1",
+      "expected_complexity": "O(|t|)",
+      "public": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 2,
+        "passed": 2,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": [
+        {
+          "section": "复杂度分析",
+          "error_type": "COMPLEXITY",
+          "error_type_label": "复杂度分析错误",
+          "detail": "声称时间复杂度 1，但代码中检测到最大循环嵌套深度为 1，实际下界约为 n。",
+          "evidence": "AST 静态分析：max_loop_depth=1, recursive=False",
+          "confidence": 0.7,
+          "source": "rule"
+        }
+      ]
+    },
+    "code": "def is_subsequence(s: str, t: str) -> bool:\n    i = 0\n    j = 0\n    len_s = len(s)\n    len_t = len(t)\n    while i < len_s and j < len_t:\n        if s[i] == t[j]:\n            i += 1\n        j += 1\n    return i == len_s",
+    "llm_summary": {
+      "summary": "代码功能正确且通过全部测试，但复杂度分析文档中错误声称时间复杂度为 O(1)，实际为 O(n)。",
+      "process_ok": false,
+      "code_ok": true,
+      "pseudo_correct": true,
+      "root_cause": "解题过程文档中的复杂度分析部分误将时间复杂度写为 1（常数），而代码使用单层循环遍历字符串，实际时间复杂度为 O(n)（n 为较长字符串长度）。",
+      "debug_hints": [
+        "修正复杂度分析描述：将时间复杂度改为 O(n)，空间复杂度 O(1)（若只用指针）或按实际实现说明",
+        "在文档中明确 n 的含义（如 s 或 t 的长度），避免与常数时间混淆"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开测试通过但对抗失败：优先检查边界归一化、空/单元素、类型边界，并用 sandbox-debugger 在失败入参上下断点观察局部变量。",
+      "[COMPLEXITY] 声称时间复杂度 1，但代码中检测到最大循环嵌套深度为 1，实际下界约为 n。"
+    ],
+    "sections": {
+      "解题思路": "本题要求判断字符串 s 是否为字符串 t 的子序列。子序列的定义是：可以从 t 中删除任意个字符（也可以不删）而不改变剩余字符的相对顺序，所得到的字符串与 s 完全相同。\n选择双指针（Two Pointers）算法：设置指针 i 指向 s 的起始位置，指针 j 指向 t 的起始位置。遍历 t，若 s[i] == t[j] 则 i 后移；无论是否匹配 j 都后移。若最终 i 到达 s 末尾，说明 s 是 t 的子序列。该算法只需线性扫描一次 t，逻辑直观且适用于本题数据规模（长度上限 10^4）。",
+      "复杂度分析": "时间复杂度：O(len(t))。推理依据：算法使用单个循环遍历字符串 t 的每个字符恰好一次，循环内操作均为 O(1)，因此总时间取决于 t 的长度，即 O(len(t))。\n空间复杂度：O(1)。推理依据：仅使用了固定数量的整型指针变量（i、j）和常量级临时存储，未借助与输入规模相关的额外数据结构。",
+      "关键边界与处理策略": "- 空输入 s（len(s)==0）：根据定义空串是任意串的子序列，直接返回 True；算法中 i 初始为 0 且 len(s)==0 时循环结束 i==0 等于 len(s)，自然返回 True。\n- 空输入 t（len(t)==0）：若 s 也为空返回 True；若 s 非空则 j 无法推进、i 无法到达末尾，返回 False。约束中 len(s)<=len(t)，故 t 空时 s 必空。\n- 单元素：s 和 t 均为单字符时，相等返回 True，否则 False；算法可正确处理。\n- 重复元素：t 中含多个相同字符时，双指针贪心匹配最左侧可用字符，不影响子序列判定正确性。\n- 极值（长度 10^4）：双指针单次遍历在 O(n) 内完成，不会超时或爆栈。\n- s 长度等于 t 长度：退化为判断两字符串是否完全相等，算法逐位比对可覆盖。",
+      "代码实现": "```python\ndef is_subsequence(s: str, t: str) -> bool:\n    i = 0\n    j = 0\n    len_s = len(s)\n    len_t = len(t)\n    while i < len_s and j < len_t:\n        if s[i] == t[j]:\n            i += 1\n        j += 1\n    return i == len_s\n```",
+      "自测说明": "我通过构造具体输入调用上述函数进行验证：使用公开示例 ('abc','ahbgdc') 得 True、('axc','ahbgdc') 得 False、('','abc') 得 True，与期望一致；补充测试 ('','') 得 True、('a','') 因约束不会出现但逻辑返回 False、('abc','acb') 得 False、('aaa','abac') 得 True。验证覆盖了空串、单元素、重复字符、不等长及公开用例，未做大规模随机压力测试，如实说明覆盖范围仅限上述手工构造用例。"
+    }
+  },
+  "elapsed_sec": 70.49,
+  "recorded_at": "2026-09-11T22:43:56"
+}

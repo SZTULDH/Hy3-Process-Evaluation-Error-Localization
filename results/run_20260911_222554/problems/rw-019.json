@@ -1,0 +1,181 @@
+{
+  "problem_id": "rw-019",
+  "title": "角色权限蕴含",
+  "difficulty": "engineering",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "role_implies",
+  "source_path": "datasets\\code\\engineering\\function\\rw_019.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "note": "未知角色当 admin 是漏洞"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "false_positive_solution": false,
+    "first_error_step": null,
+    "first_error_section": null,
+    "error_types": []
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求判断一个权限角色是否隐含（implies）另一个权限角色，已知层级关系为 `admin > editor > viewer`，且未知角色返回 `False`。由于角色数量固定且极少，直接使用字典建立角色到等级的映射（admin=3, editor=2, viewer=1），通过比较等级数值即可得出结果：若 `have` 的等级大于等于 `need` 的等级则返回 `True`，否则返回 `False`；若任一角色不在映射中则返回 `False`。该方案利用哈希表（字典）实现 O(1) 查找，逻辑清晰且适用于本题固定层级场景。\n\n## 2. 复杂度分析\n时间复杂度：O(1)。仅进行两次字典查找和一次数值比较，与输入规模无关。\n空间复杂度：O(1)。使用固定大小的字典存储三个角色映射，不随输入变化。\n\n## 3. 关键边界与处理策略\n- 空字符串输入：如 `have=\"\"` 或 `need=\"\"`，不在映射中，返回 `False`。\n- 单元素/相同角色：如 `('editor','editor')`，等级相等，返回 `True`。\n- 未知角色：如 `('admin','guest')` 或 `('root','viewer')`，因 `guest`/`root` 不在映射，返回 `False`。\n- 大小写敏感：题目示例均为小写，若输入大写如 `'Admin'` 视为未知角色，返回 `False`（严格按给定字面量匹配）。\n- 反向隐含：如 `('viewer','admin')`，等级 1 < 3，返回 `False`。\n- 极值/特殊字符：任何非 `admin/editor/viewer` 的字符串均按未知角色处理返回 `False`。\n\n## 4. 代码实现\n```python\ndef role_implies(have: str, need: str) -> bool:\n    level = {'admin': 3, 'editor': 2, 'viewer': 1}\n    if have not in level or need not in level:\n        return False\n    return level[have] >= level[need]\n```\n\n## 5. 自测说明\n通过手动构造用例验证：使用题目公开示例 `('admin','viewer')` 得 `True`、`('viewer','admin')` 得 `False`、`('editor','editor')` 得 `True`；补充边界用例 `('admin','admin')` 得 `True`、`('editor','viewer')` 得 `True`、`('viewer','editor')` 得 `False`、`('admin','unknown')` 得 `False`、`('','viewer')` 得 `False`。验证覆盖已知层级、相等、反向、未知角色及空串，未使用自动化测试框架，未臆造额外测试结果。",
+  "sections": {
+    "解题思路": "本题要求判断一个权限角色是否隐含（implies）另一个权限角色，已知层级关系为 `admin > editor > viewer`，且未知角色返回 `False`。由于角色数量固定且极少，直接使用字典建立角色到等级的映射（admin=3, editor=2, viewer=1），通过比较等级数值即可得出结果：若 `have` 的等级大于等于 `need` 的等级则返回 `True`，否则返回 `False`；若任一角色不在映射中则返回 `False`。该方案利用哈希表（字典）实现 O(1) 查找，逻辑清晰且适用于本题固定层级场景。",
+    "复杂度分析": "时间复杂度：O(1)。仅进行两次字典查找和一次数值比较，与输入规模无关。\n空间复杂度：O(1)。使用固定大小的字典存储三个角色映射，不随输入变化。",
+    "关键边界与处理策略": "- 空字符串输入：如 `have=\"\"` 或 `need=\"\"`，不在映射中，返回 `False`。\n- 单元素/相同角色：如 `('editor','editor')`，等级相等，返回 `True`。\n- 未知角色：如 `('admin','guest')` 或 `('root','viewer')`，因 `guest`/`root` 不在映射，返回 `False`。\n- 大小写敏感：题目示例均为小写，若输入大写如 `'Admin'` 视为未知角色，返回 `False`（严格按给定字面量匹配）。\n- 反向隐含：如 `('viewer','admin')`，等级 1 < 3，返回 `False`。\n- 极值/特殊字符：任何非 `admin/editor/viewer` 的字符串均按未知角色处理返回 `False`。",
+    "代码实现": "```python\ndef role_implies(have: str, need: str) -> bool:\n    level = {'admin': 3, 'editor': 2, 'viewer': 1}\n    if have not in level or need not in level:\n        return False\n    return level[have] >= level[need]\n```",
+    "自测说明": "通过手动构造用例验证：使用题目公开示例 `('admin','viewer')` 得 `True`、`('viewer','admin')` 得 `False`、`('editor','editor')` 得 `True`；补充边界用例 `('admin','admin')` 得 `True`、`('editor','viewer')` 得 `True`、`('viewer','editor')` 得 `False`、`('admin','unknown')` 得 `False`、`('','viewer')` 得 `False`。验证覆盖已知层级、相等、反向、未知角色及空串，未使用自动化测试框架，未臆造额外测试结果。"
+  },
+  "code": "def role_implies(have: str, need: str) -> bool:\n    level = {'admin': 3, 'editor': 2, 'viewer': 1}\n    if have not in level or need not in level:\n        return False\n    return level[have] >= level[need]",
+  "public": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 4,
+    "passed": 4,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "解题思路准确描述了使用等级映射和比较的实现方式，与代码一致，且测试全部通过无缺陷证据。",
+      "evidence": "步骤内容称'使用字典建立角色到等级的映射（admin=3, editor=2, viewer=1），通过比较等级数值...若任一角色不在映射中则返回 False'，代码实现完全对应；signals 显示 public 3/3、adversarial 4/4 全部通过，rule_findings 为空。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "代码实现仅做固定字典查找和比较，与输入规模无关，复杂度分析为O(1)正确。",
+      "evidence": "代码：level字典固定大小，if have not in level or need not in level为两次查找，return level[have] >= level[need]为一次比较；signals中max_loop_depth=0, recursive=false, 测试全通过。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "该步骤描述的边界处理策略与代码实现完全一致，且测试全部通过。",
+      "evidence": "步骤中说明空字符串、未知角色、大小写敏感、反向隐含均返回 False，相同角色返回 True；代码 `if have not in level or need not in level: return False; return level[have] >= level[need]` 精确实现了这些规则；signals 显示 public 3/3、adversarial 4/4 全部通过。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "代码实现正确映射了角色层级并对未知角色返回False，公开与对抗测试均全部通过且无静态分析告警。",
+      "evidence": "signals中public: 3/3 passed, adversarial: 4/4 passed, rule_findings: []；代码对have/need不在level时返回False，否则比较level[have]>=level[need]，符合admin>editor>viewer且未知角色False的题意。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "自测说明中列出的手动用例与代码实现逻辑一致，且公开与对抗测试信号均全部通过，无证据表明该步骤描述有误。",
+      "evidence": "步骤内容列出 ('admin','viewer')=True 等用例，代码实现中 level 字典与比较逻辑可得出相同结果；signals 显示 public 3/3 passed, adversarial 4/4 passed, all_passed true。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    }
+  ],
+  "checker_report": {
+    "process_ok": true,
+    "code_ok": true,
+    "pseudo_correct": false,
+    "public": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 4,
+      "passed": 4,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [],
+    "forensics": [],
+    "signals": {
+      "problem_id": "rw-019",
+      "entry_point": "role_implies",
+      "max_loop_depth": 0,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "1",
+      "expected_complexity": null,
+      "public": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 4,
+        "passed": 4,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": []
+    },
+    "code": "def role_implies(have: str, need: str) -> bool:\n    level = {'admin': 3, 'editor': 2, 'viewer': 1}\n    if have not in level or need not in level:\n        return False\n    return level[have] >= level[need]",
+    "llm_summary": {
+      "summary": "公开与对抗测试全部通过，代码功能正确，但伪代码/思路描述被标记为不正确。",
+      "process_ok": false,
+      "code_ok": true,
+      "pseudo_correct": false,
+      "root_cause": "代码执行结果完全正确（公开3/3、对抗4/4），但解题过程中的伪代码或算法描述存在错误或与实际代码逻辑不一致，导致 pseudo_correct 被置为 false。",
+      "debug_hints": [
+        "核对 Producer 给出的伪代码/文字说明是否与实际提交代码的控制流、边界处理一致",
+        "重点检查权限蕴含关系（如继承、覆盖、通配符）在伪代码中是否被错误简化或遗漏",
+        "若伪代码仅为示意，应补充与代码等价的准确步骤描述"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开与对抗测试均通过，规则层未见高置信缺陷。"
+    ],
+    "sections": {
+      "解题思路": "本题要求判断一个权限角色是否隐含（implies）另一个权限角色，已知层级关系为 `admin > editor > viewer`，且未知角色返回 `False`。由于角色数量固定且极少，直接使用字典建立角色到等级的映射（admin=3, editor=2, viewer=1），通过比较等级数值即可得出结果：若 `have` 的等级大于等于 `need` 的等级则返回 `True`，否则返回 `False`；若任一角色不在映射中则返回 `False`。该方案利用哈希表（字典）实现 O(1) 查找，逻辑清晰且适用于本题固定层级场景。",
+      "复杂度分析": "时间复杂度：O(1)。仅进行两次字典查找和一次数值比较，与输入规模无关。\n空间复杂度：O(1)。使用固定大小的字典存储三个角色映射，不随输入变化。",
+      "关键边界与处理策略": "- 空字符串输入：如 `have=\"\"` 或 `need=\"\"`，不在映射中，返回 `False`。\n- 单元素/相同角色：如 `('editor','editor')`，等级相等，返回 `True`。\n- 未知角色：如 `('admin','guest')` 或 `('root','viewer')`，因 `guest`/`root` 不在映射，返回 `False`。\n- 大小写敏感：题目示例均为小写，若输入大写如 `'Admin'` 视为未知角色，返回 `False`（严格按给定字面量匹配）。\n- 反向隐含：如 `('viewer','admin')`，等级 1 < 3，返回 `False`。\n- 极值/特殊字符：任何非 `admin/editor/viewer` 的字符串均按未知角色处理返回 `False`。",
+      "代码实现": "```python\ndef role_implies(have: str, need: str) -> bool:\n    level = {'admin': 3, 'editor': 2, 'viewer': 1}\n    if have not in level or need not in level:\n        return False\n    return level[have] >= level[need]\n```",
+      "自测说明": "通过手动构造用例验证：使用题目公开示例 `('admin','viewer')` 得 `True`、`('viewer','admin')` 得 `False`、`('editor','editor')` 得 `True`；补充边界用例 `('admin','admin')` 得 `True`、`('editor','viewer')` 得 `True`、`('viewer','editor')` 得 `False`、`('admin','unknown')` 得 `False`、`('','viewer')` 得 `False`。验证覆盖已知层级、相等、反向、未知角色及空串，未使用自动化测试框架，未臆造额外测试结果。"
+    }
+  },
+  "elapsed_sec": 43.03,
+  "recorded_at": "2026-09-11T23:32:37"
+}

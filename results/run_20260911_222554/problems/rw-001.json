@@ -1,0 +1,184 @@
+{
+  "problem_id": "rw-001",
+  "title": "深度合并配置",
+  "difficulty": "engineering",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "deep_merge",
+  "source_path": "datasets\\code\\engineering\\function\\rw_001.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "first_error_step": null,
+    "error_types": [],
+    "note": "正确实现应递归合并；浅合并会在对抗用例失败。"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "false_positive_solution": false,
+    "first_error_step": null,
+    "first_error_section": null,
+    "error_types": []
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求将两个字典进行深度合并，且不能修改原始入参。选择递归算法配合字典的浅拷贝/深拷贝策略来实现：\n- 对于 `base` 和 `override` 中的每一个键，如果 `override` 中该键对应的值为 `None`，则表示删除该键，结果中不包含此键。\n- 如果 `override` 中该键对应的值不是字典，或者 `base` 中不存在该键，则直接用 `override` 的值覆盖（或新增）。\n- 如果 `override` 中该键对应的值是字典，且 `base` 中该键对应的值也是字典，则递归合并这两个字典。\n- 为了保证不修改入参，在合并过程中对 `base` 的每一层字典都创建新的字典对象（通过字典推导式或 `copy` 方法），而不是原地修改。\n\n## 2. 复杂度分析\n- 时间复杂度：O(N)，其中 N 是两个字典中所有键值对的总数（包括嵌套字典内的键值对）。因为每个键最多被访问一次，递归处理时每个嵌套字典的键也只处理一次。\n- 空间复杂度：O(N + D)，其中 N 是结果字典中的键值对总数（需要存储新字典），D 是递归调用栈的深度（题目约束嵌套深度 <= 10，因此 D <= 10，可视为常数级，但严格来说与深度成正比）。\n\n## 3. 关键边界与处理策略\n- **空输入**：`base` 或 `override` 为空字典时，直接返回另一方的拷贝（若 `override` 为空则返回 `base` 的深拷贝；若 `base` 为空则按 `override` 构造新字典，注意 `None` 值不加入结果）。\n- **单元素**：正常处理，无特殊逻辑。\n- **重复元素（键冲突）**：`override` 优先，非字典直接覆盖，字典则递归合并。\n- **None 值**：`override` 中值为 `None` 时，结果中删除该键，即使 `base` 中该键有嵌套字典也直接丢弃。\n- **非 dict 值**：`override` 中非字典值（包括数字、字符串、列表等）整键覆盖 `base` 中的任意值（包括字典）。\n- **极值/深度**：嵌套深度 <= 10，递归不会栈溢出；键均为字符串，无需处理其他类型键。\n- **不修改入参**：始终基于 `base` 的拷贝进行合并，不直接对 `base` 做赋值或删除操作。\n\n## 4. 代码实现\n```python\ndef deep_merge(base: dict, override: dict) -> dict:\n    result = {}\n    # 先处理 base 中的键\n    for k, v in base.items():\n        if k in override:\n            ov = override[k]\n            if ov is None:\n                continue  # 删除该键\n            if isinstance(ov, dict) and isinstance(v, dict):\n                result[k] = deep_merge(v, ov)\n            else:\n                result[k] = ov\n        else:\n            # 保留 base 的值，如果是 dict 需要深拷贝以避免后续修改影响原 base\n            if isinstance(v, dict):\n                result[k] = deep_merge(v, {})\n            else:\n                result[k] = v\n    # 处理 override 中新增的键（不在 base 中）\n    for k, ov in override.items():\n        if k not in base:\n            if ov is None:\n                continue\n            if isinstance(ov, dict):\n                result[k] = deep_merge({}, ov)\n            else:\n                result[k] = ov\n    return result\n```\n\n## 5. 自测说明\n我通过以下方式验证实现：\n1. 使用题目给出的三个公开测试用例进行手工推演和代码运行：\n   - `deep_merge({'a': 1}, {'b': 2})` 得到 `{'a': 1, 'b': 2}`，符合预期。\n   - `deep_merge({'a': {'x': 1}}, {'a': {'y': 2}})` 得到 `{'a': {'x': 1, 'y': 2}}`，符合预期。\n   - `deep_merge({'a': 1, 'b': 2}, {'b': None})` 得到 `{'a': 1}`，符合预期。\n2. 补充测试：空字典合并、override 中嵌套 None 删除、base 有嵌套而 override 用非 dict 覆盖、深度为 3 的嵌套合并，均表现正确且未修改原字典（通过 `id()` 和值对比确认）。\n验证覆盖：公开用例、空输入、None 删除、类型覆盖、嵌套递归、入参不变性。未测试超深（>10）或非字符串键（题目已约束）。",
+  "sections": {
+    "解题思路": "本题要求将两个字典进行深度合并，且不能修改原始入参。选择递归算法配合字典的浅拷贝/深拷贝策略来实现：\n- 对于 `base` 和 `override` 中的每一个键，如果 `override` 中该键对应的值为 `None`，则表示删除该键，结果中不包含此键。\n- 如果 `override` 中该键对应的值不是字典，或者 `base` 中不存在该键，则直接用 `override` 的值覆盖（或新增）。\n- 如果 `override` 中该键对应的值是字典，且 `base` 中该键对应的值也是字典，则递归合并这两个字典。\n- 为了保证不修改入参，在合并过程中对 `base` 的每一层字典都创建新的字典对象（通过字典推导式或 `copy` 方法），而不是原地修改。",
+    "复杂度分析": "- 时间复杂度：O(N)，其中 N 是两个字典中所有键值对的总数（包括嵌套字典内的键值对）。因为每个键最多被访问一次，递归处理时每个嵌套字典的键也只处理一次。\n- 空间复杂度：O(N + D)，其中 N 是结果字典中的键值对总数（需要存储新字典），D 是递归调用栈的深度（题目约束嵌套深度 <= 10，因此 D <= 10，可视为常数级，但严格来说与深度成正比）。",
+    "关键边界与处理策略": "- **空输入**：`base` 或 `override` 为空字典时，直接返回另一方的拷贝（若 `override` 为空则返回 `base` 的深拷贝；若 `base` 为空则按 `override` 构造新字典，注意 `None` 值不加入结果）。\n- **单元素**：正常处理，无特殊逻辑。\n- **重复元素（键冲突）**：`override` 优先，非字典直接覆盖，字典则递归合并。\n- **None 值**：`override` 中值为 `None` 时，结果中删除该键，即使 `base` 中该键有嵌套字典也直接丢弃。\n- **非 dict 值**：`override` 中非字典值（包括数字、字符串、列表等）整键覆盖 `base` 中的任意值（包括字典）。\n- **极值/深度**：嵌套深度 <= 10，递归不会栈溢出；键均为字符串，无需处理其他类型键。\n- **不修改入参**：始终基于 `base` 的拷贝进行合并，不直接对 `base` 做赋值或删除操作。",
+    "代码实现": "```python\ndef deep_merge(base: dict, override: dict) -> dict:\n    result = {}\n    # 先处理 base 中的键\n    for k, v in base.items():\n        if k in override:\n            ov = override[k]\n            if ov is None:\n                continue  # 删除该键\n            if isinstance(ov, dict) and isinstance(v, dict):\n                result[k] = deep_merge(v, ov)\n            else:\n                result[k] = ov\n        else:\n            # 保留 base 的值，如果是 dict 需要深拷贝以避免后续修改影响原 base\n            if isinstance(v, dict):\n                result[k] = deep_merge(v, {})\n            else:\n                result[k] = v\n    # 处理 override 中新增的键（不在 base 中）\n    for k, ov in override.items():\n        if k not in base:\n            if ov is None:\n                continue\n            if isinstance(ov, dict):\n                result[k] = deep_merge({}, ov)\n            else:\n                result[k] = ov\n    return result\n```",
+    "自测说明": "我通过以下方式验证实现：\n1. 使用题目给出的三个公开测试用例进行手工推演和代码运行：\n   - `deep_merge({'a': 1}, {'b': 2})` 得到 `{'a': 1, 'b': 2}`，符合预期。\n   - `deep_merge({'a': {'x': 1}}, {'a': {'y': 2}})` 得到 `{'a': {'x': 1, 'y': 2}}`，符合预期。\n   - `deep_merge({'a': 1, 'b': 2}, {'b': None})` 得到 `{'a': 1}`，符合预期。\n2. 补充测试：空字典合并、override 中嵌套 None 删除、base 有嵌套而 override 用非 dict 覆盖、深度为 3 的嵌套合并，均表现正确且未修改原字典（通过 `id()` 和值对比确认）。\n验证覆盖：公开用例、空输入、None 删除、类型覆盖、嵌套递归、入参不变性。未测试超深（>10）或非字符串键（题目已约束）。"
+  },
+  "code": "def deep_merge(base: dict, override: dict) -> dict:\n    result = {}\n    # 先处理 base 中的键\n    for k, v in base.items():\n        if k in override:\n            ov = override[k]\n            if ov is None:\n                continue  # 删除该键\n            if isinstance(ov, dict) and isinstance(v, dict):\n                result[k] = deep_merge(v, ov)\n            else:\n                result[k] = ov\n        else:\n            # 保留 base 的值，如果是 dict 需要深拷贝以避免后续修改影响原 base\n            if isinstance(v, dict):\n                result[k] = deep_merge(v, {})\n            else:\n                result[k] = v\n    # 处理 override 中新增的键（不在 base 中）\n    for k, ov in override.items():\n        if k not in base:\n            if ov is None:\n                continue\n            if isinstance(ov, dict):\n                result[k] = deep_merge({}, ov)\n            else:\n                result[k] = ov\n    return result",
+  "public": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 4,
+    "passed": 4,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "解题思路准确描述了深度合并规则、None删除语义、递归合并及不修改入参的拷贝策略，与后续实现及测试通过结果一致。",
+      "evidence": "步骤内容中'None表示删除该键'、'非dict覆盖'、'dict递归'、'每层创建新字典对象'与代码实现中continue、isinstance判断、deep_merge(v,{})等逻辑吻合；signals显示public与adversarial测试全部通过。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "复杂度分析中对时间 O(N) 和空间 O(N+D) 的说明与实现中每个键仅处理一次、递归深度受限的逻辑一致，且测试全部通过无矛盾证据。",
+      "evidence": "步骤内容称'每个键最多被访问一次，递归处理时每个嵌套字典的键也只处理一次'，实现中 base 和 override 各遍历一次且递归合并子 dict，signals 显示 all_passed 且 claimed_complexity 为 n 与 expected 一致。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "该步骤描述的边界与处理策略与代码实现一致，且测试全部通过，无具体证据表明存在错误。",
+      "evidence": "步骤称'override 中值为 None 时删除该键'，代码在 base 循环和 override 新增键循环中均对 ov is None 执行 continue 跳过；步骤称'非 dict 值整键覆盖'，代码 else 分支 result[k]=ov；步骤称'不修改入参'，代码始终构造新 result 且对 base 的 dict 用 deep_merge(v, {}) 拷贝；signals 显示 public 3/3、adversarial 4/4 全部通过。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "代码实现正确处理了嵌套dict递归合并、非dict覆盖、None删除、不修改入参，且所有公开与对抗测试均通过，无静态规则发现。",
+      "evidence": "signals 显示 public 3/3 passed, adversarial 4/4 passed, all_passed true, rule_findings 为空；代码中对 base 中 dict 用 deep_merge(v, {}) 实现深拷贝，override 新增 dict 用 deep_merge({}, ov)，None 时 continue 删除键，均符合题意。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "suspicious",
+      "confidence": 0.6,
+      "error_types": [
+        "测试覆盖不足导致的伪正确"
+      ],
+      "reason": "自测说明声称覆盖了多种情况且未修改原字典，但仅用 id() 和值对比确认入参不变性，未展示具体证据，且未测试非字符串键等题目未明确约束但实际可能存在的场景，存在覆盖不足风险。",
+      "evidence": "步骤内容称'通过 id() 和值对比确认'未修改原字典，但未给出具体对比数据；signals 显示 adversarial 测试 4 个全通过，但自测说明中未提及 adversarial 用例，仅依赖手工推演和补充测试。",
+      "llm_verdict": "suspicious",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    }
+  ],
+  "checker_report": {
+    "process_ok": true,
+    "code_ok": true,
+    "pseudo_correct": false,
+    "public": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 4,
+      "passed": 4,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [],
+    "forensics": [],
+    "signals": {
+      "problem_id": "rw-001",
+      "entry_point": "deep_merge",
+      "max_loop_depth": 1,
+      "recursive": true,
+      "parse_error": null,
+      "claimed_complexity": "n",
+      "expected_complexity": "O(n)",
+      "public": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 4,
+        "passed": 4,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": []
+    },
+    "code": "def deep_merge(base: dict, override: dict) -> dict:\n    result = {}\n    # 先处理 base 中的键\n    for k, v in base.items():\n        if k in override:\n            ov = override[k]\n            if ov is None:\n                continue  # 删除该键\n            if isinstance(ov, dict) and isinstance(v, dict):\n                result[k] = deep_merge(v, ov)\n            else:\n                result[k] = ov\n        else:\n            # 保留 base 的值，如果是 dict 需要深拷贝以避免后续修改影响原 base\n            if isinstance(v, dict):\n                result[k] = deep_merge(v, {})\n            else:\n                result[k] = v\n    # 处理 override 中新增的键（不在 base 中）\n    for k, ov in override.items():\n        if k not in base:\n            if ov is None:\n                continue\n            if isinstance(ov, dict):\n                result[k] = deep_merge({}, ov)\n            else:\n                result[k] = ov\n    return result",
+    "llm_summary": {
+      "summary": "函数 deep_merge 在公开与对抗测试上全部通过，代码正确且无状态依赖问题。",
+      "process_ok": true,
+      "code_ok": true,
+      "pseudo_correct": false,
+      "root_cause": "无失败用例，根因不适用；题目为函数级，无跨调用状态残留风险。",
+      "debug_hints": [
+        "无需调试，所有测试已通过",
+        "若后续扩展可增加对循环引用或特殊类型的处理检查"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开与对抗测试均通过，规则层未见高置信缺陷。"
+    ],
+    "sections": {
+      "解题思路": "本题要求将两个字典进行深度合并，且不能修改原始入参。选择递归算法配合字典的浅拷贝/深拷贝策略来实现：\n- 对于 `base` 和 `override` 中的每一个键，如果 `override` 中该键对应的值为 `None`，则表示删除该键，结果中不包含此键。\n- 如果 `override` 中该键对应的值不是字典，或者 `base` 中不存在该键，则直接用 `override` 的值覆盖（或新增）。\n- 如果 `override` 中该键对应的值是字典，且 `base` 中该键对应的值也是字典，则递归合并这两个字典。\n- 为了保证不修改入参，在合并过程中对 `base` 的每一层字典都创建新的字典对象（通过字典推导式或 `copy` 方法），而不是原地修改。",
+      "复杂度分析": "- 时间复杂度：O(N)，其中 N 是两个字典中所有键值对的总数（包括嵌套字典内的键值对）。因为每个键最多被访问一次，递归处理时每个嵌套字典的键也只处理一次。\n- 空间复杂度：O(N + D)，其中 N 是结果字典中的键值对总数（需要存储新字典），D 是递归调用栈的深度（题目约束嵌套深度 <= 10，因此 D <= 10，可视为常数级，但严格来说与深度成正比）。",
+      "关键边界与处理策略": "- **空输入**：`base` 或 `override` 为空字典时，直接返回另一方的拷贝（若 `override` 为空则返回 `base` 的深拷贝；若 `base` 为空则按 `override` 构造新字典，注意 `None` 值不加入结果）。\n- **单元素**：正常处理，无特殊逻辑。\n- **重复元素（键冲突）**：`override` 优先，非字典直接覆盖，字典则递归合并。\n- **None 值**：`override` 中值为 `None` 时，结果中删除该键，即使 `base` 中该键有嵌套字典也直接丢弃。\n- **非 dict 值**：`override` 中非字典值（包括数字、字符串、列表等）整键覆盖 `base` 中的任意值（包括字典）。\n- **极值/深度**：嵌套深度 <= 10，递归不会栈溢出；键均为字符串，无需处理其他类型键。\n- **不修改入参**：始终基于 `base` 的拷贝进行合并，不直接对 `base` 做赋值或删除操作。",
+      "代码实现": "```python\ndef deep_merge(base: dict, override: dict) -> dict:\n    result = {}\n    # 先处理 base 中的键\n    for k, v in base.items():\n        if k in override:\n            ov = override[k]\n            if ov is None:\n                continue  # 删除该键\n            if isinstance(ov, dict) and isinstance(v, dict):\n                result[k] = deep_merge(v, ov)\n            else:\n                result[k] = ov\n        else:\n            # 保留 base 的值，如果是 dict 需要深拷贝以避免后续修改影响原 base\n            if isinstance(v, dict):\n                result[k] = deep_merge(v, {})\n            else:\n                result[k] = v\n    # 处理 override 中新增的键（不在 base 中）\n    for k, ov in override.items():\n        if k not in base:\n            if ov is None:\n                continue\n            if isinstance(ov, dict):\n                result[k] = deep_merge({}, ov)\n            else:\n                result[k] = ov\n    return result\n```",
+      "自测说明": "我通过以下方式验证实现：\n1. 使用题目给出的三个公开测试用例进行手工推演和代码运行：\n   - `deep_merge({'a': 1}, {'b': 2})` 得到 `{'a': 1, 'b': 2}`，符合预期。\n   - `deep_merge({'a': {'x': 1}}, {'a': {'y': 2}})` 得到 `{'a': {'x': 1, 'y': 2}}`，符合预期。\n   - `deep_merge({'a': 1, 'b': 2}, {'b': None})` 得到 `{'a': 1}`，符合预期。\n2. 补充测试：空字典合并、override 中嵌套 None 删除、base 有嵌套而 override 用非 dict 覆盖、深度为 3 的嵌套合并，均表现正确且未修改原字典（通过 `id()` 和值对比确认）。\n验证覆盖：公开用例、空输入、None 删除、类型覆盖、嵌套递归、入参不变性。未测试超深（>10）或非字符串键（题目已约束）。"
+    }
+  },
+  "elapsed_sec": 52.04,
+  "recorded_at": "2026-09-12T00:14:32"
+}

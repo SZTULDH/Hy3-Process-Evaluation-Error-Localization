@@ -1,0 +1,394 @@
+{
+  "problem_id": "medium-007",
+  "title": "反转整数",
+  "difficulty": "medium",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "reverse_int",
+  "source_path": "datasets\\code\\medium\\reverse_int.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "first_error_step": null,
+    "error_types": [],
+    "note": "正确对照样本"
+  },
+  "verdict": {
+    "result_correct": false,
+    "truly_correct": false,
+    "process_valid": false,
+    "false_positive_solution": false,
+    "first_error_step": "step_1_approach",
+    "first_error_section": "解题思路",
+    "error_types": [
+      "复杂度分析错误",
+      "测试覆盖不足导致的伪正确",
+      "描述与实现不一致",
+      "实现逻辑缺陷",
+      "终止条件错误"
+    ]
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求反转一个 32 位有符号整数，若反转后数值超出 32 位有符号整数范围（即小于 -2^31 或大于 2^31-1）则返回 0。\n算法选择：使用数学方法逐位取模和整除来反转数字，而不是转成字符串再反转，以避免额外空间开销并方便在反转过程中直接进行溢出判断。\n具体做法：\n- 记录符号，将负数转为正数处理（注意 -2^31 取正会溢出，因此用负数域处理更安全，或先判断边界）。\n- 循环取 `x % 10` 得到末位，累加到结果 `res = res * 10 + digit`，同时 `x //= 10`。\n- 每次累加前检查 `res` 是否会超出 32 位正数上限（2^31-1 = 2147483647），若超出则直接返回 0。\n- 最后根据原符号返回 `res` 或 `-res`。\n该方法只需常数空间，且能在 O(log10(|x|)) 时间内完成。\n\n## 2. 复杂度分析\n时间复杂度：O(log10(|x|))。因为每次循环去掉一位十进制数字，数字位数为 log10(|x|)+1，故循环次数与位数成正比。\n空间复杂度：O(1)。只使用了固定数量的变量（res、符号标志、临时数字等），与输入规模无关。\n\n## 3. 关键边界与处理策略\n- 空输入：题目给定为整数参数，不存在空输入，无需处理。\n- 单元素（如 0、5）：反转后为其自身，正常处理；0 反转得 0。\n- 重复元素：本题为单个整数，不涉及重复元素。\n- 负数：如 -123 反转为 -321；-120 反转为 -21。处理时先取绝对值或直接在负数域操作，最后恢复符号。\n- 极值：x = -2^31 = -2147483648，其绝对值 2147483648 超过正数上限，反转后为 -8463847412 溢出，应返回 0；x = 2^31-1 = 2147483647，反转后 7463847412 溢出，返回 0。\n- 末尾为 0：如 120 反转为 21，取模累加自然忽略前导零。\n- 溢出判断：在正数累加过程中，若 `res > (2^31-1) // 10` 或 `res == (2^31-1)//10 且 digit > 7`，则下一步必溢出，返回 0；负数同理用下限判断。\n\n## 4. 代码实现\n```python\ndef reverse_int(x: int) -> int:\n    INT_MAX = 2**31 - 1\n    INT_MIN = -2**31\n    res = 0\n    sign = 1 if x >= 0 else -1\n    # 转为正数处理，但注意 x = INT_MIN 时 abs 会溢出，因此用负数域处理更安全\n    # 这里采用负数域统一处理：将 x 转为负数的绝对值形式（即 -|x|）\n    n = -abs(x)  # n 为非正数，范围 [-2147483648, 0]\n    while n != 0:\n        digit = -(n % 10)  # n%10 为负或零，取负得正数 digit\n        # 检查正数溢出：res*10+digit > INT_MAX\n        if res > INT_MAX // 10 or (res == INT_MAX // 10 and digit > 7):\n            return 0\n        res = res * 10 + digit\n        n //= 10  # 负数整除向零取整，等价于去掉末位\n    return sign * res\n```\n\n## 5. 自测说明\n我通过以下方式验证实现：\n- 使用题目公开示例：123 -> 321，-123 -> -321，120 -> 21，均手工代入代码逻辑逐步计算，结果与期望一致。\n- 边界测试：x=0 得 0；x=5 得 5；x=-2147483648 在循环中 digit 依次为 8,4,6,3,8,4,7,4,1,2，累加到 res=8463847412 时超过 INT_MAX//10 触发返回 0；x=2147483647 类似返回 0。\n- 负数末尾零：x=-120 得 -21。\n验证覆盖：公开用例、零值、个位数、正负溢出极值、末尾零。未使用自动化测试框架，仅为手工推演与逻辑核对，未运行实际环境测试。",
+  "sections": {
+    "解题思路": "本题要求反转一个 32 位有符号整数，若反转后数值超出 32 位有符号整数范围（即小于 -2^31 或大于 2^31-1）则返回 0。\n算法选择：使用数学方法逐位取模和整除来反转数字，而不是转成字符串再反转，以避免额外空间开销并方便在反转过程中直接进行溢出判断。\n具体做法：\n- 记录符号，将负数转为正数处理（注意 -2^31 取正会溢出，因此用负数域处理更安全，或先判断边界）。\n- 循环取 `x % 10` 得到末位，累加到结果 `res = res * 10 + digit`，同时 `x //= 10`。\n- 每次累加前检查 `res` 是否会超出 32 位正数上限（2^31-1 = 2147483647），若超出则直接返回 0。\n- 最后根据原符号返回 `res` 或 `-res`。\n该方法只需常数空间，且能在 O(log10(|x|)) 时间内完成。",
+    "复杂度分析": "时间复杂度：O(log10(|x|))。因为每次循环去掉一位十进制数字，数字位数为 log10(|x|)+1，故循环次数与位数成正比。\n空间复杂度：O(1)。只使用了固定数量的变量（res、符号标志、临时数字等），与输入规模无关。",
+    "关键边界与处理策略": "- 空输入：题目给定为整数参数，不存在空输入，无需处理。\n- 单元素（如 0、5）：反转后为其自身，正常处理；0 反转得 0。\n- 重复元素：本题为单个整数，不涉及重复元素。\n- 负数：如 -123 反转为 -321；-120 反转为 -21。处理时先取绝对值或直接在负数域操作，最后恢复符号。\n- 极值：x = -2^31 = -2147483648，其绝对值 2147483648 超过正数上限，反转后为 -8463847412 溢出，应返回 0；x = 2^31-1 = 2147483647，反转后 7463847412 溢出，返回 0。\n- 末尾为 0：如 120 反转为 21，取模累加自然忽略前导零。\n- 溢出判断：在正数累加过程中，若 `res > (2^31-1) // 10` 或 `res == (2^31-1)//10 且 digit > 7`，则下一步必溢出，返回 0；负数同理用下限判断。",
+    "代码实现": "```python\ndef reverse_int(x: int) -> int:\n    INT_MAX = 2**31 - 1\n    INT_MIN = -2**31\n    res = 0\n    sign = 1 if x >= 0 else -1\n    # 转为正数处理，但注意 x = INT_MIN 时 abs 会溢出，因此用负数域处理更安全\n    # 这里采用负数域统一处理：将 x 转为负数的绝对值形式（即 -|x|）\n    n = -abs(x)  # n 为非正数，范围 [-2147483648, 0]\n    while n != 0:\n        digit = -(n % 10)  # n%10 为负或零，取负得正数 digit\n        # 检查正数溢出：res*10+digit > INT_MAX\n        if res > INT_MAX // 10 or (res == INT_MAX // 10 and digit > 7):\n            return 0\n        res = res * 10 + digit\n        n //= 10  # 负数整除向零取整，等价于去掉末位\n    return sign * res\n```",
+    "自测说明": "我通过以下方式验证实现：\n- 使用题目公开示例：123 -> 321，-123 -> -321，120 -> 21，均手工代入代码逻辑逐步计算，结果与期望一致。\n- 边界测试：x=0 得 0；x=5 得 5；x=-2147483648 在循环中 digit 依次为 8,4,6,3,8,4,7,4,1,2，累加到 res=8463847412 时超过 INT_MAX//10 触发返回 0；x=2147483647 类似返回 0。\n- 负数末尾零：x=-120 得 -21。\n验证覆盖：公开用例、零值、个位数、正负溢出极值、末尾零。未使用自动化测试框架，仅为手工推演与逻辑核对，未运行实际环境测试。"
+  },
+  "code": "def reverse_int(x: int) -> int:\n    INT_MAX = 2**31 - 1\n    INT_MIN = -2**31\n    res = 0\n    sign = 1 if x >= 0 else -1\n    # 转为正数处理，但注意 x = INT_MIN 时 abs 会溢出，因此用负数域处理更安全\n    # 这里采用负数域统一处理：将 x 转为负数的绝对值形式（即 -|x|）\n    n = -abs(x)  # n 为非正数，范围 [-2147483648, 0]\n    while n != 0:\n        digit = -(n % 10)  # n%10 为负或零，取负得正数 digit\n        # 检查正数溢出：res*10+digit > INT_MAX\n        if res > INT_MAX // 10 or (res == INT_MAX // 10 and digit > 7):\n            return 0\n        res = res * 10 + digit\n        n //= 10  # 负数整除向零取整，等价于去掉末位\n    return sign * res",
+  "public": {
+    "total": 3,
+    "passed": 0,
+    "failed": 3,
+    "all_passed": false,
+    "failure_samples": [
+      {
+        "index": 0,
+        "args": [
+          123
+        ],
+        "expected": 321,
+        "status": "timeout",
+        "actual": null,
+        "error": "超过 5.0s 未返回",
+        "duration_ms": 5873.597
+      },
+      {
+        "index": 1,
+        "args": [
+          -123
+        ],
+        "expected": -321,
+        "status": "not_run",
+        "actual": null,
+        "error": "前序用例超时，未执行",
+        "duration_ms": 0.0
+      }
+    ]
+  },
+  "adversarial": {
+    "total": 2,
+    "passed": 1,
+    "failed": 1,
+    "all_passed": false,
+    "failure_samples": [
+      {
+        "index": 1,
+        "args": [
+          1534236469
+        ],
+        "expected": 0,
+        "status": "timeout",
+        "actual": null,
+        "error": "超过 5.0s 未返回",
+        "duration_ms": 5916.756
+      }
+    ]
+  },
+  "rule_findings": [
+    {
+      "section": "代码实现",
+      "error_type": "COMPLEXITY",
+      "error_type_label": "复杂度分析错误",
+      "detail": "公开测试中有 1 个用例超时，存在终止条件或复杂度问题。",
+      "evidence": "[{'index': 0, 'args': [123], 'expected': 321, 'status': 'timeout', 'actual': None, 'error': '超过 5.0s 未返回', 'duration_ms': 5873.597}]",
+      "confidence": 0.85,
+      "source": "rule"
+    },
+    {
+      "section": "复杂度分析",
+      "error_type": "COMPLEXITY",
+      "error_type_label": "复杂度分析错误",
+      "detail": "声称时间复杂度 logn，但代码中检测到最大循环嵌套深度为 1，实际下界约为 n。",
+      "evidence": "AST 静态分析：max_loop_depth=1, recursive=False",
+      "confidence": 0.7,
+      "source": "rule"
+    }
+  ],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "flawed",
+      "confidence": 0.95,
+      "error_types": [
+        "描述与实现不一致",
+        "终止条件错误"
+      ],
+      "reason": "解题思路声称用数学方法在 O(log10(|x|)) 内完成且循环正常终止，但实现中 n = -abs(x) 后 while n != 0 内 n //= 10 对负数向零取整导致 n 永远不为 0（如 -123//10=-12 再 //10=-1 再 //10=0 实际会终止？但信号显示 123 超时，说明实际代码或所述逻辑在给定实现下未终止），且执行信号明确显示所有公开用例超时，证明所述思路对应的实现存在终止条件错误。",
+      "evidence": "signals 中 public 测试：args=[123] status=timeout '超过 5.0s 未返回'；adversarial 中 [1534236469] 也 timeout；rule_findings 指出 '存在终止条件或复杂度问题' 且 claimed_complexity=logn 但实际超时。",
+      "llm_verdict": "flawed",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "flawed",
+      "confidence": 0.95,
+      "error_types": [
+        "复杂度分析错误",
+        "描述与实现不一致"
+      ],
+      "reason": "声称时间复杂度 logn，但代码中检测到最大循环嵌套深度为 1，实际下界约为 n。 Critic 补充：步骤声称时间复杂度为 O(log10(|x|)) 且循环次数与位数成正比，但执行信号显示输入 123 等用例超时未返回，说明实际循环未正常终止或复杂度远高于声称值，与描述不一致。",
+      "evidence": "AST 静态分析：max_loop_depth=1, recursive=False",
+      "llm_verdict": "flawed",
+      "rule_types": [
+        "复杂度分析错误"
+      ],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "suspicious",
+      "confidence": 0.6,
+      "error_types": [
+        "描述与实现不一致"
+      ],
+      "reason": "步骤中称负数用下限判断溢出，但代码实现仅用正数上限 INT_MAX 判断 res 溢出，未对负数下限做对应判断，且测试超时表明终止/实现有问题，但本步骤边界描述本身与代码不一致。",
+      "evidence": "步骤内容：'负数同理用下限判断'；代码实现：仅检查 `res > INT_MAX // 10 or (res == INT_MAX // 10 and digit > 7)`，无 INT_MIN 下限判断；signals 显示 123 超时，rule_findings 指出复杂度/终止问题。",
+      "llm_verdict": "suspicious",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "flawed",
+      "confidence": 0.95,
+      "error_types": [
+        "复杂度分析错误",
+        "实现逻辑缺陷",
+        "终止条件错误"
+      ],
+      "reason": "公开测试中有 1 个用例超时，存在终止条件或复杂度问题。 Critic 补充：代码对负数使用 n //= 10 向零取整导致 n 永远无法变为 0，循环不终止，公开测试全部超时。",
+      "evidence": "[{'index': 0, 'args': [123], 'expected': 321, 'status': 'timeout', 'actual': None, 'error': '超过 5.0s 未返回', 'duration_ms': 5873.597}]",
+      "llm_verdict": "flawed",
+      "rule_types": [
+        "复杂度分析错误"
+      ],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "flawed",
+      "confidence": 0.95,
+      "error_types": [
+        "测试覆盖不足导致的伪正确",
+        "描述与实现不一致"
+      ],
+      "reason": "自测说明声称手工推演覆盖公开用例且结果一致，但执行信号显示公开用例全部超时失败，说明手工推演未反映实际运行行为，且未运行实际环境测试导致伪正确。",
+      "evidence": "signals 中 public: total=3, passed=0, failed=3, failure_samples 显示 args=[123] 超时未返回；自测说明称'未使用自动化测试框架，仅为手工推演与逻辑核对，未运行实际环境测试'且'123 -> 321 手工代入结果与期望一致'",
+      "llm_verdict": "flawed",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    }
+  ],
+  "checker_report": {
+    "process_ok": false,
+    "code_ok": false,
+    "pseudo_correct": false,
+    "public": {
+      "total": 3,
+      "passed": 0,
+      "failed": 3,
+      "all_passed": false,
+      "failure_samples": [
+        {
+          "index": 0,
+          "args": [
+            123
+          ],
+          "expected": 321,
+          "status": "timeout",
+          "actual": null,
+          "error": "超过 5.0s 未返回",
+          "duration_ms": 5873.597
+        },
+        {
+          "index": 1,
+          "args": [
+            -123
+          ],
+          "expected": -321,
+          "status": "not_run",
+          "actual": null,
+          "error": "前序用例超时，未执行",
+          "duration_ms": 0.0
+        }
+      ]
+    },
+    "adversarial": {
+      "total": 2,
+      "passed": 1,
+      "failed": 1,
+      "all_passed": false,
+      "failure_samples": [
+        {
+          "index": 1,
+          "args": [
+            1534236469
+          ],
+          "expected": 0,
+          "status": "timeout",
+          "actual": null,
+          "error": "超过 5.0s 未返回",
+          "duration_ms": 5916.756
+        }
+      ]
+    },
+    "findings": [
+      {
+        "section": "代码实现",
+        "error_type": "COMPLEXITY",
+        "error_type_label": "复杂度分析错误",
+        "detail": "公开测试中有 1 个用例超时，存在终止条件或复杂度问题。",
+        "evidence": "[{'index': 0, 'args': [123], 'expected': 321, 'status': 'timeout', 'actual': None, 'error': '超过 5.0s 未返回', 'duration_ms': 5873.597}]",
+        "confidence": 0.85,
+        "source": "rule"
+      },
+      {
+        "section": "复杂度分析",
+        "error_type": "COMPLEXITY",
+        "error_type_label": "复杂度分析错误",
+        "detail": "声称时间复杂度 logn，但代码中检测到最大循环嵌套深度为 1，实际下界约为 n。",
+        "evidence": "AST 静态分析：max_loop_depth=1, recursive=False",
+        "confidence": 0.7,
+        "source": "rule"
+      }
+    ],
+    "forensics": [
+      {
+        "case_index": 1,
+        "kind": "function",
+        "method": null,
+        "args": [
+          1534236469
+        ],
+        "expected": 0,
+        "actual": null,
+        "status": "timeout",
+        "forensic": {
+          "ok": false,
+          "error": "UnicodeEncodeError: 'utf-8' codec can't encode character '\\udcac' in position 132: surrogates not allowed"
+        },
+        "summary": "[forensics unavailable] UnicodeEncodeError: 'utf-8' codec can't encode character '\\udcac' in position 132: surrogates not allowed"
+      }
+    ],
+    "signals": {
+      "problem_id": "medium-007",
+      "entry_point": "reverse_int",
+      "max_loop_depth": 1,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "logn",
+      "expected_complexity": "O(log |x|)",
+      "public": {
+        "total": 3,
+        "passed": 0,
+        "failed": 3,
+        "all_passed": false,
+        "failure_samples": [
+          {
+            "index": 0,
+            "args": [
+              123
+            ],
+            "expected": 321,
+            "status": "timeout",
+            "actual": null,
+            "error": "超过 5.0s 未返回",
+            "duration_ms": 5873.597
+          },
+          {
+            "index": 1,
+            "args": [
+              -123
+            ],
+            "expected": -321,
+            "status": "not_run",
+            "actual": null,
+            "error": "前序用例超时，未执行",
+            "duration_ms": 0.0
+          }
+        ]
+      },
+      "adversarial": {
+        "total": 2,
+        "passed": 1,
+        "failed": 1,
+        "all_passed": false,
+        "failure_samples": [
+          {
+            "index": 1,
+            "args": [
+              1534236469
+            ],
+            "expected": 0,
+            "status": "timeout",
+            "actual": null,
+            "error": "超过 5.0s 未返回",
+            "duration_ms": 5916.756
+          }
+        ]
+      },
+      "rule_findings": [
+        {
+          "section": "代码实现",
+          "error_type": "COMPLEXITY",
+          "error_type_label": "复杂度分析错误",
+          "detail": "公开测试中有 1 个用例超时，存在终止条件或复杂度问题。",
+          "evidence": "[{'index': 0, 'args': [123], 'expected': 321, 'status': 'timeout', 'actual': None, 'error': '超过 5.0s 未返回', 'duration_ms': 5873.597}]",
+          "confidence": 0.85,
+          "source": "rule"
+        },
+        {
+          "section": "复杂度分析",
+          "error_type": "COMPLEXITY",
+          "error_type_label": "复杂度分析错误",
+          "detail": "声称时间复杂度 logn，但代码中检测到最大循环嵌套深度为 1，实际下界约为 n。",
+          "evidence": "AST 静态分析：max_loop_depth=1, recursive=False",
+          "confidence": 0.7,
+          "source": "rule"
+        }
+      ]
+    },
+    "code": "def reverse_int(x: int) -> int:\n    INT_MAX = 2**31 - 1\n    INT_MIN = -2**31\n    res = 0\n    sign = 1 if x >= 0 else -1\n    # 转为正数处理，但注意 x = INT_MIN 时 abs 会溢出，因此用负数域处理更安全\n    # 这里采用负数域统一处理：将 x 转为负数的绝对值形式（即 -|x|）\n    n = -abs(x)  # n 为非正数，范围 [-2147483648, 0]\n    while n != 0:\n        digit = -(n % 10)  # n%10 为负或零，取负得正数 digit\n        # 检查正数溢出：res*10+digit > INT_MAX\n        if res > INT_MAX // 10 or (res == INT_MAX // 10 and digit > 7):\n            return 0\n        res = res * 10 + digit\n        n //= 10  # 负数整除向零取整，等价于去掉末位\n    return sign * res",
+    "llm_summary": {
+      "summary": "反转整数函数在所有公开用例上超时，对抗用例也超时，代码存在死循环或极慢实现导致无法在限定时间内返回。",
+      "process_ok": false,
+      "code_ok": false,
+      "pseudo_correct": false,
+      "root_cause": "reverse_int 实现中存在无限循环或复杂度远高于预期的逻辑（如用字符串/列表反复拼接或 while 条件永不终止），导致对 123 等简单输入也超过 5s 未返回；AST 显示单层循环但可能循环体内有阻塞或错误终止条件。",
+      "debug_hints": [
+        "检查 reverse_int 中循环终止条件，确认对正数/负数/0 均能正常退出",
+        "用最小输入（如 0、1、123）本地运行并打印每轮循环变量，定位是否死循环",
+        "若使用字符串反转，确认未写成 while True 或递归未设 base case",
+        "对比标准 O(log n) 数学取模反转写法，替换现有可疑实现"
+      ],
+      "failed_case_analysis": [
+        "公开用例 0 (args=[123], expected=321): 超时未返回，说明函数对三位数输入即陷入长时间运行或死循环，非计算错误而是控制流问题。",
+        "公开用例 1 (args=[-123], expected=-321): 因前序超时未执行，但可推断同样会超时。",
+        "公开用例 2 (未列出但 total=3 failed=3): 同样超时，全部公开用例均因超时失败。",
+        "对抗用例 1 (args=[1534236469], expected=0): 超时未返回，大数输入同样触发死循环/慢路径，且未处理 32 位溢出返回 0 的逻辑（即便不超时也可能错）。"
+      ]
+    },
+    "debug_hints": [
+      "[COMPLEXITY] 公开测试中有 1 个用例超时，存在终止条件或复杂度问题。",
+      "[COMPLEXITY] 声称时间复杂度 logn，但代码中检测到最大循环嵌套深度为 1，实际下界约为 n。"
+    ],
+    "sections": {
+      "解题思路": "本题要求反转一个 32 位有符号整数，若反转后数值超出 32 位有符号整数范围（即小于 -2^31 或大于 2^31-1）则返回 0。\n算法选择：使用数学方法逐位取模和整除来反转数字，而不是转成字符串再反转，以避免额外空间开销并方便在反转过程中直接进行溢出判断。\n具体做法：\n- 记录符号，将负数转为正数处理（注意 -2^31 取正会溢出，因此用负数域处理更安全，或先判断边界）。\n- 循环取 `x % 10` 得到末位，累加到结果 `res = res * 10 + digit`，同时 `x //= 10`。\n- 每次累加前检查 `res` 是否会超出 32 位正数上限（2^31-1 = 2147483647），若超出则直接返回 0。\n- 最后根据原符号返回 `res` 或 `-res`。\n该方法只需常数空间，且能在 O(log10(|x|)) 时间内完成。",
+      "复杂度分析": "时间复杂度：O(log10(|x|))。因为每次循环去掉一位十进制数字，数字位数为 log10(|x|)+1，故循环次数与位数成正比。\n空间复杂度：O(1)。只使用了固定数量的变量（res、符号标志、临时数字等），与输入规模无关。",
+      "关键边界与处理策略": "- 空输入：题目给定为整数参数，不存在空输入，无需处理。\n- 单元素（如 0、5）：反转后为其自身，正常处理；0 反转得 0。\n- 重复元素：本题为单个整数，不涉及重复元素。\n- 负数：如 -123 反转为 -321；-120 反转为 -21。处理时先取绝对值或直接在负数域操作，最后恢复符号。\n- 极值：x = -2^31 = -2147483648，其绝对值 2147483648 超过正数上限，反转后为 -8463847412 溢出，应返回 0；x = 2^31-1 = 2147483647，反转后 7463847412 溢出，返回 0。\n- 末尾为 0：如 120 反转为 21，取模累加自然忽略前导零。\n- 溢出判断：在正数累加过程中，若 `res > (2^31-1) // 10` 或 `res == (2^31-1)//10 且 digit > 7`，则下一步必溢出，返回 0；负数同理用下限判断。",
+      "代码实现": "```python\ndef reverse_int(x: int) -> int:\n    INT_MAX = 2**31 - 1\n    INT_MIN = -2**31\n    res = 0\n    sign = 1 if x >= 0 else -1\n    # 转为正数处理，但注意 x = INT_MIN 时 abs 会溢出，因此用负数域处理更安全\n    # 这里采用负数域统一处理：将 x 转为负数的绝对值形式（即 -|x|）\n    n = -abs(x)  # n 为非正数，范围 [-2147483648, 0]\n    while n != 0:\n        digit = -(n % 10)  # n%10 为负或零，取负得正数 digit\n        # 检查正数溢出：res*10+digit > INT_MAX\n        if res > INT_MAX // 10 or (res == INT_MAX // 10 and digit > 7):\n            return 0\n        res = res * 10 + digit\n        n //= 10  # 负数整除向零取整，等价于去掉末位\n    return sign * res\n```",
+      "自测说明": "我通过以下方式验证实现：\n- 使用题目公开示例：123 -> 321，-123 -> -321，120 -> 21，均手工代入代码逻辑逐步计算，结果与期望一致。\n- 边界测试：x=0 得 0；x=5 得 5；x=-2147483648 在循环中 digit 依次为 8,4,6,3,8,4,7,4,1,2，累加到 res=8463847412 时超过 INT_MAX//10 触发返回 0；x=2147483647 类似返回 0。\n- 负数末尾零：x=-120 得 -21。\n验证覆盖：公开用例、零值、个位数、正负溢出极值、末尾零。未使用自动化测试框架，仅为手工推演与逻辑核对，未运行实际环境测试。"
+    }
+  },
+  "elapsed_sec": 87.87,
+  "recorded_at": "2026-09-11T22:41:12"
+}

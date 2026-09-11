@@ -1,0 +1,225 @@
+{
+  "problem_id": "hard-012",
+  "title": "最长公共子序列长度",
+  "difficulty": "hard",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "longest_common_subsequence",
+  "source_path": "datasets\\code\\hard\\longest_common_subsequence.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "first_error_step": null,
+    "error_types": [],
+    "note": "正确对照样本"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": false,
+    "false_positive_solution": true,
+    "first_error_step": "step_2_complexity",
+    "first_error_section": "复杂度分析",
+    "error_types": [
+      "复杂度分析错误",
+      "描述与实现不一致"
+    ]
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求两个字符串的最长公共子序列（LCS）长度，子序列不要求连续但保持相对顺序。经典解法是动态规划（DP）。定义 `dp[i][j]` 表示 `text1` 前 `i` 个字符与 `text2` 前 `j` 个字符的 LCS 长度。状态转移：若 `text1[i-1] == text2[j-1]`，则 `dp[i][j] = dp[i-1][j-1] + 1`；否则 `dp[i][j] = max(dp[i-1][j], dp[i][j-1])`。使用二维数组存储中间结果，适用于长度 1000 以内的字符串，时间和空间均可接受。\n\n## 2. 复杂度分析\n时间复杂度：O(m*n)，其中 m = len(text1)，n = len(text2)。需要填充 (m+1)*(n+1) 的 DP 表，每个单元计算为 O(1)。\n空间复杂度：O(m*n)，用于存储 (m+1)*(n+1) 的二维 DP 数组。若优化为一维数组可降至 O(min(m,n))，但本题约束下二维清晰且直接。\n\n## 3. 关键边界与处理策略\n- 空输入：题目约束长度 >=1，但代码应能处理空串（返回 0），DP 初始化第 0 行/列为 0 自然覆盖。\n- 单元素：如 \"a\" 与 \"a\" 返回 1，\"a\" 与 \"b\" 返回 0，DP 基础情形正确。\n- 重复元素：如 \"aaa\" 与 \"aa\" 返回 2，DP 状态转移基于字符相等累加，正确处理。\n- 无公共字符：如 \"abc\" 与 \"def\" 返回 0，DP 全为 0 路径。\n- 极值：长度 1000 时 DP 表约 10^6 项，Python 中可接受；字符可为任意 ASCII，直接比较即可。\n\n## 4. 代码实现\n```python\ndef longest_common_subsequence(text1: str, text2: str) -> int:\n    m, n = len(text1), len(text2)\n    dp = [[0] * (n + 1) for _ in range(m + 1)]\n    for i in range(1, m + 1):\n        for j in range(1, n + 1):\n            if text1[i - 1] == text2[j - 1]:\n                dp[i][j] = dp[i - 1][j - 1] + 1\n            else:\n                dp[i][j] = max(dp[i - 1][j], dp[i][j - 1])\n    return dp[m][n]\n```\n\n## 5. 自测说明\n我使用题目给出的公开测试用例进行验证：\n- `longest_common_subsequence('abcde', 'ace')` 返回 3，与期望一致。\n- `longest_common_subsequence('abc', 'abc')` 返回 3，与期望一致。\n- `longest_common_subsequence('abc', 'def')` 返回 0，与期望一致。\n此外手动验证了单元素（\"a\",\"a\"->1）、重复元素（\"aaa\",\"aa\"->2）和空串（\"\",\"a\"->0）的情形，均符合预期。验证覆盖公开用例及基本边界，未做大规模随机压力测试。",
+  "sections": {
+    "解题思路": "本题要求两个字符串的最长公共子序列（LCS）长度，子序列不要求连续但保持相对顺序。经典解法是动态规划（DP）。定义 `dp[i][j]` 表示 `text1` 前 `i` 个字符与 `text2` 前 `j` 个字符的 LCS 长度。状态转移：若 `text1[i-1] == text2[j-1]`，则 `dp[i][j] = dp[i-1][j-1] + 1`；否则 `dp[i][j] = max(dp[i-1][j], dp[i][j-1])`。使用二维数组存储中间结果，适用于长度 1000 以内的字符串，时间和空间均可接受。",
+    "复杂度分析": "时间复杂度：O(m*n)，其中 m = len(text1)，n = len(text2)。需要填充 (m+1)*(n+1) 的 DP 表，每个单元计算为 O(1)。\n空间复杂度：O(m*n)，用于存储 (m+1)*(n+1) 的二维 DP 数组。若优化为一维数组可降至 O(min(m,n))，但本题约束下二维清晰且直接。",
+    "关键边界与处理策略": "- 空输入：题目约束长度 >=1，但代码应能处理空串（返回 0），DP 初始化第 0 行/列为 0 自然覆盖。\n- 单元素：如 \"a\" 与 \"a\" 返回 1，\"a\" 与 \"b\" 返回 0，DP 基础情形正确。\n- 重复元素：如 \"aaa\" 与 \"aa\" 返回 2，DP 状态转移基于字符相等累加，正确处理。\n- 无公共字符：如 \"abc\" 与 \"def\" 返回 0，DP 全为 0 路径。\n- 极值：长度 1000 时 DP 表约 10^6 项，Python 中可接受；字符可为任意 ASCII，直接比较即可。",
+    "代码实现": "```python\ndef longest_common_subsequence(text1: str, text2: str) -> int:\n    m, n = len(text1), len(text2)\n    dp = [[0] * (n + 1) for _ in range(m + 1)]\n    for i in range(1, m + 1):\n        for j in range(1, n + 1):\n            if text1[i - 1] == text2[j - 1]:\n                dp[i][j] = dp[i - 1][j - 1] + 1\n            else:\n                dp[i][j] = max(dp[i - 1][j], dp[i][j - 1])\n    return dp[m][n]\n```",
+    "自测说明": "我使用题目给出的公开测试用例进行验证：\n- `longest_common_subsequence('abcde', 'ace')` 返回 3，与期望一致。\n- `longest_common_subsequence('abc', 'abc')` 返回 3，与期望一致。\n- `longest_common_subsequence('abc', 'def')` 返回 0，与期望一致。\n此外手动验证了单元素（\"a\",\"a\"->1）、重复元素（\"aaa\",\"aa\"->2）和空串（\"\",\"a\"->0）的情形，均符合预期。验证覆盖公开用例及基本边界，未做大规模随机压力测试。"
+  },
+  "code": "def longest_common_subsequence(text1: str, text2: str) -> int:\n    m, n = len(text1), len(text2)\n    dp = [[0] * (n + 1) for _ in range(m + 1)]\n    for i in range(1, m + 1):\n        for j in range(1, n + 1):\n            if text1[i - 1] == text2[j - 1]:\n                dp[i][j] = dp[i - 1][j - 1] + 1\n            else:\n                dp[i][j] = max(dp[i - 1][j], dp[i][j - 1])\n    return dp[m][n]",
+  "public": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 2,
+    "passed": 2,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [
+    {
+      "section": "复杂度分析",
+      "error_type": "COMPLEXITY",
+      "error_type_label": "复杂度分析错误",
+      "detail": "声称时间复杂度 n，但代码中检测到最大循环嵌套深度为 2，实际下界约为 n2。",
+      "evidence": "AST 静态分析：max_loop_depth=2, recursive=False",
+      "confidence": 0.7,
+      "source": "rule"
+    }
+  ],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "suspicious",
+      "confidence": 0.7,
+      "error_types": [
+        "复杂度分析错误"
+      ],
+      "reason": "步骤中称时间和空间可接受且未明确写出 O(mn) 复杂度，但信号显示 claimed_complexity 为 'n' 而实际循环深度为 2，存在复杂度声明与实现不一致的嫌疑。",
+      "evidence": "signals 中 rule_findings: 声称时间复杂度 n，但代码中检测到最大循环嵌套深度为 2，实际下界约为 n2；步骤内容仅说'时间和空间均可接受'未纠正该错误复杂度声明。",
+      "llm_verdict": "suspicious",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "flawed",
+      "confidence": 0.95,
+      "error_types": [
+        "复杂度分析错误",
+        "描述与实现不一致"
+      ],
+      "reason": "声称时间复杂度 n，但代码中检测到最大循环嵌套深度为 2，实际下界约为 n2。 Critic 补充：步骤中声称时间复杂度 O(m*n) 与代码实际二维 DP 循环一致，但 signals 显示 claimed_complexity 为 'n' 且规则检测到复杂度分析错误，说明步骤文本外的声明或元数据与实现不一致，而本步骤内容虽写 O(m*n) 但整体上下文（claimed_complexity=n）构成描述与实现不一致。",
+      "evidence": "AST 静态分析：max_loop_depth=2, recursive=False",
+      "llm_verdict": "flawed",
+      "rule_types": [
+        "复杂度分析错误"
+      ],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "该步骤对空输入、单元素、重复元素、无公共字符及极值等边界与处理策略的描述与代码实现一致，且测试全部通过，无具体依据判定其不成立。",
+      "evidence": "步骤内容称空串返回0由DP初始化覆盖，代码dp=[[0]*(n+1) for _ in range(m+1)]确实如此；单元素、重复元素、无公共字符描述均与代码状态转移逻辑相符；signals中public与adversarial测试均all_passed=true。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "代码实现使用标准二维DP正确求解LCS，测试全部通过且无实现逻辑缺陷。",
+      "evidence": "public测试3/3通过，adversarial测试2/2通过；代码为典型O(mn) DP，与完整实现一致，无parse_error。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "suspicious",
+      "confidence": 0.6,
+      "error_types": [
+        "测试覆盖不足导致的伪正确"
+      ],
+      "reason": "自测说明仅覆盖公开用例和少量手动边界，未做大规模随机压力测试，虽当前信号显示全部通过，但测试覆盖不足可能掩盖潜在问题。",
+      "evidence": "步骤内容写明'验证覆盖公开用例及基本边界，未做大规模随机压力测试'；signals 中 public 3/3、adversarial 2/2 通过，但无更大规模测试证据。",
+      "llm_verdict": "suspicious",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    }
+  ],
+  "checker_report": {
+    "process_ok": false,
+    "code_ok": true,
+    "pseudo_correct": true,
+    "public": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [
+      {
+        "section": "复杂度分析",
+        "error_type": "COMPLEXITY",
+        "error_type_label": "复杂度分析错误",
+        "detail": "声称时间复杂度 n，但代码中检测到最大循环嵌套深度为 2，实际下界约为 n2。",
+        "evidence": "AST 静态分析：max_loop_depth=2, recursive=False",
+        "confidence": 0.7,
+        "source": "rule"
+      }
+    ],
+    "forensics": [],
+    "signals": {
+      "problem_id": "hard-012",
+      "entry_point": "longest_common_subsequence",
+      "max_loop_depth": 2,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "n",
+      "expected_complexity": "O(mn)",
+      "public": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 2,
+        "passed": 2,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": [
+        {
+          "section": "复杂度分析",
+          "error_type": "COMPLEXITY",
+          "error_type_label": "复杂度分析错误",
+          "detail": "声称时间复杂度 n，但代码中检测到最大循环嵌套深度为 2，实际下界约为 n2。",
+          "evidence": "AST 静态分析：max_loop_depth=2, recursive=False",
+          "confidence": 0.7,
+          "source": "rule"
+        }
+      ]
+    },
+    "code": "def longest_common_subsequence(text1: str, text2: str) -> int:\n    m, n = len(text1), len(text2)\n    dp = [[0] * (n + 1) for _ in range(m + 1)]\n    for i in range(1, m + 1):\n        for j in range(1, n + 1):\n            if text1[i - 1] == text2[j - 1]:\n                dp[i][j] = dp[i - 1][j - 1] + 1\n            else:\n                dp[i][j] = max(dp[i - 1][j], dp[i][j - 1])\n    return dp[m][n]",
+    "llm_summary": {
+      "summary": "代码功能正确通过全部测试，但复杂度分析声称O(n)与实际O(n^2)不符。",
+      "process_ok": false,
+      "code_ok": true,
+      "pseudo_correct": true,
+      "root_cause": "解题过程中的复杂度分析部分错误地将双重循环实现的LCS算法时间复杂度写为O(n)，实际应为O(n*m)或O(n^2)。",
+      "debug_hints": [
+        "修正复杂度分析：将时间复杂度从O(n)改为O(n*m)（或当n=m时O(n^2)），空间复杂度根据实现说明为O(n*m)或优化后O(min(n,m))",
+        "检查代码中是否使用了二维DP数组及两层嵌套循环，确认无递归后更新文档描述"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开测试通过但对抗失败：优先检查边界归一化、空/单元素、类型边界，并用 sandbox-debugger 在失败入参上下断点观察局部变量。",
+      "[COMPLEXITY] 声称时间复杂度 n，但代码中检测到最大循环嵌套深度为 2，实际下界约为 n2。"
+    ],
+    "sections": {
+      "解题思路": "本题要求两个字符串的最长公共子序列（LCS）长度，子序列不要求连续但保持相对顺序。经典解法是动态规划（DP）。定义 `dp[i][j]` 表示 `text1` 前 `i` 个字符与 `text2` 前 `j` 个字符的 LCS 长度。状态转移：若 `text1[i-1] == text2[j-1]`，则 `dp[i][j] = dp[i-1][j-1] + 1`；否则 `dp[i][j] = max(dp[i-1][j], dp[i][j-1])`。使用二维数组存储中间结果，适用于长度 1000 以内的字符串，时间和空间均可接受。",
+      "复杂度分析": "时间复杂度：O(m*n)，其中 m = len(text1)，n = len(text2)。需要填充 (m+1)*(n+1) 的 DP 表，每个单元计算为 O(1)。\n空间复杂度：O(m*n)，用于存储 (m+1)*(n+1) 的二维 DP 数组。若优化为一维数组可降至 O(min(m,n))，但本题约束下二维清晰且直接。",
+      "关键边界与处理策略": "- 空输入：题目约束长度 >=1，但代码应能处理空串（返回 0），DP 初始化第 0 行/列为 0 自然覆盖。\n- 单元素：如 \"a\" 与 \"a\" 返回 1，\"a\" 与 \"b\" 返回 0，DP 基础情形正确。\n- 重复元素：如 \"aaa\" 与 \"aa\" 返回 2，DP 状态转移基于字符相等累加，正确处理。\n- 无公共字符：如 \"abc\" 与 \"def\" 返回 0，DP 全为 0 路径。\n- 极值：长度 1000 时 DP 表约 10^6 项，Python 中可接受；字符可为任意 ASCII，直接比较即可。",
+      "代码实现": "```python\ndef longest_common_subsequence(text1: str, text2: str) -> int:\n    m, n = len(text1), len(text2)\n    dp = [[0] * (n + 1) for _ in range(m + 1)]\n    for i in range(1, m + 1):\n        for j in range(1, n + 1):\n            if text1[i - 1] == text2[j - 1]:\n                dp[i][j] = dp[i - 1][j - 1] + 1\n            else:\n                dp[i][j] = max(dp[i - 1][j], dp[i][j - 1])\n    return dp[m][n]\n```",
+      "自测说明": "我使用题目给出的公开测试用例进行验证：\n- `longest_common_subsequence('abcde', 'ace')` 返回 3，与期望一致。\n- `longest_common_subsequence('abc', 'abc')` 返回 3，与期望一致。\n- `longest_common_subsequence('abc', 'def')` 返回 0，与期望一致。\n此外手动验证了单元素（\"a\",\"a\"->1）、重复元素（\"aaa\",\"aa\"->2）和空串（\"\",\"a\"->0）的情形，均符合预期。验证覆盖公开用例及基本边界，未做大规模随机压力测试。"
+    }
+  },
+  "elapsed_sec": 47.82,
+  "recorded_at": "2026-09-11T23:00:33"
+}

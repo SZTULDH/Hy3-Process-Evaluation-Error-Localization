@@ -1,0 +1,187 @@
+{
+  "problem_id": "hard-003",
+  "title": "盛最多水的容器",
+  "difficulty": "hard",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "max_area",
+  "source_path": "datasets\\code\\hard\\max_area.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": false,
+    "first_error_step": "step_2_complexity",
+    "error_types": [
+      "算法选择错误",
+      "复杂度分析错误"
+    ],
+    "note": "结果正确但是 O(n^2) 暴力，不满足期望 O(n) 双指针；在 n=1e5 时会超时，过程不成立。"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "false_positive_solution": false,
+    "first_error_step": null,
+    "first_error_section": null,
+    "error_types": []
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求在数组中选取两个下标 i 和 j（i < j），使得容器容量 `min(height[i], height[j]) * (j - i)` 最大。采用**双指针算法**：初始时左指针 l 指向数组起始，右指针 r 指向数组末尾，此时宽度最大。计算当前容量后，将高度较小的那个指针向中间移动（因为若移动高度较大的指针，宽度减小且受限于较小高度，容量必然不会增大；而移动较小指针有可能遇到更高的线从而提升容量）。每次移动后重新计算容量并更新最大值，直到两指针相遇。该算法只需一次线性扫描，适用于 n 最大为 10^5 的规模。\n\n## 2. 复杂度分析\n时间复杂度：O(n)，其中 n 为数组长度。双指针从两端向中间遍历，每个元素最多被访问一次，循环次数为 n-1 次，每次操作均为 O(1)。\n空间复杂度：O(1)，仅使用了固定数量的变量（l, r, max_water 等），与输入规模无关。\n\n## 3. 关键边界与处理策略\n- 空输入或长度不足 2：题目约束 n >= 2，但代码逻辑上若 len(height) < 2 可直接返回 0 防御。\n- 单元素：不满足 n>=2，不会发生；若发生返回 0。\n- 重复元素：如 [1,1]，双指针计算 min(1,1)*(1-0)=1，正确；重复高度不影响指针移动策略（相等时移动任意一端均可，代码中移动左或右均可，通常移动左）。\n- 负数：题目约束 height[i] >= 0，无负数；若有则取 min 会得负容量，但约束已排除。\n- 极值：n=10^5 时 O(n) 可过；height[i]=0 时容量为 0，指针正常移动；height[i]=10^4 时计算不溢出（Python int 无限制）。\n- 两指针相遇：循环条件 l < r，相遇时终止，不会重复计算同一线。\n\n## 4. 代码实现\n```python\ndef max_area(height: list) -> int:\n    l, r = 0, len(height) - 1\n    max_water = 0\n    while l < r:\n        h = min(height[l], height[r])\n        w = r - l\n        max_water = max(max_water, h * w)\n        if height[l] < height[r]:\n            l += 1\n        else:\n            r -= 1\n    return max_water\n```\n\n## 5. 自测说明\n我使用题目给出的公开测试用例进行了验证：\n- 输入 `[1, 8, 6, 2, 5, 4, 8, 3, 7]`，手动模拟双指针过程：初始 l=0,r=8 容量 min(1,7)*8=8；移动 l 至 1，容量 min(8,7)*7=49；之后移动 r 等均小于 49，最终返回 49，与期望一致。\n- 输入 `[1, 1]`，l=0,r=1 容量 1*1=1，返回 1，与期望一致。\n此外，我验证了边界情形：输入 `[0, 0]` 返回 0；输入 `[4, 3, 2, 1, 4]` 返回 16（l=0,r=4 容量 4*4=16）。验证覆盖了公开用例、零高度、递减序列及最小长度，未覆盖随机大规模压力测试，但算法逻辑与复杂度保证正确性。",
+  "sections": {
+    "解题思路": "本题要求在数组中选取两个下标 i 和 j（i < j），使得容器容量 `min(height[i], height[j]) * (j - i)` 最大。采用**双指针算法**：初始时左指针 l 指向数组起始，右指针 r 指向数组末尾，此时宽度最大。计算当前容量后，将高度较小的那个指针向中间移动（因为若移动高度较大的指针，宽度减小且受限于较小高度，容量必然不会增大；而移动较小指针有可能遇到更高的线从而提升容量）。每次移动后重新计算容量并更新最大值，直到两指针相遇。该算法只需一次线性扫描，适用于 n 最大为 10^5 的规模。",
+    "复杂度分析": "时间复杂度：O(n)，其中 n 为数组长度。双指针从两端向中间遍历，每个元素最多被访问一次，循环次数为 n-1 次，每次操作均为 O(1)。\n空间复杂度：O(1)，仅使用了固定数量的变量（l, r, max_water 等），与输入规模无关。",
+    "关键边界与处理策略": "- 空输入或长度不足 2：题目约束 n >= 2，但代码逻辑上若 len(height) < 2 可直接返回 0 防御。\n- 单元素：不满足 n>=2，不会发生；若发生返回 0。\n- 重复元素：如 [1,1]，双指针计算 min(1,1)*(1-0)=1，正确；重复高度不影响指针移动策略（相等时移动任意一端均可，代码中移动左或右均可，通常移动左）。\n- 负数：题目约束 height[i] >= 0，无负数；若有则取 min 会得负容量，但约束已排除。\n- 极值：n=10^5 时 O(n) 可过；height[i]=0 时容量为 0，指针正常移动；height[i]=10^4 时计算不溢出（Python int 无限制）。\n- 两指针相遇：循环条件 l < r，相遇时终止，不会重复计算同一线。",
+    "代码实现": "```python\ndef max_area(height: list) -> int:\n    l, r = 0, len(height) - 1\n    max_water = 0\n    while l < r:\n        h = min(height[l], height[r])\n        w = r - l\n        max_water = max(max_water, h * w)\n        if height[l] < height[r]:\n            l += 1\n        else:\n            r -= 1\n    return max_water\n```",
+    "自测说明": "我使用题目给出的公开测试用例进行了验证：\n- 输入 `[1, 8, 6, 2, 5, 4, 8, 3, 7]`，手动模拟双指针过程：初始 l=0,r=8 容量 min(1,7)*8=8；移动 l 至 1，容量 min(8,7)*7=49；之后移动 r 等均小于 49，最终返回 49，与期望一致。\n- 输入 `[1, 1]`，l=0,r=1 容量 1*1=1，返回 1，与期望一致。\n此外，我验证了边界情形：输入 `[0, 0]` 返回 0；输入 `[4, 3, 2, 1, 4]` 返回 16（l=0,r=4 容量 4*4=16）。验证覆盖了公开用例、零高度、递减序列及最小长度，未覆盖随机大规模压力测试，但算法逻辑与复杂度保证正确性。"
+  },
+  "code": "def max_area(height: list) -> int:\n    l, r = 0, len(height) - 1\n    max_water = 0\n    while l < r:\n        h = min(height[l], height[r])\n        w = r - l\n        max_water = max(max_water, h * w)\n        if height[l] < height[r]:\n            l += 1\n        else:\n            r -= 1\n    return max_water",
+  "public": {
+    "total": 2,
+    "passed": 2,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "valid",
+      "confidence": 0.98,
+      "error_types": [],
+      "reason": "解题思路正确描述了双指针算法的核心逻辑、移动策略及复杂度，与代码实现一致且测试全部通过。",
+      "evidence": "步骤内容说明'将高度较小的那个指针向中间移动'且'只需一次线性扫描'，代码实现中 if height[l] < height[r]: l += 1 else: r -= 1 与此一致；signals 显示 public 和 adversarial 测试 all_passed 为 true，claimed_complexity 为 n 符合 O(n) 期望。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "valid",
+      "confidence": 0.99,
+      "error_types": [],
+      "reason": "复杂度分析步骤对时间和空间复杂度的描述与代码实现及信号中的执行结果一致，且符合题目期望的 O(n)。",
+      "evidence": "步骤内容称时间复杂度 O(n)、空间复杂度 O(1)；代码使用双指针单次 while 循环（max_loop_depth=1，无递归），仅用固定变量；signals 显示 claimed_complexity 为 n、expected_complexity 为 O(n)，且所有测试通过。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "该步骤对边界情况（长度不足、重复元素、负数、极值、指针相遇）的描述与题目约束及代码实现一致，且测试全部通过。",
+      "evidence": "步骤内容称'n>=2 但代码逻辑上若 len(height)<2 可直接返回 0 防御'，代码未显式写但循环 l<r 在 len<2 时不会执行返回 0；重复元素[1,1]计算正确；signals 显示 public 2/2、adversarial 3/3 全部通过。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "代码实现使用双指针法正确求解最大储水量，与完整实现一致，且所有公开和对抗测试均通过，无静态分析告警。",
+      "evidence": "signals 中 public: total=2 passed=2 failed=0 all_passed=true；adversarial: total=3 passed=3 failed=0 all_passed=true；rule_findings 为空；代码与完整实现完全相同，双指针逻辑正确。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "suspicious",
+      "confidence": 0.6,
+      "error_types": [
+        "测试覆盖不足导致的伪正确"
+      ],
+      "reason": "自测说明仅依赖少量手工模拟和公开用例，未覆盖随机大规模压力测试，虽执行信号显示全部通过，但自测过程本身不足以证明算法在各种输入下均正确。",
+      "evidence": "步骤内容中明确写道'未覆盖随机大规模压力测试，但算法逻辑与复杂度保证正确性'，且仅列举了[1,8,6,2,5,4,8,3,7]、[1,1]、[0,0]、[4,3,2,1,4]四个用例的手工模拟。",
+      "llm_verdict": "suspicious",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    }
+  ],
+  "checker_report": {
+    "process_ok": true,
+    "code_ok": true,
+    "pseudo_correct": false,
+    "public": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [],
+    "forensics": [],
+    "signals": {
+      "problem_id": "hard-003",
+      "entry_point": "max_area",
+      "max_loop_depth": 1,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "n",
+      "expected_complexity": "O(n)",
+      "public": {
+        "total": 2,
+        "passed": 2,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": []
+    },
+    "code": "def max_area(height: list) -> int:\n    l, r = 0, len(height) - 1\n    max_water = 0\n    while l < r:\n        h = min(height[l], height[r])\n        w = r - l\n        max_water = max(max_water, h * w)\n        if height[l] < height[r]:\n            l += 1\n        else:\n            r -= 1\n    return max_water",
+    "llm_summary": {
+      "summary": "公开与对抗测试全部通过，双指针解法正确且代码无误。",
+      "process_ok": true,
+      "code_ok": true,
+      "pseudo_correct": false,
+      "root_cause": "无失败用例，根因不适用；原 pseudo_correct 标记为 false 但实测全绿，属误标。",
+      "debug_hints": [
+        "无需调试，保持现有双指针实现即可",
+        "若后续扩展可补充边界（空数组/单元素）防御"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开与对抗测试均通过，规则层未见高置信缺陷。"
+    ],
+    "sections": {
+      "解题思路": "本题要求在数组中选取两个下标 i 和 j（i < j），使得容器容量 `min(height[i], height[j]) * (j - i)` 最大。采用**双指针算法**：初始时左指针 l 指向数组起始，右指针 r 指向数组末尾，此时宽度最大。计算当前容量后，将高度较小的那个指针向中间移动（因为若移动高度较大的指针，宽度减小且受限于较小高度，容量必然不会增大；而移动较小指针有可能遇到更高的线从而提升容量）。每次移动后重新计算容量并更新最大值，直到两指针相遇。该算法只需一次线性扫描，适用于 n 最大为 10^5 的规模。",
+      "复杂度分析": "时间复杂度：O(n)，其中 n 为数组长度。双指针从两端向中间遍历，每个元素最多被访问一次，循环次数为 n-1 次，每次操作均为 O(1)。\n空间复杂度：O(1)，仅使用了固定数量的变量（l, r, max_water 等），与输入规模无关。",
+      "关键边界与处理策略": "- 空输入或长度不足 2：题目约束 n >= 2，但代码逻辑上若 len(height) < 2 可直接返回 0 防御。\n- 单元素：不满足 n>=2，不会发生；若发生返回 0。\n- 重复元素：如 [1,1]，双指针计算 min(1,1)*(1-0)=1，正确；重复高度不影响指针移动策略（相等时移动任意一端均可，代码中移动左或右均可，通常移动左）。\n- 负数：题目约束 height[i] >= 0，无负数；若有则取 min 会得负容量，但约束已排除。\n- 极值：n=10^5 时 O(n) 可过；height[i]=0 时容量为 0，指针正常移动；height[i]=10^4 时计算不溢出（Python int 无限制）。\n- 两指针相遇：循环条件 l < r，相遇时终止，不会重复计算同一线。",
+      "代码实现": "```python\ndef max_area(height: list) -> int:\n    l, r = 0, len(height) - 1\n    max_water = 0\n    while l < r:\n        h = min(height[l], height[r])\n        w = r - l\n        max_water = max(max_water, h * w)\n        if height[l] < height[r]:\n            l += 1\n        else:\n            r -= 1\n    return max_water\n```",
+      "自测说明": "我使用题目给出的公开测试用例进行了验证：\n- 输入 `[1, 8, 6, 2, 5, 4, 8, 3, 7]`，手动模拟双指针过程：初始 l=0,r=8 容量 min(1,7)*8=8；移动 l 至 1，容量 min(8,7)*7=49；之后移动 r 等均小于 49，最终返回 49，与期望一致。\n- 输入 `[1, 1]`，l=0,r=1 容量 1*1=1，返回 1，与期望一致。\n此外，我验证了边界情形：输入 `[0, 0]` 返回 0；输入 `[4, 3, 2, 1, 4]` 返回 16（l=0,r=4 容量 4*4=16）。验证覆盖了公开用例、零高度、递减序列及最小长度，未覆盖随机大规模压力测试，但算法逻辑与复杂度保证正确性。"
+    }
+  },
+  "elapsed_sec": 63.36,
+  "recorded_at": "2026-09-11T22:51:15"
+}

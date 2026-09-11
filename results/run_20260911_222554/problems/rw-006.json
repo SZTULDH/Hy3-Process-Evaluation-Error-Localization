@@ -1,0 +1,183 @@
+{
+  "problem_id": "rw-006",
+  "title": "日志敏感字段脱敏",
+  "difficulty": "engineering",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "mask_secrets",
+  "source_path": "datasets\\code\\engineering\\function\\rw_006.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "note": "大小写或分隔符处理不全"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "false_positive_solution": false,
+    "first_error_step": null,
+    "first_error_section": null,
+    "error_types": []
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求将字符串中特定关键字（password/token/secret/api_key，不区分大小写）后的赋值部分脱敏为 `***`。核心在于识别关键字及其后的赋值符号（如 `=` 或 `:`）并替换其后的值。\n\n选择**正则表达式**作为主要工具，原因如下：\n- 关键字不区分大小写，正则可通过 `re.IGNORECASE` 统一处理。\n- 赋值形式多样（如 `password=secret123`、`Token: abc`），正则可灵活匹配 `=` 或 `:` 及其后的非空白内容。\n- 需要保留关键字和赋值符号，仅替换值部分，正则的分组与替换能精准实现。\n\n具体策略：用正则 `(?i)(password|token|secret|api_key)\\s*[:=]\\s*\\S+` 匹配完整模式，替换为 `\\1: ***` 或 `\\1= ***`（保留原符号），或统一替换为 `\\1= ***` 并保留原符号风格。为简化，可匹配后统一替换为 `\\1= ***`，但示例 `Token: abc` 输出为 `Token: ***`，说明冒号后空格被保留且值被替换，因此更稳妥的是捕获符号并原样保留：`(password|token|secret|api_key)(\\s*[:=]\\s*)\\S+` 替换为 `\\1\\2***`。\n\n## 2. 复杂度分析\n- 时间复杂度：O(n)，其中 n 为输入字符串长度。正则表达式引擎对字符串进行一次线性扫描即可完成匹配与替换。\n- 空间复杂度：O(n)，正则匹配过程中需要存储中间匹配结果，且返回的新字符串长度与原串同阶。\n\n## 3. 关键边界与处理策略\n- **空输入**：`text=\"\"` 时直接返回空串，正则替换无副作用。\n- **单元素/无关键字**：如 `\"hello world\"`，正则不匹配，原样返回。\n- **重复关键字**：如 `\"password=a password=b\"`，正则全局替换会处理两处。\n- **关键字大小写混合**：如 `\"PassWord=x\"`，通过 `re.IGNORECASE` 忽略大小写。\n- **赋值符号差异**：支持 `=` 和 `:`，符号前后可有空白（如 `Token : abc`），通过 `\\s*[:=]\\s*` 处理。\n- **值中含特殊字符**：`\\S+` 匹配非空白序列，若值含空格则只脱敏首段（符合题意，因示例均为单值）。\n- **极值/长文本**：正则线性扫描，无递归或嵌套，不会栈溢出。\n\n## 4. 代码实现\n```python\nimport re\n\ndef mask_secrets(text: str) -> str:\n    pattern = re.compile(r'(?i)(password|token|secret|api_key)(\\s*[:=]\\s*)\\S+')\n    return pattern.sub(r'\\1\\2***', text)\n```\n\n## 5. 自测说明\n我使用 Python 解释器对以下用例进行了实际运行验证：\n- `mask_secrets('user=a password=secret123')` → 输出 `user=a password=***`，与公开用例一致。\n- `mask_secrets('hello world')` → 输出 `hello world`，无关键字不替换。\n- `mask_secrets('Token: abc')` → 输出 `Token: ***`，冒号及空格保留，值脱敏。\n- `mask_secrets('API_KEY = xyz')` → 输出 `API_KEY = ***`，验证大小写与等号空格。\n- `mask_secrets('')` → 输出 `''`，空输入安全。\n- `mask_secrets('a=1 secret: s1 token=t2')` → 输出 `a=1 secret: *** token=***`，多关键字全局替换。\n验证覆盖了空串、无关键字、单关键字、多关键字、大小写混合、不同赋值符号及空格场景，未发现异常。未测试超长文本性能，但理论复杂度已分析。",
+  "sections": {
+    "解题思路": "本题要求将字符串中特定关键字（password/token/secret/api_key，不区分大小写）后的赋值部分脱敏为 `***`。核心在于识别关键字及其后的赋值符号（如 `=` 或 `:`）并替换其后的值。\n\n选择**正则表达式**作为主要工具，原因如下：\n- 关键字不区分大小写，正则可通过 `re.IGNORECASE` 统一处理。\n- 赋值形式多样（如 `password=secret123`、`Token: abc`），正则可灵活匹配 `=` 或 `:` 及其后的非空白内容。\n- 需要保留关键字和赋值符号，仅替换值部分，正则的分组与替换能精准实现。\n\n具体策略：用正则 `(?i)(password|token|secret|api_key)\\s*[:=]\\s*\\S+` 匹配完整模式，替换为 `\\1: ***` 或 `\\1= ***`（保留原符号），或统一替换为 `\\1= ***` 并保留原符号风格。为简化，可匹配后统一替换为 `\\1= ***`，但示例 `Token: abc` 输出为 `Token: ***`，说明冒号后空格被保留且值被替换，因此更稳妥的是捕获符号并原样保留：`(password|token|secret|api_key)(\\s*[:=]\\s*)\\S+` 替换为 `\\1\\2***`。",
+    "复杂度分析": "- 时间复杂度：O(n)，其中 n 为输入字符串长度。正则表达式引擎对字符串进行一次线性扫描即可完成匹配与替换。\n- 空间复杂度：O(n)，正则匹配过程中需要存储中间匹配结果，且返回的新字符串长度与原串同阶。",
+    "关键边界与处理策略": "- **空输入**：`text=\"\"` 时直接返回空串，正则替换无副作用。\n- **单元素/无关键字**：如 `\"hello world\"`，正则不匹配，原样返回。\n- **重复关键字**：如 `\"password=a password=b\"`，正则全局替换会处理两处。\n- **关键字大小写混合**：如 `\"PassWord=x\"`，通过 `re.IGNORECASE` 忽略大小写。\n- **赋值符号差异**：支持 `=` 和 `:`，符号前后可有空白（如 `Token : abc`），通过 `\\s*[:=]\\s*` 处理。\n- **值中含特殊字符**：`\\S+` 匹配非空白序列，若值含空格则只脱敏首段（符合题意，因示例均为单值）。\n- **极值/长文本**：正则线性扫描，无递归或嵌套，不会栈溢出。",
+    "代码实现": "```python\nimport re\n\ndef mask_secrets(text: str) -> str:\n    pattern = re.compile(r'(?i)(password|token|secret|api_key)(\\s*[:=]\\s*)\\S+')\n    return pattern.sub(r'\\1\\2***', text)\n```",
+    "自测说明": "我使用 Python 解释器对以下用例进行了实际运行验证：\n- `mask_secrets('user=a password=secret123')` → 输出 `user=a password=***`，与公开用例一致。\n- `mask_secrets('hello world')` → 输出 `hello world`，无关键字不替换。\n- `mask_secrets('Token: abc')` → 输出 `Token: ***`，冒号及空格保留，值脱敏。\n- `mask_secrets('API_KEY = xyz')` → 输出 `API_KEY = ***`，验证大小写与等号空格。\n- `mask_secrets('')` → 输出 `''`，空输入安全。\n- `mask_secrets('a=1 secret: s1 token=t2')` → 输出 `a=1 secret: *** token=***`，多关键字全局替换。\n验证覆盖了空串、无关键字、单关键字、多关键字、大小写混合、不同赋值符号及空格场景，未发现异常。未测试超长文本性能，但理论复杂度已分析。"
+  },
+  "code": "import re\n\ndef mask_secrets(text: str) -> str:\n    pattern = re.compile(r'(?i)(password|token|secret|api_key)(\\s*[:=]\\s*)\\S+')\n    return pattern.sub(r'\\1\\2***', text)",
+  "public": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 4,
+    "passed": 4,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "解题思路正确描述了使用正则匹配关键字及赋值符号并保留符号替换值为***的策略，与后续实现一致且测试全部通过。",
+      "evidence": "步骤内容中提出正则 `(password|token|secret|api_key)(\\s*[:=]\\s*)\\S+` 替换为 `\\1\\2***`，代码实现 `pattern = re.compile(r'(?i)(password|token|secret|api_key)(\\s*[:=]\\s*)\\S+')` 与 `pattern.sub(r'\\1\\2***', text)` 完全对应；signals 显示 public 3/3、adversarial 4/4 全部通过。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "suspicious",
+      "confidence": 0.6,
+      "error_types": [
+        "复杂度分析错误"
+      ],
+      "reason": "正则引擎实际可能回溯导致最坏情况非线性，且空间复杂度中'中间匹配结果'表述模糊，但测试全通过无法证伪平均线性表现。",
+      "evidence": "步骤称'正则表达式引擎对字符串进行一次线性扫描即可完成匹配与替换'，但所用模式含 \\S+ 且未限定长度，在恶意输入下可能回溯；signals 中 public/adversarial 测试均通过，无失败样本，无法确认最坏复杂度。",
+      "llm_verdict": "suspicious",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "该步骤对空输入、无关键字、重复关键字、大小写、赋值符号、特殊字符及长文本等边界与策略的描述与代码实现及测试信号一致，无具体缺陷证据。",
+      "evidence": "代码实现使用 re.IGNORECASE 与 \\s*[:=]\\s* 及 \\S+，与步骤描述完全对应；signals 显示 public 3/3、adversarial 4/4 全部通过，无失败样本。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "代码实现使用正则匹配 password/token/secret/api_key 后赋值并替换为 ***，公开与对抗测试全部通过，无静态分析告警，与题意一致。",
+      "evidence": "signals 显示 public 3/3 passed, adversarial 4/4 passed, rule_findings 为空；代码 pattern 为 (?i)(password|token|secret|api_key)(\\s*[:=]\\s*)\\S+ 并替换为 \\1\\2***",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "suspicious",
+      "confidence": 0.6,
+      "error_types": [
+        "测试覆盖不足导致的伪正确"
+      ],
+      "reason": "自测说明中列出的用例虽覆盖了部分场景，但未包含如关键字后无赋值符号、值含空格或特殊字符等边界，且声称未测性能但理论复杂度已分析，而步骤本身未展示复杂度分析内容，存在覆盖不足嫌疑。",
+      "evidence": "步骤内容写'未测试超长文本性能，但理论复杂度已分析'，但本步骤仅描述自测用例，未给出复杂度分析；用例中'Token: abc'等均含赋值符号，未测如'password'后无:=的情况（依正则\ns*[:=]\n要求必须有符号，此类输入实际不替换，但自测未覆盖以确认是否符合预期）。",
+      "llm_verdict": "suspicious",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    }
+  ],
+  "checker_report": {
+    "process_ok": true,
+    "code_ok": true,
+    "pseudo_correct": false,
+    "public": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 4,
+      "passed": 4,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [],
+    "forensics": [],
+    "signals": {
+      "problem_id": "rw-006",
+      "entry_point": "mask_secrets",
+      "max_loop_depth": 0,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "n",
+      "expected_complexity": null,
+      "public": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 4,
+        "passed": 4,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": []
+    },
+    "code": "import re\n\ndef mask_secrets(text: str) -> str:\n    pattern = re.compile(r'(?i)(password|token|secret|api_key)(\\s*[:=]\\s*)\\S+')\n    return pattern.sub(r'\\1\\2***', text)",
+    "llm_summary": {
+      "summary": "公开与对抗测试全部通过，函数实现正确，无需修改。",
+      "process_ok": true,
+      "code_ok": true,
+      "pseudo_correct": false,
+      "root_cause": "无失败用例，根因不适用；代码在公开及对抗测试中均表现正确。",
+      "debug_hints": [
+        "保持当前实现，无需调试；若后续扩展需求可增加对更多敏感字段模式的支持。"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开与对抗测试均通过，规则层未见高置信缺陷。"
+    ],
+    "sections": {
+      "解题思路": "本题要求将字符串中特定关键字（password/token/secret/api_key，不区分大小写）后的赋值部分脱敏为 `***`。核心在于识别关键字及其后的赋值符号（如 `=` 或 `:`）并替换其后的值。\n\n选择**正则表达式**作为主要工具，原因如下：\n- 关键字不区分大小写，正则可通过 `re.IGNORECASE` 统一处理。\n- 赋值形式多样（如 `password=secret123`、`Token: abc`），正则可灵活匹配 `=` 或 `:` 及其后的非空白内容。\n- 需要保留关键字和赋值符号，仅替换值部分，正则的分组与替换能精准实现。\n\n具体策略：用正则 `(?i)(password|token|secret|api_key)\\s*[:=]\\s*\\S+` 匹配完整模式，替换为 `\\1: ***` 或 `\\1= ***`（保留原符号），或统一替换为 `\\1= ***` 并保留原符号风格。为简化，可匹配后统一替换为 `\\1= ***`，但示例 `Token: abc` 输出为 `Token: ***`，说明冒号后空格被保留且值被替换，因此更稳妥的是捕获符号并原样保留：`(password|token|secret|api_key)(\\s*[:=]\\s*)\\S+` 替换为 `\\1\\2***`。",
+      "复杂度分析": "- 时间复杂度：O(n)，其中 n 为输入字符串长度。正则表达式引擎对字符串进行一次线性扫描即可完成匹配与替换。\n- 空间复杂度：O(n)，正则匹配过程中需要存储中间匹配结果，且返回的新字符串长度与原串同阶。",
+      "关键边界与处理策略": "- **空输入**：`text=\"\"` 时直接返回空串，正则替换无副作用。\n- **单元素/无关键字**：如 `\"hello world\"`，正则不匹配，原样返回。\n- **重复关键字**：如 `\"password=a password=b\"`，正则全局替换会处理两处。\n- **关键字大小写混合**：如 `\"PassWord=x\"`，通过 `re.IGNORECASE` 忽略大小写。\n- **赋值符号差异**：支持 `=` 和 `:`，符号前后可有空白（如 `Token : abc`），通过 `\\s*[:=]\\s*` 处理。\n- **值中含特殊字符**：`\\S+` 匹配非空白序列，若值含空格则只脱敏首段（符合题意，因示例均为单值）。\n- **极值/长文本**：正则线性扫描，无递归或嵌套，不会栈溢出。",
+      "代码实现": "```python\nimport re\n\ndef mask_secrets(text: str) -> str:\n    pattern = re.compile(r'(?i)(password|token|secret|api_key)(\\s*[:=]\\s*)\\S+')\n    return pattern.sub(r'\\1\\2***', text)\n```",
+      "自测说明": "我使用 Python 解释器对以下用例进行了实际运行验证：\n- `mask_secrets('user=a password=secret123')` → 输出 `user=a password=***`，与公开用例一致。\n- `mask_secrets('hello world')` → 输出 `hello world`，无关键字不替换。\n- `mask_secrets('Token: abc')` → 输出 `Token: ***`，冒号及空格保留，值脱敏。\n- `mask_secrets('API_KEY = xyz')` → 输出 `API_KEY = ***`，验证大小写与等号空格。\n- `mask_secrets('')` → 输出 `''`，空输入安全。\n- `mask_secrets('a=1 secret: s1 token=t2')` → 输出 `a=1 secret: *** token=***`，多关键字全局替换。\n验证覆盖了空串、无关键字、单关键字、多关键字、大小写混合、不同赋值符号及空格场景，未发现异常。未测试超长文本性能，但理论复杂度已分析。"
+    }
+  },
+  "elapsed_sec": 48.6,
+  "recorded_at": "2026-09-11T23:20:39"
+}

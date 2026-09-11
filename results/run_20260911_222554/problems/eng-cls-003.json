@@ -1,0 +1,180 @@
+{
+  "problem_id": "eng-cls-003",
+  "title": "简易 LRU 缓存",
+  "difficulty": "engineering",
+  "kind": "class",
+  "class_name": "LRUCache",
+  "entry_point": "get",
+  "source_path": "datasets\\code\\engineering\\class\\eng_cls_003.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "note": "FIFO 而非 LRU 会在 get 后再 put 时淘汰错误键"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "false_positive_solution": false,
+    "first_error_step": null,
+    "first_error_section": null,
+    "error_types": []
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求实现一个 LRU（Least Recently Used）缓存类 `LRUCache`，支持 `get(key)` 和 `put(key, value)` 操作，且 `get` 和 `put` 都算作一次“使用”，容量满时淘汰最久未使用的元素。\n\n算法与数据结构选择：\n- 使用**哈希表（字典）** `self.cache` 保存 key 到节点（或值+前驱后继信息）的映射，实现 O(1) 查找。\n- 使用**双向链表**维护访问顺序：头部为最近使用，尾部为最久未使用。每次 `get` 或 `put` 将对应节点移到头部；`put` 时若超容则删除尾部节点。\n- 状态在多次方法调用之间保存：实例属性 `self.capacity`、`self.cache`（字典）、`self.head`/`self.tail`（哨兵节点）在 `__init__` 中初始化，并在各方法中被持续修改，从而跨调用保持缓存内容与顺序。\n\n## 2. 复杂度分析\n- `__init__`：时间 O(1)，空间 O(1)（仅初始化固定结构，不含缓存数据）。\n- `get(key)`：均摊时间 O(1)。哈希表查找 O(1)，链表移动节点 O(1)；空间开销 O(1)（无新增存储，仅指针调整）。\n- `put(key, value)`：均摊时间 O(1)。查找/插入哈希表 O(1)，链表插入/删除 O(1)；若触发淘汰则删除尾节点 O(1)。空间开销：每个键值对占用 O(1) 的字典项与链表节点，总体空间 O(capacity)。\n推理依据：哈希表提供常数级映射，双向链表通过已知节点引用实现常数级断链与重连，无遍历操作。\n\n## 3. 关键边界与处理策略\n- 重复调用 `put` 同一 key：更新值并将节点移至头部，不新增容量占用。\n- 乱序调用 `get`/`put`：均按“使用”处理，节点移至头部，顺序由链表自然维护。\n- 达到容量上限后 `put` 新 key：删除尾部最久未使用节点，并从字典移除，再头部插入新节点。\n- `get` 不存在的 key：返回 `None`，不改变链表与字典。\n- 容量为 0 或负数：按题意构造参数为 2，但代码应兼容；若 capacity<=0 则 `put` 直接忽略（或按实际语义），本题构造参数为 2 故正常处理。\n- 非法状态迁移：如 `get` 后节点已在头部，移动操作幂等，不会破坏结构。\n- 复位时机：无显式 reset 方法，状态随实例生命周期持续；若需清空可另加方法，但题目未要求。\n\n## 4. 代码实现\n```python\nclass LRUCache:\n    class _Node:\n        __slots__ = ('key', 'value', 'prev', 'next')\n        def __init__(self, key=None, value=None):\n            self.key = key\n            self.value = value\n            self.prev = None\n            self.next = None\n\n    def __init__(self, capacity: int):\n        self.capacity = capacity\n        self.cache = {}\n        self.head = self._Node()\n        self.tail = self._Node()\n        self.head.next = self.tail\n        self.tail.prev = self.head\n\n    def _remove(self, node: _Node):\n        node.prev.next = node.next\n        node.next.prev = node.prev\n\n    def _add_to_head(self, node: _Node):\n        node.prev = self.head\n        node.next = self.head.next\n        self.head.next.prev = node\n        self.head.next = node\n\n    def _move_to_head(self, node: _Node):\n        self._remove(node)\n        self._add_to_head(node)\n\n    def _pop_tail(self) -> _Node:\n        res = self.tail.prev\n        self._remove(res)\n        return res\n\n    def get(self, key):\n        if key not in self.cache:\n            return None\n        node = self.cache[key]\n        self._move_to_head(node)\n        return node.value\n\n    def put(self, key, value) -> None:\n        if key in self.cache:\n            node = self.cache[key]\n            node.value = value\n            self._move_to_head(node)\n        else:\n            new_node = self._Node(key, value)\n            self.cache[key] = new_node\n            self._add_to_head(new_node)\n            if len(self.cache) > self.capacity:\n                tail = self._pop_tail()\n                del self.cache[tail.key]\n```\n\n## 5. 自测说明\n验证方式：\n- 按题目示例在同一实例上依次调用 `put(1,'a')`、`put(2,'b')`、`get(1)`，检查返回分别为 `None`、`None`、`'a'`。\n- 补充测试：容量满后 `put(3,'c')` 应淘汰 key=2，再 `get(2)` 返回 `None`，`get(3)` 返回 `'c'`；重复 `put(1,'x')` 后 `get(1)` 返回 `'x'` 且不影响其他。\n- 使用 Python 交互式或脚本断言上述行为，未使用自动化测试框架。\n覆盖范围：示例路径、容量淘汰、重复写、缺失 key 读；未覆盖并发、极大容量压测及非哈希 key 类型。",
+  "sections": {
+    "解题思路": "本题要求实现一个 LRU（Least Recently Used）缓存类 `LRUCache`，支持 `get(key)` 和 `put(key, value)` 操作，且 `get` 和 `put` 都算作一次“使用”，容量满时淘汰最久未使用的元素。\n\n算法与数据结构选择：\n- 使用**哈希表（字典）** `self.cache` 保存 key 到节点（或值+前驱后继信息）的映射，实现 O(1) 查找。\n- 使用**双向链表**维护访问顺序：头部为最近使用，尾部为最久未使用。每次 `get` 或 `put` 将对应节点移到头部；`put` 时若超容则删除尾部节点。\n- 状态在多次方法调用之间保存：实例属性 `self.capacity`、`self.cache`（字典）、`self.head`/`self.tail`（哨兵节点）在 `__init__` 中初始化，并在各方法中被持续修改，从而跨调用保持缓存内容与顺序。",
+    "复杂度分析": "- `__init__`：时间 O(1)，空间 O(1)（仅初始化固定结构，不含缓存数据）。\n- `get(key)`：均摊时间 O(1)。哈希表查找 O(1)，链表移动节点 O(1)；空间开销 O(1)（无新增存储，仅指针调整）。\n- `put(key, value)`：均摊时间 O(1)。查找/插入哈希表 O(1)，链表插入/删除 O(1)；若触发淘汰则删除尾节点 O(1)。空间开销：每个键值对占用 O(1) 的字典项与链表节点，总体空间 O(capacity)。\n推理依据：哈希表提供常数级映射，双向链表通过已知节点引用实现常数级断链与重连，无遍历操作。",
+    "关键边界与处理策略": "- 重复调用 `put` 同一 key：更新值并将节点移至头部，不新增容量占用。\n- 乱序调用 `get`/`put`：均按“使用”处理，节点移至头部，顺序由链表自然维护。\n- 达到容量上限后 `put` 新 key：删除尾部最久未使用节点，并从字典移除，再头部插入新节点。\n- `get` 不存在的 key：返回 `None`，不改变链表与字典。\n- 容量为 0 或负数：按题意构造参数为 2，但代码应兼容；若 capacity<=0 则 `put` 直接忽略（或按实际语义），本题构造参数为 2 故正常处理。\n- 非法状态迁移：如 `get` 后节点已在头部，移动操作幂等，不会破坏结构。\n- 复位时机：无显式 reset 方法，状态随实例生命周期持续；若需清空可另加方法，但题目未要求。",
+    "代码实现": "```python\nclass LRUCache:\n    class _Node:\n        __slots__ = ('key', 'value', 'prev', 'next')\n        def __init__(self, key=None, value=None):\n            self.key = key\n            self.value = value\n            self.prev = None\n            self.next = None\n\n    def __init__(self, capacity: int):\n        self.capacity = capacity\n        self.cache = {}\n        self.head = self._Node()\n        self.tail = self._Node()\n        self.head.next = self.tail\n        self.tail.prev = self.head\n\n    def _remove(self, node: _Node):\n        node.prev.next = node.next\n        node.next.prev = node.prev\n\n    def _add_to_head(self, node: _Node):\n        node.prev = self.head\n        node.next = self.head.next\n        self.head.next.prev = node\n        self.head.next = node\n\n    def _move_to_head(self, node: _Node):\n        self._remove(node)\n        self._add_to_head(node)\n\n    def _pop_tail(self) -> _Node:\n        res = self.tail.prev\n        self._remove(res)\n        return res\n\n    def get(self, key):\n        if key not in self.cache:\n            return None\n        node = self.cache[key]\n        self._move_to_head(node)\n        return node.value\n\n    def put(self, key, value) -> None:\n        if key in self.cache:\n            node = self.cache[key]\n            node.value = value\n            self._move_to_head(node)\n        else:\n            new_node = self._Node(key, value)\n            self.cache[key] = new_node\n            self._add_to_head(new_node)\n            if len(self.cache) > self.capacity:\n                tail = self._pop_tail()\n                del self.cache[tail.key]\n```",
+    "自测说明": "验证方式：\n- 按题目示例在同一实例上依次调用 `put(1,'a')`、`put(2,'b')`、`get(1)`，检查返回分别为 `None`、`None`、`'a'`。\n- 补充测试：容量满后 `put(3,'c')` 应淘汰 key=2，再 `get(2)` 返回 `None`，`get(3)` 返回 `'c'`；重复 `put(1,'x')` 后 `get(1)` 返回 `'x'` 且不影响其他。\n- 使用 Python 交互式或脚本断言上述行为，未使用自动化测试框架。\n覆盖范围：示例路径、容量淘汰、重复写、缺失 key 读；未覆盖并发、极大容量压测及非哈希 key 类型。"
+  },
+  "code": "class LRUCache:\n    class _Node:\n        __slots__ = ('key', 'value', 'prev', 'next')\n        def __init__(self, key=None, value=None):\n            self.key = key\n            self.value = value\n            self.prev = None\n            self.next = None\n\n    def __init__(self, capacity: int):\n        self.capacity = capacity\n        self.cache = {}\n        self.head = self._Node()\n        self.tail = self._Node()\n        self.head.next = self.tail\n        self.tail.prev = self.head\n\n    def _remove(self, node: _Node):\n        node.prev.next = node.next\n        node.next.prev = node.prev\n\n    def _add_to_head(self, node: _Node):\n        node.prev = self.head\n        node.next = self.head.next\n        self.head.next.prev = node\n        self.head.next = node\n\n    def _move_to_head(self, node: _Node):\n        self._remove(node)\n        self._add_to_head(node)\n\n    def _pop_tail(self) -> _Node:\n        res = self.tail.prev\n        self._remove(res)\n        return res\n\n    def get(self, key):\n        if key not in self.cache:\n            return None\n        node = self.cache[key]\n        self._move_to_head(node)\n        return node.value\n\n    def put(self, key, value) -> None:\n        if key in self.cache:\n            node = self.cache[key]\n            node.value = value\n            self._move_to_head(node)\n        else:\n            new_node = self._Node(key, value)\n            self.cache[key] = new_node\n            self._add_to_head(new_node)\n            if len(self.cache) > self.capacity:\n                tail = self._pop_tail()\n                del self.cache[tail.key]",
+  "public": {
+    "total": 5,
+    "passed": 5,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 6,
+    "passed": 6,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "解题思路准确描述了使用哈希表+双向链表实现LRU缓存、get/put均更新使用顺序、容量满删尾部，与后续代码实现及测试全通过信号一致。",
+      "evidence": "步骤内容说明'使用哈希表保存key到节点映射实现O(1)查找，双向链表维护访问顺序，头部最近使用尾部最久未使用，get/put移到头部，超容删尾部'；代码实现中get调用_move_to_head、put新建或更新后_add_to_head并在超容时_pop_tail；signals显示public 5/5、adversarial 6/6全部通过。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "复杂度分析中对各方法时间与空间开销的描述与所给哈希表+双向链表实现一致，均为常数级操作且无遍历。",
+      "evidence": "实现中 get 通过 self.cache[key] 取节点后 _move_to_head（_remove+_add_to_head 仅指针调整），put 类似且淘汰时 _pop_tail 为 O(1)；__init__ 仅建空头尾节点与空字典；空间上每个键值对占一个字典项与一个节点，总量受 capacity 限制，与步骤描述吻合。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "该步骤列出的边界与处理策略与代码实现一致，且公开与对抗测试全部通过，无具体依据表明其不成立。",
+      "evidence": "步骤称'重复调用 put 同一 key：更新值并将节点移至头部'对应代码 put 中 if key in self.cache 分支；'达到容量上限后 put 新 key：删除尾部...'对应 else 分支中 len(self.cache)>self.capacity 时 _pop_tail 并 del；'get 不存在返回 None'对应 get 中 if key not in self.cache: return None；signals 显示 public 5/5、adversarial 6/6 全通过，rule_findings 为空。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "代码实现使用哈希表加双向链表正确实现了LRU缓存的get和put语义，且所有公开与对抗测试均通过。",
+      "evidence": "signals中public: total 5 passed 5 failed 0 all_passed true; adversarial: total 6 passed 6 failed 0 all_passed true; 代码逻辑中get命中后_move_to_head，put更新或插入后检查容量并_pop_tail删除，符合LRU定义。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "自测说明描述了具体的验证路径和覆盖范围，与代码实现行为一致，且信号显示所有测试通过，该步骤作为自测说明本身无错误。",
+      "evidence": "步骤内容中列出的 put(1,'a')、put(2,'b')、get(1) 返回 None/None/'a' 与代码逻辑一致；补充测试淘汰 key=2 后 get(2)=None、get(3)='c' 也符合代码；signals 中 public 5/5、adversarial 6/6 全通过。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    }
+  ],
+  "checker_report": {
+    "process_ok": true,
+    "code_ok": true,
+    "pseudo_correct": false,
+    "public": {
+      "total": 5,
+      "passed": 5,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 6,
+      "passed": 6,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [],
+    "forensics": [],
+    "signals": {
+      "problem_id": "eng-cls-003",
+      "entry_point": "get",
+      "max_loop_depth": 0,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "1",
+      "expected_complexity": null,
+      "public": {
+        "total": 5,
+        "passed": 5,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 6,
+        "passed": 6,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": []
+    },
+    "code": "class LRUCache:\n    class _Node:\n        __slots__ = ('key', 'value', 'prev', 'next')\n        def __init__(self, key=None, value=None):\n            self.key = key\n            self.value = value\n            self.prev = None\n            self.next = None\n\n    def __init__(self, capacity: int):\n        self.capacity = capacity\n        self.cache = {}\n        self.head = self._Node()\n        self.tail = self._Node()\n        self.head.next = self.tail\n        self.tail.prev = self.head\n\n    def _remove(self, node: _Node):\n        node.prev.next = node.next\n        node.next.prev = node.prev\n\n    def _add_to_head(self, node: _Node):\n        node.prev = self.head\n        node.next = self.head.next\n        self.head.next.prev = node\n        self.head.next = node\n\n    def _move_to_head(self, node: _Node):\n        self._remove(node)\n        self._add_to_head(node)\n\n    def _pop_tail(self) -> _Node:\n        res = self.tail.prev\n        self._remove(res)\n        return res\n\n    def get(self, key):\n        if key not in self.cache:\n            return None\n        node = self.cache[key]\n        self._move_to_head(node)\n        return node.value\n\n    def put(self, key, value) -> None:\n        if key in self.cache:\n            node = self.cache[key]\n            node.value = value\n            self._move_to_head(node)\n        else:\n            new_node = self._Node(key, value)\n            self.cache[key] = new_node\n            self._add_to_head(new_node)\n            if len(self.cache) > self.capacity:\n                tail = self._pop_tail()\n                del self.cache[tail.key]",
+    "llm_summary": {
+      "summary": "公开与对抗测试全部通过，类级 LRU 缓存实现正确，无状态残留或顺序依赖问题。",
+      "process_ok": true,
+      "code_ok": true,
+      "pseudo_correct": false,
+      "root_cause": "无失败用例，实现符合 LRU 语义且跨调用状态管理正确。",
+      "debug_hints": [
+        "保持当前基于哈希表+双向链表（或 OrderedDict）的实现方式",
+        "若后续扩展容量或并发场景，注意在 get/put 中同步更新访问序与容量淘汰"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开与对抗测试均通过，规则层未见高置信缺陷。"
+    ],
+    "sections": {
+      "解题思路": "本题要求实现一个 LRU（Least Recently Used）缓存类 `LRUCache`，支持 `get(key)` 和 `put(key, value)` 操作，且 `get` 和 `put` 都算作一次“使用”，容量满时淘汰最久未使用的元素。\n\n算法与数据结构选择：\n- 使用**哈希表（字典）** `self.cache` 保存 key 到节点（或值+前驱后继信息）的映射，实现 O(1) 查找。\n- 使用**双向链表**维护访问顺序：头部为最近使用，尾部为最久未使用。每次 `get` 或 `put` 将对应节点移到头部；`put` 时若超容则删除尾部节点。\n- 状态在多次方法调用之间保存：实例属性 `self.capacity`、`self.cache`（字典）、`self.head`/`self.tail`（哨兵节点）在 `__init__` 中初始化，并在各方法中被持续修改，从而跨调用保持缓存内容与顺序。",
+      "复杂度分析": "- `__init__`：时间 O(1)，空间 O(1)（仅初始化固定结构，不含缓存数据）。\n- `get(key)`：均摊时间 O(1)。哈希表查找 O(1)，链表移动节点 O(1)；空间开销 O(1)（无新增存储，仅指针调整）。\n- `put(key, value)`：均摊时间 O(1)。查找/插入哈希表 O(1)，链表插入/删除 O(1)；若触发淘汰则删除尾节点 O(1)。空间开销：每个键值对占用 O(1) 的字典项与链表节点，总体空间 O(capacity)。\n推理依据：哈希表提供常数级映射，双向链表通过已知节点引用实现常数级断链与重连，无遍历操作。",
+      "关键边界与处理策略": "- 重复调用 `put` 同一 key：更新值并将节点移至头部，不新增容量占用。\n- 乱序调用 `get`/`put`：均按“使用”处理，节点移至头部，顺序由链表自然维护。\n- 达到容量上限后 `put` 新 key：删除尾部最久未使用节点，并从字典移除，再头部插入新节点。\n- `get` 不存在的 key：返回 `None`，不改变链表与字典。\n- 容量为 0 或负数：按题意构造参数为 2，但代码应兼容；若 capacity<=0 则 `put` 直接忽略（或按实际语义），本题构造参数为 2 故正常处理。\n- 非法状态迁移：如 `get` 后节点已在头部，移动操作幂等，不会破坏结构。\n- 复位时机：无显式 reset 方法，状态随实例生命周期持续；若需清空可另加方法，但题目未要求。",
+      "代码实现": "```python\nclass LRUCache:\n    class _Node:\n        __slots__ = ('key', 'value', 'prev', 'next')\n        def __init__(self, key=None, value=None):\n            self.key = key\n            self.value = value\n            self.prev = None\n            self.next = None\n\n    def __init__(self, capacity: int):\n        self.capacity = capacity\n        self.cache = {}\n        self.head = self._Node()\n        self.tail = self._Node()\n        self.head.next = self.tail\n        self.tail.prev = self.head\n\n    def _remove(self, node: _Node):\n        node.prev.next = node.next\n        node.next.prev = node.prev\n\n    def _add_to_head(self, node: _Node):\n        node.prev = self.head\n        node.next = self.head.next\n        self.head.next.prev = node\n        self.head.next = node\n\n    def _move_to_head(self, node: _Node):\n        self._remove(node)\n        self._add_to_head(node)\n\n    def _pop_tail(self) -> _Node:\n        res = self.tail.prev\n        self._remove(res)\n        return res\n\n    def get(self, key):\n        if key not in self.cache:\n            return None\n        node = self.cache[key]\n        self._move_to_head(node)\n        return node.value\n\n    def put(self, key, value) -> None:\n        if key in self.cache:\n            node = self.cache[key]\n            node.value = value\n            self._move_to_head(node)\n        else:\n            new_node = self._Node(key, value)\n            self.cache[key] = new_node\n            self._add_to_head(new_node)\n            if len(self.cache) > self.capacity:\n                tail = self._pop_tail()\n                del self.cache[tail.key]\n```",
+      "自测说明": "验证方式：\n- 按题目示例在同一实例上依次调用 `put(1,'a')`、`put(2,'b')`、`get(1)`，检查返回分别为 `None`、`None`、`'a'`。\n- 补充测试：容量满后 `put(3,'c')` 应淘汰 key=2，再 `get(2)` 返回 `None`，`get(3)` 返回 `'c'`；重复 `put(1,'x')` 后 `get(1)` 返回 `'x'` 且不影响其他。\n- 使用 Python 交互式或脚本断言上述行为，未使用自动化测试框架。\n覆盖范围：示例路径、容量淘汰、重复写、缺失 key 读；未覆盖并发、极大容量压测及非哈希 key 类型。"
+    }
+  },
+  "elapsed_sec": 57.17,
+  "recorded_at": "2026-09-12T00:13:40"
+}

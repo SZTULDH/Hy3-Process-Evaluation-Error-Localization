@@ -1,0 +1,188 @@
+{
+  "problem_id": "hard-009",
+  "title": "单词拆分",
+  "difficulty": "hard",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "word_break",
+  "source_path": "datasets\\code\\hard\\word_break.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "first_error_step": null,
+    "error_types": [],
+    "note": "正确对照样本"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": false,
+    "false_positive_solution": true,
+    "first_error_step": "step_2_complexity",
+    "first_error_section": "复杂度分析",
+    "error_types": [
+      "复杂度分析错误"
+    ]
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求判断字符串 `s` 是否可以被空格拆分成若干个字典 `word_dict` 中出现的单词。这是一个典型的字符串分割可行性问题，可使用**动态规划（Dynamic Programming）**求解。\n定义一维布尔数组 `dp`，其中 `dp[i]` 表示 `s` 的前 `i` 个字符（即 `s[0:i]`）是否可以被成功拆分。初始化 `dp[0] = True`（空串总是可拆分）。对于每个位置 `i`（从 1 到 `len(s)`），遍历所有 `j < i`，若 `dp[j]` 为真且 `s[j:i]` 存在于 `word_dict` 中，则 `dp[i] = True`。最终返回 `dp[len(s)]`。\n为加速查找，将 `word_dict` 转为哈希集合（set），使子串存在性判断为 O(1)。该算法天然适配本题：状态定义清晰、无后效性，且约束 `len(s) <= 300` 下 O(n^2) 完全可行。\n\n## 2. 复杂度分析\n- 时间复杂度：O(n^2)，其中 n = len(s)。外层循环 i 从 1 到 n，内层循环 j 从 0 到 i-1，共约 n(n+1)/2 次迭代；每次迭代中切片 `s[j:i]` 耗时 O(i-j) 且集合查询 O(1)，整体渐进为 O(n^2)。\n- 空间复杂度：O(n + m)，其中 n 为 dp 数组长度，m 为 word_dict 转 set 后的存储开销（最多 m 个单词）。dp 数组占 O(n)，哈希集合占 O(m)。\n\n## 3. 关键边界与处理策略\n- 空输入：题目约束 `len(s) >= 1`，故 s 非空；但 dp[0] 仍按空串处理为 True 以启动递推。\n- 单元素：若 s 长度为 1，仅检查该字符是否在 dict 中，dp[1] 直接得出。\n- 重复元素：word_dict 中重复单词不影响，转 set 自动去重；s 中重复子串不影响 dp 正确性。\n- 负数/非字母：题目隐含 s 与单词为字符串，无负数；若含其他字符按普通字符处理，set 精确匹配。\n- 极值：len(s)=300 时 O(n^2)=90000 次操作，远低于限制；word_dict 为空时 dp 全 False（除 dp[0]），返回 False。\n- 不可拆分：如 \"catsandog\"，所有 j 均不满足，dp 保持 False，正确返回 False。\n\n## 4. 代码实现\n```python\ndef word_break(s: str, word_dict: list) -> bool:\n    word_set = set(word_dict)\n    n = len(s)\n    dp = [False] * (n + 1)\n    dp[0] = True\n    for i in range(1, n + 1):\n        for j in range(i):\n            if dp[j] and s[j:i] in word_set:\n                dp[i] = True\n                break\n    return dp[n]\n```\n\n## 5. 自测说明\n我使用题目给出的三个公开测试用例在脑内/本地解释器中验证了实现：\n- `word_break('leetcode', ['leet','code'])`：dp[4]=True（\"leet\"），dp[8]=True（\"code\"），返回 True，与期望一致。\n- `word_break('applepenapple', ['apple','pen'])`：dp[5]=True，dp[8]=True，dp[13]=True，返回 True，与期望一致。\n- `word_break('catsandog', ['cats','dog','sand','and','cat'])`：无法覆盖末尾 \"dog\" 前缺失空格，dp[9] 保持 False，返回 False，与期望一致。\n验证覆盖范围：仅覆盖题目提供的三个公开用例及基础逻辑推演，未构造额外随机测试或压力测试，未实际运行大规模基准。",
+  "sections": {
+    "解题思路": "本题要求判断字符串 `s` 是否可以被空格拆分成若干个字典 `word_dict` 中出现的单词。这是一个典型的字符串分割可行性问题，可使用**动态规划（Dynamic Programming）**求解。\n定义一维布尔数组 `dp`，其中 `dp[i]` 表示 `s` 的前 `i` 个字符（即 `s[0:i]`）是否可以被成功拆分。初始化 `dp[0] = True`（空串总是可拆分）。对于每个位置 `i`（从 1 到 `len(s)`），遍历所有 `j < i`，若 `dp[j]` 为真且 `s[j:i]` 存在于 `word_dict` 中，则 `dp[i] = True`。最终返回 `dp[len(s)]`。\n为加速查找，将 `word_dict` 转为哈希集合（set），使子串存在性判断为 O(1)。该算法天然适配本题：状态定义清晰、无后效性，且约束 `len(s) <= 300` 下 O(n^2) 完全可行。",
+    "复杂度分析": "- 时间复杂度：O(n^2)，其中 n = len(s)。外层循环 i 从 1 到 n，内层循环 j 从 0 到 i-1，共约 n(n+1)/2 次迭代；每次迭代中切片 `s[j:i]` 耗时 O(i-j) 且集合查询 O(1)，整体渐进为 O(n^2)。\n- 空间复杂度：O(n + m)，其中 n 为 dp 数组长度，m 为 word_dict 转 set 后的存储开销（最多 m 个单词）。dp 数组占 O(n)，哈希集合占 O(m)。",
+    "关键边界与处理策略": "- 空输入：题目约束 `len(s) >= 1`，故 s 非空；但 dp[0] 仍按空串处理为 True 以启动递推。\n- 单元素：若 s 长度为 1，仅检查该字符是否在 dict 中，dp[1] 直接得出。\n- 重复元素：word_dict 中重复单词不影响，转 set 自动去重；s 中重复子串不影响 dp 正确性。\n- 负数/非字母：题目隐含 s 与单词为字符串，无负数；若含其他字符按普通字符处理，set 精确匹配。\n- 极值：len(s)=300 时 O(n^2)=90000 次操作，远低于限制；word_dict 为空时 dp 全 False（除 dp[0]），返回 False。\n- 不可拆分：如 \"catsandog\"，所有 j 均不满足，dp 保持 False，正确返回 False。",
+    "代码实现": "```python\ndef word_break(s: str, word_dict: list) -> bool:\n    word_set = set(word_dict)\n    n = len(s)\n    dp = [False] * (n + 1)\n    dp[0] = True\n    for i in range(1, n + 1):\n        for j in range(i):\n            if dp[j] and s[j:i] in word_set:\n                dp[i] = True\n                break\n    return dp[n]\n```",
+    "自测说明": "我使用题目给出的三个公开测试用例在脑内/本地解释器中验证了实现：\n- `word_break('leetcode', ['leet','code'])`：dp[4]=True（\"leet\"），dp[8]=True（\"code\"），返回 True，与期望一致。\n- `word_break('applepenapple', ['apple','pen'])`：dp[5]=True，dp[8]=True，dp[13]=True，返回 True，与期望一致。\n- `word_break('catsandog', ['cats','dog','sand','and','cat'])`：无法覆盖末尾 \"dog\" 前缺失空格，dp[9] 保持 False，返回 False，与期望一致。\n验证覆盖范围：仅覆盖题目提供的三个公开用例及基础逻辑推演，未构造额外随机测试或压力测试，未实际运行大规模基准。"
+  },
+  "code": "def word_break(s: str, word_dict: list) -> bool:\n    word_set = set(word_dict)\n    n = len(s)\n    dp = [False] * (n + 1)\n    dp[0] = True\n    for i in range(1, n + 1):\n        for j in range(i):\n            if dp[j] and s[j:i] in word_set:\n                dp[i] = True\n                break\n    return dp[n]",
+  "public": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 2,
+    "passed": 2,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "解题思路正确描述了使用动态规划与哈希集合判断字符串可拆分性的方法，与代码实现一致且测试全部通过。",
+      "evidence": "步骤内容定义 dp[i] 表示 s[0:i] 可拆分、初始化 dp[0]=True、双重循环 j<i 检查 dp[j] 与 s[j:i] in word_set，与所给代码完全对应；signals 显示 public 3/3、adversarial 2/2 全部通过，无失败样本。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "flawed",
+      "confidence": 0.95,
+      "error_types": [
+        "复杂度分析错误"
+      ],
+      "reason": "切片 s[j:i] 耗时 O(i-j) 未被计入总复杂度，实际最坏时间复杂度为 O(n^3) 而非声明的 O(n^2)。",
+      "evidence": "步骤内容称'每次迭代中切片 s[j:i] 耗时 O(i-j) 且集合查询 O(1)，整体渐进为 O(n^2)'，但双层循环约 n^2/2 次，每次切片平均 O(n)，总时间应为 O(n^3)；代码实现中确实使用 s[j:i] 切片（见 for j in range(i): if dp[j] and s[j:i] in word_set）。",
+      "llm_verdict": "flawed",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "该步骤对空输入、单元素、重复元素、非字母、极值及不可拆分等边界情况的讨论与代码实现和题目约束一致，且测试全部通过。",
+      "evidence": "步骤称'题目约束 len(s)>=1，故 s 非空；但 dp[0] 仍按空串处理为 True 以启动递推'，代码中 dp[0]=True 且循环从 1 开始；'word_dict 为空时 dp 全 False（除 dp[0]），返回 False' 与代码逻辑一致；signals 显示 public 3/3、adversarial 2/2 全部通过。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "代码实现使用动态规划正确判断字符串拆分，双层循环复杂度为O(n^2)符合预期，且所有公开与对抗测试均通过。",
+      "evidence": "signals中public与adversarial测试全部passed，claimed_complexity为n2与expected_complexity O(n^2)一致，代码dp逻辑与标准word break解法一致。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "suspicious",
+      "confidence": 0.7,
+      "error_types": [
+        "测试覆盖不足导致的伪正确"
+      ],
+      "reason": "自测说明明确承认仅用三个公开用例验证且未构造额外测试，虽信号显示对抗测试也通过，但该步骤自身描述的验证范围不足以支撑实现正确性的充分审查。",
+      "evidence": "步骤内容中写明'验证覆盖范围：仅覆盖题目提供的三个公开用例及基础逻辑推演，未构造额外随机测试或压力测试，未实际运行大规模基准。'",
+      "llm_verdict": "suspicious",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    }
+  ],
+  "checker_report": {
+    "process_ok": true,
+    "code_ok": true,
+    "pseudo_correct": false,
+    "public": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [],
+    "forensics": [],
+    "signals": {
+      "problem_id": "hard-009",
+      "entry_point": "word_break",
+      "max_loop_depth": 2,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "n2",
+      "expected_complexity": "O(n^2)",
+      "public": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 2,
+        "passed": 2,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": []
+    },
+    "code": "def word_break(s: str, word_dict: list) -> bool:\n    word_set = set(word_dict)\n    n = len(s)\n    dp = [False] * (n + 1)\n    dp[0] = True\n    for i in range(1, n + 1):\n        for j in range(i):\n            if dp[j] and s[j:i] in word_set:\n                dp[i] = True\n                break\n    return dp[n]",
+    "llm_summary": {
+      "summary": "公开与对抗测试全部通过，函数级实现正确，无状态或顺序依赖问题。",
+      "process_ok": true,
+      "code_ok": true,
+      "pseudo_correct": false,
+      "root_cause": "无失败用例，代码与解题过程均正确；pseudo_correct 为 false 仅表示未使用伪代码或伪代码未被判定为正确（本题为 function 类，直接以真实代码通过测试）。",
+      "debug_hints": [
+        "无需调试，所有测试已通过",
+        "若需复核可检查 DP 初始化与字典查询边界条件"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开与对抗测试均通过，规则层未见高置信缺陷。"
+    ],
+    "sections": {
+      "解题思路": "本题要求判断字符串 `s` 是否可以被空格拆分成若干个字典 `word_dict` 中出现的单词。这是一个典型的字符串分割可行性问题，可使用**动态规划（Dynamic Programming）**求解。\n定义一维布尔数组 `dp`，其中 `dp[i]` 表示 `s` 的前 `i` 个字符（即 `s[0:i]`）是否可以被成功拆分。初始化 `dp[0] = True`（空串总是可拆分）。对于每个位置 `i`（从 1 到 `len(s)`），遍历所有 `j < i`，若 `dp[j]` 为真且 `s[j:i]` 存在于 `word_dict` 中，则 `dp[i] = True`。最终返回 `dp[len(s)]`。\n为加速查找，将 `word_dict` 转为哈希集合（set），使子串存在性判断为 O(1)。该算法天然适配本题：状态定义清晰、无后效性，且约束 `len(s) <= 300` 下 O(n^2) 完全可行。",
+      "复杂度分析": "- 时间复杂度：O(n^2)，其中 n = len(s)。外层循环 i 从 1 到 n，内层循环 j 从 0 到 i-1，共约 n(n+1)/2 次迭代；每次迭代中切片 `s[j:i]` 耗时 O(i-j) 且集合查询 O(1)，整体渐进为 O(n^2)。\n- 空间复杂度：O(n + m)，其中 n 为 dp 数组长度，m 为 word_dict 转 set 后的存储开销（最多 m 个单词）。dp 数组占 O(n)，哈希集合占 O(m)。",
+      "关键边界与处理策略": "- 空输入：题目约束 `len(s) >= 1`，故 s 非空；但 dp[0] 仍按空串处理为 True 以启动递推。\n- 单元素：若 s 长度为 1，仅检查该字符是否在 dict 中，dp[1] 直接得出。\n- 重复元素：word_dict 中重复单词不影响，转 set 自动去重；s 中重复子串不影响 dp 正确性。\n- 负数/非字母：题目隐含 s 与单词为字符串，无负数；若含其他字符按普通字符处理，set 精确匹配。\n- 极值：len(s)=300 时 O(n^2)=90000 次操作，远低于限制；word_dict 为空时 dp 全 False（除 dp[0]），返回 False。\n- 不可拆分：如 \"catsandog\"，所有 j 均不满足，dp 保持 False，正确返回 False。",
+      "代码实现": "```python\ndef word_break(s: str, word_dict: list) -> bool:\n    word_set = set(word_dict)\n    n = len(s)\n    dp = [False] * (n + 1)\n    dp[0] = True\n    for i in range(1, n + 1):\n        for j in range(i):\n            if dp[j] and s[j:i] in word_set:\n                dp[i] = True\n                break\n    return dp[n]\n```",
+      "自测说明": "我使用题目给出的三个公开测试用例在脑内/本地解释器中验证了实现：\n- `word_break('leetcode', ['leet','code'])`：dp[4]=True（\"leet\"），dp[8]=True（\"code\"），返回 True，与期望一致。\n- `word_break('applepenapple', ['apple','pen'])`：dp[5]=True，dp[8]=True，dp[13]=True，返回 True，与期望一致。\n- `word_break('catsandog', ['cats','dog','sand','and','cat'])`：无法覆盖末尾 \"dog\" 前缺失空格，dp[9] 保持 False，返回 False，与期望一致。\n验证覆盖范围：仅覆盖题目提供的三个公开用例及基础逻辑推演，未构造额外随机测试或压力测试，未实际运行大规模基准。"
+    }
+  },
+  "elapsed_sec": 46.33,
+  "recorded_at": "2026-09-11T22:57:12"
+}

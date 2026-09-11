@@ -1,0 +1,754 @@
+{
+  "problem_id": "medium-002",
+  "title": "验证回文串",
+  "difficulty": "medium",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "is_palindrome",
+  "source_path": "datasets\\code\\medium\\is_palindrome.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": false,
+    "process_valid": false,
+    "first_error_step": "step_3_edge_cases",
+    "error_types": [
+      "边界处理缺失",
+      "测试覆盖不足导致的伪正确"
+    ],
+    "note": "伪正确样本：公开用例恰好都是纯小写/纯数字，直接反转比较能够通过；一旦出现大小写混合或标点空格即失败。根因在边界处理讨论中遗漏了大小写与标点归一化。"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": false,
+    "process_valid": false,
+    "false_positive_solution": true,
+    "first_error_step": "step_2_complexity",
+    "first_error_section": "复杂度分析",
+    "error_types": [
+      "复杂度分析错误",
+      "边界处理缺失",
+      "测试覆盖不足导致的伪正确",
+      "描述与实现不一致",
+      "实现逻辑缺陷"
+    ]
+  },
+  "raw_solution": "## 1. 解题思路\n选择双指针（对撞指针）算法，配合原地字符过滤与大小写归一化。左指针从字符串头部向右、右指针从尾部向左移动，遇到非字母数字字符则跳过；当两指针都指向有效字符时，统一转为小写后比较，若不同则不是回文，否则继续向中间靠拢直到指针交错。该算法只需一次线性扫描，无需额外构建过滤后的字符串，适合本题只考虑字母数字、忽略大小写且长度可达 10^5 的约束。\n\n## 2. 复杂度分析\n时间复杂度：O(n)，其中 n 为字符串长度。每个字符最多被左右指针各访问一次，跳过和比较均为常数时间，总操作次数与 n 成线性关系。\n空间复杂度：O(1)。仅使用固定数量的整型指针和临时变量，未分配与输入规模相关的额外数据结构。\n\n## 3. 关键边界与处理策略\n- 空字符串：长度为 0，指针初始即交错，直接返回 True（题目规定空串为回文）。\n- 单元素字符串：如 \"a\" 或 \"!\"，左指针等于右指针或跳过无效字符后交错，返回 True。\n- 全为标点符号/空格：如 \"!!!\"，所有字符被跳过，指针交错后返回 True。\n- 重复字母数字：如 \"aabaa\"，正常比较，相同则继续，不影响结果。\n- 大小写混合：如 \"Aa\"，统一转小写后比较，视为相同。\n- 负数与数字：数字字符 '0'-'9' 属于有效字符，参与比较；负号 '-' 为标点被忽略。\n- 极值长度 10^5：双指针单次扫描，不会超时或爆栈。\n- 非字母数字 ASCII 可打印字符（如空格、逗号）：使用 isalnum() 判断并跳过。\n\n## 4. 代码实现\n```python\ndef is_palindrome(s: str) -> bool:\n    left, right = 0, len(s) - 1\n    while left < right:\n        while left < right and not s[left].isalnum():\n            left += 1\n        while left < right and not s[right].isalnum():\n            right -= 1\n        if left < right:\n            if s[left].lower() != s[right].lower():\n                return False\n            left += 1\n            right -= 1\n    return True\n```\n\n## 5. 自测说明\n我通过构造本地测试样例对实现进行了验证，覆盖：公开示例（'aba'->True、'ab'->False、''->True）、单字符（'a'->True、'!'->True）、全标点（'!!!'->True）、大小写混合（'Aa'->True、'A man, a plan, a canal: Panama'->True）、含数字（'1a2'->False、'0P'->False 因 P 与 0 不同）、长串模拟（生成 10^5 个 'a' 返回 True）。验证覆盖了空输入、单元素、重复、大小写、标点、数字及极值长度，未发现与预期不符的输出；未使用臆造的线上评测结果，仅基于上述自测样例确认逻辑正确。",
+  "sections": {
+    "解题思路": "选择双指针（对撞指针）算法，配合原地字符过滤与大小写归一化。左指针从字符串头部向右、右指针从尾部向左移动，遇到非字母数字字符则跳过；当两指针都指向有效字符时，统一转为小写后比较，若不同则不是回文，否则继续向中间靠拢直到指针交错。该算法只需一次线性扫描，无需额外构建过滤后的字符串，适合本题只考虑字母数字、忽略大小写且长度可达 10^5 的约束。",
+    "复杂度分析": "时间复杂度：O(n)，其中 n 为字符串长度。每个字符最多被左右指针各访问一次，跳过和比较均为常数时间，总操作次数与 n 成线性关系。\n空间复杂度：O(1)。仅使用固定数量的整型指针和临时变量，未分配与输入规模相关的额外数据结构。",
+    "关键边界与处理策略": "- 空字符串：长度为 0，指针初始即交错，直接返回 True（题目规定空串为回文）。\n- 单元素字符串：如 \"a\" 或 \"!\"，左指针等于右指针或跳过无效字符后交错，返回 True。\n- 全为标点符号/空格：如 \"!!!\"，所有字符被跳过，指针交错后返回 True。\n- 重复字母数字：如 \"aabaa\"，正常比较，相同则继续，不影响结果。\n- 大小写混合：如 \"Aa\"，统一转小写后比较，视为相同。\n- 负数与数字：数字字符 '0'-'9' 属于有效字符，参与比较；负号 '-' 为标点被忽略。\n- 极值长度 10^5：双指针单次扫描，不会超时或爆栈。\n- 非字母数字 ASCII 可打印字符（如空格、逗号）：使用 isalnum() 判断并跳过。",
+    "代码实现": "```python\ndef is_palindrome(s: str) -> bool:\n    left, right = 0, len(s) - 1\n    while left < right:\n        while left < right and not s[left].isalnum():\n            left += 1\n        while left < right and not s[right].isalnum():\n            right -= 1\n        if left < right:\n            if s[left].lower() != s[right].lower():\n                return False\n            left += 1\n            right -= 1\n    return True\n```",
+    "自测说明": "我通过构造本地测试样例对实现进行了验证，覆盖：公开示例（'aba'->True、'ab'->False、''->True）、单字符（'a'->True、'!'->True）、全标点（'!!!'->True）、大小写混合（'Aa'->True、'A man, a plan, a canal: Panama'->True）、含数字（'1a2'->False、'0P'->False 因 P 与 0 不同）、长串模拟（生成 10^5 个 'a' 返回 True）。验证覆盖了空输入、单元素、重复、大小写、标点、数字及极值长度，未发现与预期不符的输出；未使用臆造的线上评测结果，仅基于上述自测样例确认逻辑正确。"
+  },
+  "code": "def is_palindrome(s: str) -> bool:\n    left, right = 0, len(s) - 1\n    while left < right:\n        while left < right and not s[left].isalnum():\n            left += 1\n        while left < right and not s[right].isalnum():\n            right -= 1\n        if left < right:\n            if s[left].lower() != s[right].lower():\n                return False\n            left += 1\n            right -= 1\n    return True",
+  "public": {
+    "total": 5,
+    "passed": 5,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 4,
+    "passed": 3,
+    "failed": 1,
+    "all_passed": false,
+    "failure_samples": [
+      {
+        "index": 1,
+        "args": [
+          "race a car"
+        ],
+        "expected": true,
+        "status": "wrong_answer",
+        "actual": false,
+        "error": "",
+        "duration_ms": 0.044
+      }
+    ]
+  },
+  "rule_findings": [
+    {
+      "section": "代码实现",
+      "error_type": "FALSE_POSITIVE",
+      "error_type_label": "测试覆盖不足导致的伪正确",
+      "detail": "公开测试全部通过（5/5），但对抗测试 1/4 失败——典型的“结果看似正确、实现逻辑有缺陷”的伪正确样本。",
+      "evidence": "[{'index': 1, 'args': ['race a car'], 'expected': True, 'status': 'wrong_answer', 'actual': False, 'error': '', 'duration_ms': 0.044}]",
+      "confidence": 0.95,
+      "source": "rule"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "error_type": "EDGE",
+      "error_type_label": "边界处理缺失",
+      "detail": "本题要求的边界情形 ['标点与空格'] 在「关键边界与处理策略」中未被讨论；对抗测试已证明这些情形处理失败。",
+      "evidence": "已提及：['空', '单元素', '重复元素', '负数', '边界']；缺失：['标点与空格']",
+      "confidence": 0.85,
+      "source": "rule"
+    },
+    {
+      "section": "复杂度分析",
+      "error_type": "COMPLEXITY",
+      "error_type_label": "复杂度分析错误",
+      "detail": "声称时间复杂度 n，但代码中检测到最大循环嵌套深度为 2，实际下界约为 n2。",
+      "evidence": "AST 静态分析：max_loop_depth=2, recursive=False",
+      "confidence": 0.7,
+      "source": "rule"
+    }
+  ],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "suspicious",
+      "confidence": 0.6,
+      "error_types": [
+        "描述与实现不一致"
+      ],
+      "reason": "解题思路声称算法正确跳过非字母数字并比较，但对抗测试 'race a car' 返回 false 而期望 true，说明实现或思路描述与实际行为存在不一致，需进一步定位。",
+      "evidence": "signals 中 adversarial failure_samples: {'index': 1, 'args': ['race a car'], 'expected': true, 'actual': false}；步骤内容称'遇到非字母数字字符则跳过'但代码对 'race a car' 处理出错",
+      "llm_verdict": "suspicious",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "flawed",
+      "confidence": 0.7,
+      "error_types": [
+        "复杂度分析错误"
+      ],
+      "reason": "声称时间复杂度 n，但代码中检测到最大循环嵌套深度为 2，实际下界约为 n2。（LLM 审查未发现此问题，但执行证据更可靠，以执行结果为准。）",
+      "evidence": "AST 静态分析：max_loop_depth=2, recursive=False",
+      "llm_verdict": "valid",
+      "rule_types": [
+        "复杂度分析错误"
+      ],
+      "signal_agreement": "rule_only"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "flawed",
+      "confidence": 0.95,
+      "error_types": [
+        "边界处理缺失",
+        "描述与实现不一致"
+      ],
+      "reason": "本题要求的边界情形 ['标点与空格'] 在「关键边界与处理策略」中未被讨论；对抗测试已证明这些情形处理失败。 Critic 补充：步骤声称处理了全为标点符号/空格及非字母数字字符跳过，但对抗测试 'race a car' 返回 False 而期望 True，说明实际实现未正确跳过空格导致比较错误，且步骤描述与实现行为不一致。",
+      "evidence": "已提及：['空', '单元素', '重复元素', '负数', '边界']；缺失：['标点与空格']",
+      "llm_verdict": "flawed",
+      "rule_types": [
+        "边界处理缺失"
+      ],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "flawed",
+      "confidence": 0.95,
+      "error_types": [
+        "测试覆盖不足导致的伪正确",
+        "实现逻辑缺陷"
+      ],
+      "reason": "公开测试全部通过（5/5），但对抗测试 1/4 失败——典型的“结果看似正确、实现逻辑有缺陷”的伪正确样本。 Critic 补充：对抗测试 'race a car' 期望 true 但实际返回 false，证明代码实现未正确忽略空格与标点导致误判。",
+      "evidence": "[{'index': 1, 'args': ['race a car'], 'expected': True, 'status': 'wrong_answer', 'actual': False, 'error': '', 'duration_ms': 0.044}]",
+      "llm_verdict": "flawed",
+      "rule_types": [
+        "测试覆盖不足导致的伪正确"
+      ],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "flawed",
+      "confidence": 0.95,
+      "error_types": [
+        "测试覆盖不足导致的伪正确",
+        "描述与实现不一致"
+      ],
+      "reason": "自测说明声称覆盖标点与空格等情形且未发现不符，但对抗测试显示 'race a car' 实际返回 False 而期望 True，证明自测样例未真正覆盖含空格的有效回文场景，描述与执行结果不一致。",
+      "evidence": "自测说明中写：'覆盖：...大小写混合（'A man, a plan, a canal: Panama'->True）...未发现与预期不符的输出'；但 signals 中 adversarial failure_samples: [{'index': 1, 'args': ['race a car'], 'expected': true, 'actual': false}]，且 rule_findings 指出 '测试覆盖不足导致的伪正确'。",
+      "llm_verdict": "flawed",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    }
+  ],
+  "checker_report": {
+    "process_ok": false,
+    "code_ok": false,
+    "pseudo_correct": true,
+    "public": {
+      "total": 5,
+      "passed": 5,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 4,
+      "passed": 3,
+      "failed": 1,
+      "all_passed": false,
+      "failure_samples": [
+        {
+          "index": 1,
+          "args": [
+            "race a car"
+          ],
+          "expected": true,
+          "status": "wrong_answer",
+          "actual": false,
+          "error": "",
+          "duration_ms": 0.044
+        }
+      ]
+    },
+    "findings": [
+      {
+        "section": "代码实现",
+        "error_type": "FALSE_POSITIVE",
+        "error_type_label": "测试覆盖不足导致的伪正确",
+        "detail": "公开测试全部通过（5/5），但对抗测试 1/4 失败——典型的“结果看似正确、实现逻辑有缺陷”的伪正确样本。",
+        "evidence": "[{'index': 1, 'args': ['race a car'], 'expected': True, 'status': 'wrong_answer', 'actual': False, 'error': '', 'duration_ms': 0.044}]",
+        "confidence": 0.95,
+        "source": "rule"
+      },
+      {
+        "section": "关键边界与处理策略",
+        "error_type": "EDGE",
+        "error_type_label": "边界处理缺失",
+        "detail": "本题要求的边界情形 ['标点与空格'] 在「关键边界与处理策略」中未被讨论；对抗测试已证明这些情形处理失败。",
+        "evidence": "已提及：['空', '单元素', '重复元素', '负数', '边界']；缺失：['标点与空格']",
+        "confidence": 0.85,
+        "source": "rule"
+      },
+      {
+        "section": "复杂度分析",
+        "error_type": "COMPLEXITY",
+        "error_type_label": "复杂度分析错误",
+        "detail": "声称时间复杂度 n，但代码中检测到最大循环嵌套深度为 2，实际下界约为 n2。",
+        "evidence": "AST 静态分析：max_loop_depth=2, recursive=False",
+        "confidence": 0.7,
+        "source": "rule"
+      }
+    ],
+    "forensics": [
+      {
+        "case_index": 1,
+        "kind": "function",
+        "method": null,
+        "args": [
+          "race a car"
+        ],
+        "expected": true,
+        "actual": false,
+        "status": "wrong_answer",
+        "forensic": {
+          "ok": true,
+          "status": "returned",
+          "result": "False",
+          "error": "",
+          "traceback": "",
+          "steps": 30,
+          "used_seconds": 0.003,
+          "trace_tail": {
+            "total_steps": 30,
+            "truncated": false,
+            "steps": [
+              {
+                "n": 1,
+                "line": 2,
+                "func": "is_palindrome",
+                "depth": 1,
+                "locals": {
+                  "s": "'race a car'"
+                },
+                "ts_ms": 47299542.171,
+                "stdout": ""
+              },
+              {
+                "n": 2,
+                "line": 3,
+                "func": "is_palindrome",
+                "depth": 1,
+                "locals": {
+                  "s": "'race a car'",
+                  "left": "0",
+                  "right": "9"
+                },
+                "ts_ms": 47299542.231,
+                "stdout": ""
+              },
+              {
+                "n": 3,
+                "line": 4,
+                "func": "is_palindrome",
+                "depth": 1,
+                "locals": {
+                  "s": "'race a car'",
+                  "left": "0",
+                  "right": "9"
+                },
+                "ts_ms": 47299542.264,
+                "stdout": ""
+              },
+              {
+                "n": 4,
+                "line": 6,
+                "func": "is_palindrome",
+                "depth": 1,
+                "locals": {
+                  "s": "'race a car'",
+                  "left": "0",
+                  "right": "9"
+                },
+                "ts_ms": 47299542.286,
+                "stdout": ""
+              },
+              {
+                "n": 5,
+                "line": 8,
+                "func": "is_palindrome",
+                "depth": 1,
+                "locals": {
+                  "s": "'race a car'",
+                  "left": "0",
+                  "right": "9"
+                },
+                "ts_ms": 47299542.302,
+                "stdout": ""
+              },
+              {
+                "n": 6,
+                "line": 9,
+                "func": "is_palindrome",
+                "depth": 1,
+                "locals": {
+                  "s": "'race a car'",
+                  "left": "0",
+                  "right": "9"
+                },
+                "ts_ms": 47299542.316,
+                "stdout": ""
+              },
+              {
+                "n": 7,
+                "line": 11,
+                "func": "is_palindrome",
+                "depth": 1,
+                "locals": {
+                  "s": "'race a car'",
+                  "left": "0",
+                  "right": "9"
+                },
+                "ts_ms": 47299542.332,
+                "stdout": ""
+              },
+              {
+                "n": 8,
+                "line": 12,
+                "func": "is_palindrome",
+                "depth": 1,
+                "locals": {
+                  "s": "'race a car'",
+                  "left": "1",
+                  "right": "9"
+                },
+                "ts_ms": 47299542.356,
+                "stdout": ""
+              },
+              {
+                "n": 9,
+                "line": 3,
+                "func": "is_palindrome",
+                "depth": 1,
+                "locals": {
+                  "s": "'race a car'",
+                  "left": "1",
+                  "right": "8"
+                },
+                "ts_ms": 47299542.369,
+                "stdout": ""
+              },
+              {
+                "n": 10,
+                "line": 4,
+                "func": "is_palindrome",
+                "depth": 1,
+                "locals": {
+                  "s": "'race a car'",
+                  "left": "1",
+                  "right": "8"
+                },
+                "ts_ms": 47299542.385,
+                "stdout": ""
+              },
+              {
+                "n": 11,
+                "line": 6,
+                "func": "is_palindrome",
+                "depth": 1,
+                "locals": {
+                  "s": "'race a car'",
+                  "left": "1",
+                  "right": "8"
+                },
+                "ts_ms": 47299543.231,
+                "stdout": ""
+              },
+              {
+                "n": 12,
+                "line": 8,
+                "func": "is_palindrome",
+                "depth": 1,
+                "locals": {
+                  "s": "'race a car'",
+                  "left": "1",
+                  "right": "8"
+                },
+                "ts_ms": 47299543.282,
+                "stdout": ""
+              },
+              {
+                "n": 13,
+                "line": 9,
+                "func": "is_palindrome",
+                "depth": 1,
+                "locals": {
+                  "s": "'race a car'",
+                  "left": "1",
+                  "right": "8"
+                },
+                "ts_ms": 47299543.297,
+                "stdout": ""
+              },
+              {
+                "n": 14,
+                "line": 11,
+                "func": "is_palindrome",
+                "depth": 1,
+                "locals": {
+                  "s": "'race a car'",
+                  "left": "1",
+                  "right": "8"
+                },
+                "ts_ms": 47299543.313,
+                "stdout": ""
+              },
+              {
+                "n": 15,
+                "line": 12,
+                "func": "is_palindrome",
+                "depth": 1,
+                "locals": {
+                  "s": "'race a car'",
+                  "left": "2",
+                  "right": "8"
+                },
+                "ts_ms": 47299543.322,
+                "stdout": ""
+              },
+              {
+                "n": 16,
+                "line": 3,
+                "func": "is_palindrome",
+                "depth": 1,
+                "locals": {
+                  "s": "'race a car'",
+                  "left": "2",
+                  "right": "7"
+                },
+                "ts_ms": 47299543.331,
+                "stdout": ""
+              },
+              {
+                "n": 17,
+                "line": 4,
+                "func": "is_palindrome",
+                "depth": 1,
+                "locals": {
+                  "s": "'race a car'",
+                  "left": "2",
+                  "right": "7"
+                },
+                "ts_ms": 47299543.34,
+                "stdout": ""
+              },
+              {
+                "n": 18,
+                "line": 6,
+                "func": "is_palindrome",
+                "depth": 1,
+                "locals": {
+                  "s": "'race a car'",
+                  "left": "2",
+                  "right": "7"
+                },
+                "ts_ms": 47299543.35,
+                "stdout": ""
+              },
+              {
+                "n": 19,
+                "line": 8,
+                "func": "is_palindrome",
+                "depth": 1,
+                "locals": {
+                  "s": "'race a car'",
+                  "left": "2",
+                  "right": "7"
+                },
+                "ts_ms": 47299543.358,
+                "stdout": ""
+              },
+              {
+                "n": 20,
+                "line": 9,
+                "func": "is_palindrome",
+                "depth": 1,
+                "locals": {
+                  "s": "'race a car'",
+                  "left": "2",
+                  "right": "7"
+                },
+                "ts_ms": 47299543.366,
+                "stdout": ""
+              },
+              {
+                "n": 21,
+                "line": 11,
+                "func": "is_palindrome",
+                "depth": 1,
+                "locals": {
+                  "s": "'race a car'",
+                  "left": "2",
+                  "right": "7"
+                },
+                "ts_ms": 47299543.375,
+                "stdout": ""
+              },
+              {
+                "n": 22,
+                "line": 12,
+                "func": "is_palindrome",
+                "depth": 1,
+                "locals": {
+                  "s": "'race a car'",
+                  "left": "3",
+                  "right": "7"
+                },
+                "ts_ms": 47299543.383,
+                "stdout": ""
+              },
+              {
+                "n": 23,
+                "line": 3,
+                "func": "is_palindrome",
+                "depth": 1,
+                "locals": {
+                  "s": "'race a car'",
+                  "left": "3",
+                  "right": "6"
+                },
+                "ts_ms": 47299543.391,
+                "stdout": ""
+              },
+              {
+                "n": 24,
+                "line": 4,
+                "func": "is_palindrome",
+                "depth": 1,
+                "locals": {
+                  "s": "'race a car'",
+                  "left": "3",
+                  "right": "6"
+                },
+                "ts_ms": 47299543.399,
+                "stdout": ""
+              },
+              {
+                "n": 25,
+                "line": 6,
+                "func": "is_palindrome",
+                "depth": 1,
+                "locals": {
+                  "s": "'race a car'",
+                  "left": "3",
+                  "right": "6"
+                },
+                "ts_ms": 47299543.407,
+                "stdout": ""
+              },
+              {
+                "n": 26,
+                "line": 7,
+                "func": "is_palindrome",
+                "depth": 1,
+                "locals": {
+                  "s": "'race a car'",
+                  "left": "3",
+                  "right": "6"
+                },
+                "ts_ms": 47299543.416,
+                "stdout": ""
+              },
+              {
+                "n": 27,
+                "line": 6,
+                "func": "is_palindrome",
+                "depth": 1,
+                "locals": {
+                  "s": "'race a car'",
+                  "left": "3",
+                  "right": "5"
+                },
+                "ts_ms": 47299543.427,
+                "stdout": ""
+              },
+              {
+                "n": 28,
+                "line": 8,
+                "func": "is_palindrome",
+                "depth": 1,
+                "locals": {
+                  "s": "'race a car'",
+                  "left": "3",
+                  "right": "5"
+                },
+                "ts_ms": 47299543.439,
+                "stdout": ""
+              },
+              {
+                "n": 29,
+                "line": 9,
+                "func": "is_palindrome",
+                "depth": 1,
+                "locals": {
+                  "s": "'race a car'",
+                  "left": "3",
+                  "right": "5"
+                },
+                "ts_ms": 47299543.45,
+                "stdout": ""
+              },
+              {
+                "n": 30,
+                "line": 10,
+                "func": "is_palindrome",
+                "depth": 1,
+                "locals": {
+                  "s": "'race a car'",
+                  "left": "3",
+                  "right": "5"
+                },
+                "ts_ms": 47299543.459,
+                "stdout": ""
+              }
+            ]
+          }
+        },
+        "summary": "status=returned\nresult='False'\ntrace_tail:\n  L3 is_palindrome locals={'s': \"'race a car'\", 'left': '3', 'right': '6'}\n  L4 is_palindrome locals={'s': \"'race a car'\", 'left': '3', 'right': '6'}\n  L6 is_palindrome locals={'s': \"'race a car'\", 'left': '3', 'right': '6'}\n  L7 is_palindrome locals={'s': \"'race a car'\", 'left': '3', 'right': '6'}\n  L6 is_palindrome locals={'s': \"'race a car'\", 'left': '3', 'right': '5'}\n  L8 is_palindrome locals={'s': \"'race a car'\", 'left': '3', 'right': '5'}\n  L9 is_palindrome locals={'s': \"'race a car'\", 'left': '3', 'right': '5'}\n  L10 is_palindrome locals={'s': \"'race a car'\", 'left': '3', 'right': '5'}"
+      }
+    ],
+    "signals": {
+      "problem_id": "medium-002",
+      "entry_point": "is_palindrome",
+      "max_loop_depth": 2,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "n",
+      "expected_complexity": "O(n)",
+      "public": {
+        "total": 5,
+        "passed": 5,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 4,
+        "passed": 3,
+        "failed": 1,
+        "all_passed": false,
+        "failure_samples": [
+          {
+            "index": 1,
+            "args": [
+              "race a car"
+            ],
+            "expected": true,
+            "status": "wrong_answer",
+            "actual": false,
+            "error": "",
+            "duration_ms": 0.044
+          }
+        ]
+      },
+      "rule_findings": [
+        {
+          "section": "代码实现",
+          "error_type": "FALSE_POSITIVE",
+          "error_type_label": "测试覆盖不足导致的伪正确",
+          "detail": "公开测试全部通过（5/5），但对抗测试 1/4 失败——典型的“结果看似正确、实现逻辑有缺陷”的伪正确样本。",
+          "evidence": "[{'index': 1, 'args': ['race a car'], 'expected': True, 'status': 'wrong_answer', 'actual': False, 'error': '', 'duration_ms': 0.044}]",
+          "confidence": 0.95,
+          "source": "rule"
+        },
+        {
+          "section": "关键边界与处理策略",
+          "error_type": "EDGE",
+          "error_type_label": "边界处理缺失",
+          "detail": "本题要求的边界情形 ['标点与空格'] 在「关键边界与处理策略」中未被讨论；对抗测试已证明这些情形处理失败。",
+          "evidence": "已提及：['空', '单元素', '重复元素', '负数', '边界']；缺失：['标点与空格']",
+          "confidence": 0.85,
+          "source": "rule"
+        },
+        {
+          "section": "复杂度分析",
+          "error_type": "COMPLEXITY",
+          "error_type_label": "复杂度分析错误",
+          "detail": "声称时间复杂度 n，但代码中检测到最大循环嵌套深度为 2，实际下界约为 n2。",
+          "evidence": "AST 静态分析：max_loop_depth=2, recursive=False",
+          "confidence": 0.7,
+          "source": "rule"
+        }
+      ]
+    },
+    "code": "def is_palindrome(s: str) -> bool:\n    left, right = 0, len(s) - 1\n    while left < right:\n        while left < right and not s[left].isalnum():\n            left += 1\n        while left < right and not s[right].isalnum():\n            right -= 1\n        if left < right:\n            if s[left].lower() != s[right].lower():\n                return False\n            left += 1\n            right -= 1\n    return True",
+    "llm_summary": {
+      "summary": "公开测试全过但对抗测试暴露边界处理缺陷，代码在含空格标点字符串上误判回文。",
+      "process_ok": false,
+      "code_ok": false,
+      "pseudo_correct": true,
+      "root_cause": "实现未正确跳过非字母数字字符（如空格），在 'race a car' 中 left/right 指针未忽略空格导致比较 'e' vs ' ' 后提前返回 False；同时复杂度分析误判为 O(n) 实为嵌套循环 O(n^2)。",
+      "debug_hints": [
+        "在双指针移动前加入 while 循环跳过非字母数字字符（用 isalnum() 判断）",
+        "统一将字符转为小写再比较",
+        "修正复杂度分析：若用 filter+reverse 或先清洗字符串再双指针才是 O(n)，当前嵌套 while 为 O(n^2)",
+        "补充含空格、标点、混合大小写的对抗用例到自测集"
+      ],
+      "failed_case_analysis": [
+        "用例 'race a car'：期望 true（清洗后为 'raceacar' 不是回文？注意题目原意：'race a car' 清洗后 'raceacar' 并非回文，但标注 expected=true 说明本题定义可能只去空格不去标点或另有规则；实际代码返回 false 与 expected 不符，需核对题目清洗规则——若只去空格则 'raceacar' 非回文应 false，此处 expected=true 暗示题目可能把 'a' 当有效且 'rac e a car' 某种对齐后为回文，或标注有误；但按给定 expected=true，代码因未跳过空格在 left=3('e') right=6(' ') 时判不等返回 false，应改为跳过空格后继续比较"
+      ]
+    },
+    "debug_hints": [
+      "公开测试通过但对抗失败：优先检查边界归一化、空/单元素、类型边界，并用 sandbox-debugger 在失败入参上下断点观察局部变量。",
+      "失败用例 args=['race a car'] 的执行轨迹已取证：status=returned\nresult='False'\ntrace_tail:\n  L3 is_palindrome locals={'s': \"'race a car'\", 'left': '3', 'right': '6'}\n  L4 is_palindrome locals={'s': \"'race a c",
+      "[FALSE_POSITIVE] 公开测试全部通过（5/5），但对抗测试 1/4 失败——典型的“结果看似正确、实现逻辑有缺陷”的伪正确样本。",
+      "[EDGE] 本题要求的边界情形 ['标点与空格'] 在「关键边界与处理策略」中未被讨论；对抗测试已证明这些情形处理失败。",
+      "[COMPLEXITY] 声称时间复杂度 n，但代码中检测到最大循环嵌套深度为 2，实际下界约为 n2。"
+    ],
+    "sections": {
+      "解题思路": "选择双指针（对撞指针）算法，配合原地字符过滤与大小写归一化。左指针从字符串头部向右、右指针从尾部向左移动，遇到非字母数字字符则跳过；当两指针都指向有效字符时，统一转为小写后比较，若不同则不是回文，否则继续向中间靠拢直到指针交错。该算法只需一次线性扫描，无需额外构建过滤后的字符串，适合本题只考虑字母数字、忽略大小写且长度可达 10^5 的约束。",
+      "复杂度分析": "时间复杂度：O(n)，其中 n 为字符串长度。每个字符最多被左右指针各访问一次，跳过和比较均为常数时间，总操作次数与 n 成线性关系。\n空间复杂度：O(1)。仅使用固定数量的整型指针和临时变量，未分配与输入规模相关的额外数据结构。",
+      "关键边界与处理策略": "- 空字符串：长度为 0，指针初始即交错，直接返回 True（题目规定空串为回文）。\n- 单元素字符串：如 \"a\" 或 \"!\"，左指针等于右指针或跳过无效字符后交错，返回 True。\n- 全为标点符号/空格：如 \"!!!\"，所有字符被跳过，指针交错后返回 True。\n- 重复字母数字：如 \"aabaa\"，正常比较，相同则继续，不影响结果。\n- 大小写混合：如 \"Aa\"，统一转小写后比较，视为相同。\n- 负数与数字：数字字符 '0'-'9' 属于有效字符，参与比较；负号 '-' 为标点被忽略。\n- 极值长度 10^5：双指针单次扫描，不会超时或爆栈。\n- 非字母数字 ASCII 可打印字符（如空格、逗号）：使用 isalnum() 判断并跳过。",
+      "代码实现": "```python\ndef is_palindrome(s: str) -> bool:\n    left, right = 0, len(s) - 1\n    while left < right:\n        while left < right and not s[left].isalnum():\n            left += 1\n        while left < right and not s[right].isalnum():\n            right -= 1\n        if left < right:\n            if s[left].lower() != s[right].lower():\n                return False\n            left += 1\n            right -= 1\n    return True\n```",
+      "自测说明": "我通过构造本地测试样例对实现进行了验证，覆盖：公开示例（'aba'->True、'ab'->False、''->True）、单字符（'a'->True、'!'->True）、全标点（'!!!'->True）、大小写混合（'Aa'->True、'A man, a plan, a canal: Panama'->True）、含数字（'1a2'->False、'0P'->False 因 P 与 0 不同）、长串模拟（生成 10^5 个 'a' 返回 True）。验证覆盖了空输入、单元素、重复、大小写、标点、数字及极值长度，未发现与预期不符的输出；未使用臆造的线上评测结果，仅基于上述自测样例确认逻辑正确。"
+    }
+  },
+  "elapsed_sec": 62.21,
+  "recorded_at": "2026-09-11T22:36:12"
+}

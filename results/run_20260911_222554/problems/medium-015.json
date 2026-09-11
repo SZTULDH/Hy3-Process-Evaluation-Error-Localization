@@ -1,0 +1,183 @@
+{
+  "problem_id": "medium-015",
+  "title": "最大连续 1 的个数",
+  "difficulty": "medium",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "find_max_consecutive_ones",
+  "source_path": "datasets\\code\\medium\\find_max_consecutive_ones.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "first_error_step": null,
+    "error_types": [],
+    "note": "正确对照样本"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "false_positive_solution": false,
+    "first_error_step": null,
+    "first_error_section": null,
+    "error_types": []
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求计算二进制数组中最大连续 1 的个数。由于数组元素仅为 0 或 1，且需要统计连续出现的 1，最直观且高效的方法是单次线性扫描。使用一个计数器 `current` 记录当前连续 1 的个数，遇到 1 时加一，遇到 0 时将其与历史最大值 `max_count` 比较并更新，随后将 `current` 清零。该算法只需遍历数组一次，无需额外数据结构，适用于本题的数据规模与二进制特性。\n\n## 2. 复杂度分析\n时间复杂度：O(n)，其中 n 为数组长度。算法对数组进行了一次完整的线性遍历，每个元素仅被访问一次，常数时间内完成判断与计数更新。\n空间复杂度：O(1)。仅使用了固定数量的整型变量（当前计数与最大计数），不随输入规模增长而分配额外空间。\n\n## 3. 关键边界与处理策略\n- 空输入：题目约束 len >= 1，但为健壮性考虑，若传入空列表，循环不执行，直接返回初始 max_count = 0，符合逻辑。\n- 单元素：若数组为 [1]，扫描后 current=1, max_count=1，返回 1；若为 [0]，返回 0，均正确。\n- 全 0 数组：如 [0,0,0]，每次遇 0 更新 max_count 为 0，最终返回 0。\n- 全 1 数组：如 [1,1,1]，current 累加至 3，循环结束前或遇 0 时更新，需在循环结束后再比较一次以防末尾连续 1 未被更新（或在遇 0 时更新并在末尾补更新）。\n- 重复元素：二进制数组天然重复 0/1，算法通过遇 0 重置天然处理重复。\n- 负数/非二进制：题目明确为二进制数组，约束中不含负数，无需处理；若误传其他值，按真值判断（Python 中非 0 为真）可能出错，但依题意不处理。\n- 极值：长度 10^5 全 1，算法 O(n) 可轻松处理，无递归栈溢出风险。\n\n## 4. 代码实现\n```python\ndef find_max_consecutive_ones(nums: list) -> int:\n    max_count = 0\n    current = 0\n    for num in nums:\n        if num == 1:\n            current += 1\n        else:\n            if current > max_count:\n                max_count = current\n            current = 0\n    if current > max_count:\n        max_count = current\n    return max_count\n```\n\n## 5. 自测说明\n我通过构造多组输入验证了实现：使用题目公开示例 `[1,1,0,1,1,1]` 得 3、`[1,0,1,1,0,1]` 得 2，与期望一致；补充测试了 `[1]` 得 1、`[0]` 得 0、`[0,0,0]` 得 0、`[1,1,1,1]` 得 4、`[1,0,0,1,0,1,1,1,0]` 得 3，均返回正确结果。验证覆盖了单元素、全 0、全 1、末尾连续 1、中间多段连续 1 等边界情形，未发现错误。未进行大规模随机压力测试，但基于逻辑与小规模用例可确认正确性。",
+  "sections": {
+    "解题思路": "本题要求计算二进制数组中最大连续 1 的个数。由于数组元素仅为 0 或 1，且需要统计连续出现的 1，最直观且高效的方法是单次线性扫描。使用一个计数器 `current` 记录当前连续 1 的个数，遇到 1 时加一，遇到 0 时将其与历史最大值 `max_count` 比较并更新，随后将 `current` 清零。该算法只需遍历数组一次，无需额外数据结构，适用于本题的数据规模与二进制特性。",
+    "复杂度分析": "时间复杂度：O(n)，其中 n 为数组长度。算法对数组进行了一次完整的线性遍历，每个元素仅被访问一次，常数时间内完成判断与计数更新。\n空间复杂度：O(1)。仅使用了固定数量的整型变量（当前计数与最大计数），不随输入规模增长而分配额外空间。",
+    "关键边界与处理策略": "- 空输入：题目约束 len >= 1，但为健壮性考虑，若传入空列表，循环不执行，直接返回初始 max_count = 0，符合逻辑。\n- 单元素：若数组为 [1]，扫描后 current=1, max_count=1，返回 1；若为 [0]，返回 0，均正确。\n- 全 0 数组：如 [0,0,0]，每次遇 0 更新 max_count 为 0，最终返回 0。\n- 全 1 数组：如 [1,1,1]，current 累加至 3，循环结束前或遇 0 时更新，需在循环结束后再比较一次以防末尾连续 1 未被更新（或在遇 0 时更新并在末尾补更新）。\n- 重复元素：二进制数组天然重复 0/1，算法通过遇 0 重置天然处理重复。\n- 负数/非二进制：题目明确为二进制数组，约束中不含负数，无需处理；若误传其他值，按真值判断（Python 中非 0 为真）可能出错，但依题意不处理。\n- 极值：长度 10^5 全 1，算法 O(n) 可轻松处理，无递归栈溢出风险。",
+    "代码实现": "```python\ndef find_max_consecutive_ones(nums: list) -> int:\n    max_count = 0\n    current = 0\n    for num in nums:\n        if num == 1:\n            current += 1\n        else:\n            if current > max_count:\n                max_count = current\n            current = 0\n    if current > max_count:\n        max_count = current\n    return max_count\n```",
+    "自测说明": "我通过构造多组输入验证了实现：使用题目公开示例 `[1,1,0,1,1,1]` 得 3、`[1,0,1,1,0,1]` 得 2，与期望一致；补充测试了 `[1]` 得 1、`[0]` 得 0、`[0,0,0]` 得 0、`[1,1,1,1]` 得 4、`[1,0,0,1,0,1,1,1,0]` 得 3，均返回正确结果。验证覆盖了单元素、全 0、全 1、末尾连续 1、中间多段连续 1 等边界情形，未发现错误。未进行大规模随机压力测试，但基于逻辑与小规模用例可确认正确性。"
+  },
+  "code": "def find_max_consecutive_ones(nums: list) -> int:\n    max_count = 0\n    current = 0\n    for num in nums:\n        if num == 1:\n            current += 1\n        else:\n            if current > max_count:\n                max_count = current\n            current = 0\n    if current > max_count:\n        max_count = current\n    return max_count",
+  "public": {
+    "total": 2,
+    "passed": 2,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "解题思路描述的线性扫描、计数器更新与清零逻辑与代码实现一致，且测试全部通过、复杂度符合预期。",
+      "evidence": "步骤内容称'遇到 1 时加一，遇到 0 时将其与历史最大值比较并更新，随后将 current 清零'，代码中 for 循环内 if num==1: current+=1 else: 比较更新 max_count 并 current=0，且循环后补了尾部比较；signals 显示 public 2/2、adversarial 3/3 全通过，claimed_complexity n 与 expected O(n) 一致。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "valid",
+      "confidence": 0.99,
+      "error_types": [],
+      "reason": "复杂度分析描述与代码实现一致，单次线性遍历且仅用固定变量，符合O(n)时间与O(1)空间。",
+      "evidence": "代码为单层for循环遍历nums，无递归（max_loop_depth=1, recursive=false），仅用max_count和current两个整型变量；signals显示claimed_complexity='n'、expected_complexity='O(n)'且测试全通过。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "该步骤对空输入、单元素、全0、全1、重复元素、非二进制及极值等边界与策略的描述与所给代码实现及执行信号（全部测试通过）一致，无具体依据表明其不成立。",
+      "evidence": "步骤称全1数组需在循环结束后再比较一次，代码对应 `if current > max_count: max_count = current`；signals 显示 public 2/2、adversarial 3/3 全部通过，无失败样本。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.98,
+      "error_types": [],
+      "reason": "代码实现正确遍历数组统计连续1并在结尾补更新最大值，测试全部通过且无静态问题。",
+      "evidence": "signals 显示 public 2/2 passed、adversarial 3/3 passed、parse_error null、rule_findings 空；代码逻辑与完整实现一致且覆盖末尾连续1情况。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "自测说明中列举的用例与代码实现逻辑一致，且信号显示公开与对抗测试全部通过，未发现描述与实现不一致或测试覆盖明显不足的问题。",
+      "evidence": "步骤内容称 '[1,1,0,1,1,1] 得 3、[1,0,1,1,0,1] 得 2' 等均正确；signals 中 public 2/2 passed、adversarial 3/3 passed、all_passed true；代码实现遍历一次数组并在末尾补更新 max_count，与描述覆盖的边界情形相符。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    }
+  ],
+  "checker_report": {
+    "process_ok": true,
+    "code_ok": true,
+    "pseudo_correct": false,
+    "public": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [],
+    "forensics": [],
+    "signals": {
+      "problem_id": "medium-015",
+      "entry_point": "find_max_consecutive_ones",
+      "max_loop_depth": 1,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "n",
+      "expected_complexity": "O(n)",
+      "public": {
+        "total": 2,
+        "passed": 2,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": []
+    },
+    "code": "def find_max_consecutive_ones(nums: list) -> int:\n    max_count = 0\n    current = 0\n    for num in nums:\n        if num == 1:\n            current += 1\n        else:\n            if current > max_count:\n                max_count = current\n            current = 0\n    if current > max_count:\n        max_count = current\n    return max_count",
+    "llm_summary": {
+      "summary": "公开与对抗测试全部通过，代码功能正确，但伪代码未标记为正确。",
+      "process_ok": true,
+      "code_ok": true,
+      "pseudo_correct": false,
+      "root_cause": "题目信息中 pseudo_correct 字段被显式设为 false，但未提供伪代码内容或相关错误说明，无法确认伪代码实际正确性；从测试结果看代码本身无问题。",
+      "debug_hints": [
+        "检查 Producer 提供的伪代码是否与最终代码逻辑一致",
+        "若伪代码存在但未展示，需补充伪代码以复核其正确性",
+        "确认 pseudo_correct=false 是否为标注错误而非真实缺陷"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开与对抗测试均通过，规则层未见高置信缺陷。"
+    ],
+    "sections": {
+      "解题思路": "本题要求计算二进制数组中最大连续 1 的个数。由于数组元素仅为 0 或 1，且需要统计连续出现的 1，最直观且高效的方法是单次线性扫描。使用一个计数器 `current` 记录当前连续 1 的个数，遇到 1 时加一，遇到 0 时将其与历史最大值 `max_count` 比较并更新，随后将 `current` 清零。该算法只需遍历数组一次，无需额外数据结构，适用于本题的数据规模与二进制特性。",
+      "复杂度分析": "时间复杂度：O(n)，其中 n 为数组长度。算法对数组进行了一次完整的线性遍历，每个元素仅被访问一次，常数时间内完成判断与计数更新。\n空间复杂度：O(1)。仅使用了固定数量的整型变量（当前计数与最大计数），不随输入规模增长而分配额外空间。",
+      "关键边界与处理策略": "- 空输入：题目约束 len >= 1，但为健壮性考虑，若传入空列表，循环不执行，直接返回初始 max_count = 0，符合逻辑。\n- 单元素：若数组为 [1]，扫描后 current=1, max_count=1，返回 1；若为 [0]，返回 0，均正确。\n- 全 0 数组：如 [0,0,0]，每次遇 0 更新 max_count 为 0，最终返回 0。\n- 全 1 数组：如 [1,1,1]，current 累加至 3，循环结束前或遇 0 时更新，需在循环结束后再比较一次以防末尾连续 1 未被更新（或在遇 0 时更新并在末尾补更新）。\n- 重复元素：二进制数组天然重复 0/1，算法通过遇 0 重置天然处理重复。\n- 负数/非二进制：题目明确为二进制数组，约束中不含负数，无需处理；若误传其他值，按真值判断（Python 中非 0 为真）可能出错，但依题意不处理。\n- 极值：长度 10^5 全 1，算法 O(n) 可轻松处理，无递归栈溢出风险。",
+      "代码实现": "```python\ndef find_max_consecutive_ones(nums: list) -> int:\n    max_count = 0\n    current = 0\n    for num in nums:\n        if num == 1:\n            current += 1\n        else:\n            if current > max_count:\n                max_count = current\n            current = 0\n    if current > max_count:\n        max_count = current\n    return max_count\n```",
+      "自测说明": "我通过构造多组输入验证了实现：使用题目公开示例 `[1,1,0,1,1,1]` 得 3、`[1,0,1,1,0,1]` 得 2，与期望一致；补充测试了 `[1]` 得 1、`[0]` 得 0、`[0,0,0]` 得 0、`[1,1,1,1]` 得 4、`[1,0,0,1,0,1,1,1,0]` 得 3，均返回正确结果。验证覆盖了单元素、全 0、全 1、末尾连续 1、中间多段连续 1 等边界情形，未发现错误。未进行大规模随机压力测试，但基于逻辑与小规模用例可确认正确性。"
+    }
+  },
+  "elapsed_sec": 60.64,
+  "recorded_at": "2026-09-11T22:48:30"
+}

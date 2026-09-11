@@ -1,0 +1,179 @@
+{
+  "problem_id": "rw-007",
+  "title": "订单状态机合法跳转",
+  "difficulty": "engineering",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "order_transition_ok",
+  "source_path": "datasets\\code\\engineering\\function\\rw_007.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "note": "漏 cancelled 分支"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "false_positive_solution": false,
+    "first_error_step": null,
+    "first_error_section": null,
+    "error_types": []
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求判断订单状态机中从 `from_state` 到 `to_state` 的转移是否合法。状态机定义为：正常流程 `created -> paid -> shipped -> done`；取消流程 `created/paid -> cancelled`。这是一个典型的有向图可达性/邻接关系判断问题，状态数量极少（仅 5 个），因此直接使用哈希表（字典）建立邻接表是最简洁高效的方法。将每个状态作为键，其允许转移到的目标状态集合作为值，查询时只需检查 `to_state` 是否在 `from_state` 对应的集合中即可。\n\n## 2. 复杂度分析\n时间复杂度：O(1)。因为状态总数固定为 5，邻接表查询为常数时间哈希查找，与输入规模无关。\n空间复杂度：O(1)。邻接表仅存储固定数量的状态和转移关系，不随输入变化。\n\n## 3. 关键边界与处理策略\n- 空输入/非法状态：若 `from_state` 或 `to_state` 不在预定义状态集合中（如空字符串、拼写错误），直接返回 `False`，因为非法状态无法参与合法转移。\n- 相同状态转移：如 `created -> created`，未在定义中允许，返回 `False`。\n- 终态转移：`done` 和 `cancelled` 为终态，未定义任何出边，任何从它们出发的转移均返回 `False`。\n- 反向/跨级转移：如 `shipped -> created`、`paid -> done` 等未定义路径，返回 `False`。\n- 取消路径：`created -> cancelled` 和 `paid -> cancelled` 明确允许，返回 `True`；`shipped -> cancelled` 未定义，返回 `False`。\n\n## 4. 代码实现\n```python\ndef order_transition_ok(from_state: str, to_state: str) -> bool:\n    transitions = {\n        'created': {'paid', 'cancelled'},\n        'paid': {'shipped', 'cancelled'},\n        'shipped': {'done'},\n        'done': set(),\n        'cancelled': set()\n    }\n    if from_state not in transitions:\n        return False\n    return to_state in transitions[from_state]\n```\n\n## 5. 自测说明\n我通过构造覆盖所有状态及边界的用例进行验证：\n- 正常路径：`created->paid`、`paid->shipped`、`shipped->done` 均返回 `True`。\n- 取消路径：`created->cancelled`、`paid->cancelled` 返回 `True`；`shipped->cancelled` 返回 `False`。\n- 非法反向：`shipped->created`、`paid->created` 返回 `False`。\n- 终态出边：`done->paid`、`cancelled->created` 返回 `False`。\n- 非法状态：`''->paid`、`created->unknown` 返回 `False`。\n- 自环：`created->created` 返回 `False`。\n验证覆盖了全部 5 个状态、所有定义边及典型非定义边，未发现与预期不符的情况。",
+  "sections": {
+    "解题思路": "本题要求判断订单状态机中从 `from_state` 到 `to_state` 的转移是否合法。状态机定义为：正常流程 `created -> paid -> shipped -> done`；取消流程 `created/paid -> cancelled`。这是一个典型的有向图可达性/邻接关系判断问题，状态数量极少（仅 5 个），因此直接使用哈希表（字典）建立邻接表是最简洁高效的方法。将每个状态作为键，其允许转移到的目标状态集合作为值，查询时只需检查 `to_state` 是否在 `from_state` 对应的集合中即可。",
+    "复杂度分析": "时间复杂度：O(1)。因为状态总数固定为 5，邻接表查询为常数时间哈希查找，与输入规模无关。\n空间复杂度：O(1)。邻接表仅存储固定数量的状态和转移关系，不随输入变化。",
+    "关键边界与处理策略": "- 空输入/非法状态：若 `from_state` 或 `to_state` 不在预定义状态集合中（如空字符串、拼写错误），直接返回 `False`，因为非法状态无法参与合法转移。\n- 相同状态转移：如 `created -> created`，未在定义中允许，返回 `False`。\n- 终态转移：`done` 和 `cancelled` 为终态，未定义任何出边，任何从它们出发的转移均返回 `False`。\n- 反向/跨级转移：如 `shipped -> created`、`paid -> done` 等未定义路径，返回 `False`。\n- 取消路径：`created -> cancelled` 和 `paid -> cancelled` 明确允许，返回 `True`；`shipped -> cancelled` 未定义，返回 `False`。",
+    "代码实现": "```python\ndef order_transition_ok(from_state: str, to_state: str) -> bool:\n    transitions = {\n        'created': {'paid', 'cancelled'},\n        'paid': {'shipped', 'cancelled'},\n        'shipped': {'done'},\n        'done': set(),\n        'cancelled': set()\n    }\n    if from_state not in transitions:\n        return False\n    return to_state in transitions[from_state]\n```",
+    "自测说明": "我通过构造覆盖所有状态及边界的用例进行验证：\n- 正常路径：`created->paid`、`paid->shipped`、`shipped->done` 均返回 `True`。\n- 取消路径：`created->cancelled`、`paid->cancelled` 返回 `True`；`shipped->cancelled` 返回 `False`。\n- 非法反向：`shipped->created`、`paid->created` 返回 `False`。\n- 终态出边：`done->paid`、`cancelled->created` 返回 `False`。\n- 非法状态：`''->paid`、`created->unknown` 返回 `False`。\n- 自环：`created->created` 返回 `False`。\n验证覆盖了全部 5 个状态、所有定义边及典型非定义边，未发现与预期不符的情况。"
+  },
+  "code": "def order_transition_ok(from_state: str, to_state: str) -> bool:\n    transitions = {\n        'created': {'paid', 'cancelled'},\n        'paid': {'shipped', 'cancelled'},\n        'shipped': {'done'},\n        'done': set(),\n        'cancelled': set()\n    }\n    if from_state not in transitions:\n        return False\n    return to_state in transitions[from_state]",
+  "public": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 6,
+    "passed": 6,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "解题思路准确描述了状态机定义、采用邻接表判断转移合法性的方法，与后续实现及测试通过结果一致，无错误类型。",
+      "evidence": "步骤内容称'直接使用哈希表（字典）建立邻接表...查询时只需检查 to_state 是否在 from_state 对应的集合中'，代码实现中 transitions 字典结构与描述完全对应；signals 显示 public 3/3、adversarial 6/6 全部通过，无失败样本。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "状态总数固定为5，使用字典和集合进行成员检查均为常数时间，与输入规模无关，复杂度分析正确。",
+      "evidence": "代码中 transitions 字典固定包含5个键，每个值为固定大小集合；from_state not in transitions 和 to_state in transitions[from_state] 均为哈希查找，时间复杂度 O(1)，空间仅存固定状态转移，O(1)。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "步骤描述的边界处理策略与代码实现完全一致，且测试全部通过，无具体缺陷依据。",
+      "evidence": "步骤称非法状态返回False、相同状态False、终态无出边False、取消路径created/paid->cancelled为True而shipped->cancelled为False；代码transitions字典及not in检查与to_state in set逻辑精确对应；signals显示public 3/3、adversarial 6/6全通过，rule_findings为空。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "代码实现准确映射了题目给定的状态转移规则，且所有公开与对抗测试均通过，无静态分析告警。",
+      "evidence": "transitions 字典中 created->paid/cancelled, paid->shipped/cancelled, shipped->done, done/cancelled 为空集，与题目规则一致；signals 显示 public 3/3、adversarial 6/6 全部通过，rule_findings 为空。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "自测说明中列举的用例与代码实现及题目定义的状态转移规则一致，且执行信号显示所有测试通过，无矛盾证据。",
+      "evidence": "自测说明覆盖 created->paid/paid->shipped/shipped->done 正常路径、created/paid->cancelled 取消路径、shipped->cancelled 为 False、终态出边为 False、非法状态为 False、自环为 False；代码实现中 transitions 字典与上述预期完全匹配；signals 显示 public 3/3、adversarial 6/6 全部通过。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    }
+  ],
+  "checker_report": {
+    "process_ok": true,
+    "code_ok": true,
+    "pseudo_correct": false,
+    "public": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 6,
+      "passed": 6,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [],
+    "forensics": [],
+    "signals": {
+      "problem_id": "rw-007",
+      "entry_point": "order_transition_ok",
+      "max_loop_depth": 0,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "1",
+      "expected_complexity": null,
+      "public": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 6,
+        "passed": 6,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": []
+    },
+    "code": "def order_transition_ok(from_state: str, to_state: str) -> bool:\n    transitions = {\n        'created': {'paid', 'cancelled'},\n        'paid': {'shipped', 'cancelled'},\n        'shipped': {'done'},\n        'done': set(),\n        'cancelled': set()\n    }\n    if from_state not in transitions:\n        return False\n    return to_state in transitions[from_state]",
+    "llm_summary": {
+      "summary": "公开与对抗测试全部通过，函数级订单状态机跳转判定实现正确。",
+      "process_ok": true,
+      "code_ok": true,
+      "pseudo_correct": false,
+      "root_cause": "无失败用例，根因不适用；实现与测试预期一致。",
+      "debug_hints": [
+        "无需调试，可补充边界状态枚举与非法输入类型校验以增强鲁棒性"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开与对抗测试均通过，规则层未见高置信缺陷。"
+    ],
+    "sections": {
+      "解题思路": "本题要求判断订单状态机中从 `from_state` 到 `to_state` 的转移是否合法。状态机定义为：正常流程 `created -> paid -> shipped -> done`；取消流程 `created/paid -> cancelled`。这是一个典型的有向图可达性/邻接关系判断问题，状态数量极少（仅 5 个），因此直接使用哈希表（字典）建立邻接表是最简洁高效的方法。将每个状态作为键，其允许转移到的目标状态集合作为值，查询时只需检查 `to_state` 是否在 `from_state` 对应的集合中即可。",
+      "复杂度分析": "时间复杂度：O(1)。因为状态总数固定为 5，邻接表查询为常数时间哈希查找，与输入规模无关。\n空间复杂度：O(1)。邻接表仅存储固定数量的状态和转移关系，不随输入变化。",
+      "关键边界与处理策略": "- 空输入/非法状态：若 `from_state` 或 `to_state` 不在预定义状态集合中（如空字符串、拼写错误），直接返回 `False`，因为非法状态无法参与合法转移。\n- 相同状态转移：如 `created -> created`，未在定义中允许，返回 `False`。\n- 终态转移：`done` 和 `cancelled` 为终态，未定义任何出边，任何从它们出发的转移均返回 `False`。\n- 反向/跨级转移：如 `shipped -> created`、`paid -> done` 等未定义路径，返回 `False`。\n- 取消路径：`created -> cancelled` 和 `paid -> cancelled` 明确允许，返回 `True`；`shipped -> cancelled` 未定义，返回 `False`。",
+      "代码实现": "```python\ndef order_transition_ok(from_state: str, to_state: str) -> bool:\n    transitions = {\n        'created': {'paid', 'cancelled'},\n        'paid': {'shipped', 'cancelled'},\n        'shipped': {'done'},\n        'done': set(),\n        'cancelled': set()\n    }\n    if from_state not in transitions:\n        return False\n    return to_state in transitions[from_state]\n```",
+      "自测说明": "我通过构造覆盖所有状态及边界的用例进行验证：\n- 正常路径：`created->paid`、`paid->shipped`、`shipped->done` 均返回 `True`。\n- 取消路径：`created->cancelled`、`paid->cancelled` 返回 `True`；`shipped->cancelled` 返回 `False`。\n- 非法反向：`shipped->created`、`paid->created` 返回 `False`。\n- 终态出边：`done->paid`、`cancelled->created` 返回 `False`。\n- 非法状态：`''->paid`、`created->unknown` 返回 `False`。\n- 自环：`created->created` 返回 `False`。\n验证覆盖了全部 5 个状态、所有定义边及典型非定义边，未发现与预期不符的情况。"
+    }
+  },
+  "elapsed_sec": 49.49,
+  "recorded_at": "2026-09-11T23:21:29"
+}

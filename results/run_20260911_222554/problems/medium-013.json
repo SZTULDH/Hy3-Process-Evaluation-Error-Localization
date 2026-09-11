@@ -1,0 +1,183 @@
+{
+  "problem_id": "medium-013",
+  "title": "删除有序数组重复项",
+  "difficulty": "medium",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "remove_duplicates",
+  "source_path": "datasets\\code\\medium\\remove_duplicates.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "first_error_step": null,
+    "error_types": [],
+    "note": "正确对照样本"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "false_positive_solution": false,
+    "first_error_step": null,
+    "first_error_section": null,
+    "error_types": []
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求对列表进行原地去重，并返回去重后的前 k 个元素组成的列表。由于题目强调“原地”，但函数签名要求返回一个列表，我们可以在原数组上通过双指针技巧将不重复的元素移动到数组前部，然后截取前 k 个元素返回。选择双指针算法是因为它只需一次线性扫描，用慢指针指向当前不重复部分的末尾，快指针遍历整个数组，当快指针遇到与慢指针不同的元素时将其赋值到慢指针后一位。该算法适用于本题是因为输入规模最大为 3*10^4，线性时间可以接受，且不需要额外数组空间（除了返回的新列表切片，但切片是返回要求，原地去重过程本身是 O(1) 额外空间）。\n\n## 2. 复杂度分析\n时间复杂度：O(n)，其中 n 为输入列表长度。快慢指针各遍历列表一次，每个元素最多被访问两次（快指针读、慢指针写），因此是线性时间。\n空间复杂度：O(k)，其中 k 为去重后元素个数。原地去重过程仅使用常数个临时变量，但函数要求返回前 k 个元素的列表，Python 中切片 `nums[:k]` 会创建新列表，占用 O(k) 空间；若不计返回值的必需空间，算法本身额外空间为 O(1)。\n\n## 3. 关键边界与处理策略\n- 空输入（len(nums) == 0）：直接返回空列表，慢指针初始为 0，循环不执行，返回 `nums[:0]` 即 `[]`。\n- 单元素（len(nums) == 1）：快指针从 1 开始，循环不执行，返回 `nums[:1]` 即原单元素列表。\n- 重复元素连续或非连续：双指针仅在相邻不同时搬运，保证去重且保持原顺序。\n- 负数与极值：算法基于相等比较，不依赖数值范围，负数、大整数均正常处理。\n- 全部元素相同：慢指针始终为 0，最终返回仅含第一个元素的列表。\n- 已排序/未排序：题目示例为已排序，但算法对未排序列表同样有效（保留首次出现元素）。\n\n## 4. 代码实现\n```python\ndef remove_duplicates(nums: list) -> list:\n    if not nums:\n        return []\n    k = 0\n    for i in range(1, len(nums)):\n        if nums[i] != nums[k]:\n            k += 1\n            nums[k] = nums[i]\n    return nums[:k+1]\n```\n\n## 5. 自测说明\n我通过构造以下用例验证实现：公开示例 `[1,1,2]` 得 `[1,2]`；`[0,0,1,1,1,2,2,3,3,4]` 得 `[0,1,2,3,4]`；空列表 `[]` 得 `[]`；单元素 `[5]` 得 `[5]`；全同 `[7,7,7]` 得 `[7]`；含负数 `[-1,-1,0,2,2]` 得 `[-1,0,2]`。验证覆盖了空、单元素、重复、负数、全同等边界，结果与预期一致，未发现错误。未做大规模随机压力测试，但逻辑上线性扫描可处理 3*10^4 规模。",
+  "sections": {
+    "解题思路": "本题要求对列表进行原地去重，并返回去重后的前 k 个元素组成的列表。由于题目强调“原地”，但函数签名要求返回一个列表，我们可以在原数组上通过双指针技巧将不重复的元素移动到数组前部，然后截取前 k 个元素返回。选择双指针算法是因为它只需一次线性扫描，用慢指针指向当前不重复部分的末尾，快指针遍历整个数组，当快指针遇到与慢指针不同的元素时将其赋值到慢指针后一位。该算法适用于本题是因为输入规模最大为 3*10^4，线性时间可以接受，且不需要额外数组空间（除了返回的新列表切片，但切片是返回要求，原地去重过程本身是 O(1) 额外空间）。",
+    "复杂度分析": "时间复杂度：O(n)，其中 n 为输入列表长度。快慢指针各遍历列表一次，每个元素最多被访问两次（快指针读、慢指针写），因此是线性时间。\n空间复杂度：O(k)，其中 k 为去重后元素个数。原地去重过程仅使用常数个临时变量，但函数要求返回前 k 个元素的列表，Python 中切片 `nums[:k]` 会创建新列表，占用 O(k) 空间；若不计返回值的必需空间，算法本身额外空间为 O(1)。",
+    "关键边界与处理策略": "- 空输入（len(nums) == 0）：直接返回空列表，慢指针初始为 0，循环不执行，返回 `nums[:0]` 即 `[]`。\n- 单元素（len(nums) == 1）：快指针从 1 开始，循环不执行，返回 `nums[:1]` 即原单元素列表。\n- 重复元素连续或非连续：双指针仅在相邻不同时搬运，保证去重且保持原顺序。\n- 负数与极值：算法基于相等比较，不依赖数值范围，负数、大整数均正常处理。\n- 全部元素相同：慢指针始终为 0，最终返回仅含第一个元素的列表。\n- 已排序/未排序：题目示例为已排序，但算法对未排序列表同样有效（保留首次出现元素）。",
+    "代码实现": "```python\ndef remove_duplicates(nums: list) -> list:\n    if not nums:\n        return []\n    k = 0\n    for i in range(1, len(nums)):\n        if nums[i] != nums[k]:\n            k += 1\n            nums[k] = nums[i]\n    return nums[:k+1]\n```",
+    "自测说明": "我通过构造以下用例验证实现：公开示例 `[1,1,2]` 得 `[1,2]`；`[0,0,1,1,1,2,2,3,3,4]` 得 `[0,1,2,3,4]`；空列表 `[]` 得 `[]`；单元素 `[5]` 得 `[5]`；全同 `[7,7,7]` 得 `[7]`；含负数 `[-1,-1,0,2,2]` 得 `[-1,0,2]`。验证覆盖了空、单元素、重复、负数、全同等边界，结果与预期一致，未发现错误。未做大规模随机压力测试，但逻辑上线性扫描可处理 3*10^4 规模。"
+  },
+  "code": "def remove_duplicates(nums: list) -> list:\n    if not nums:\n        return []\n    k = 0\n    for i in range(1, len(nums)):\n        if nums[i] != nums[k]:\n            k += 1\n            nums[k] = nums[i]\n    return nums[:k+1]",
+  "public": {
+    "total": 2,
+    "passed": 2,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "解题思路正确描述了双指针原地去重算法，与代码实现一致，且复杂度分析和空间说明符合题目O(n)要求。",
+      "evidence": "步骤内容称'用慢指针指向当前不重复部分的末尾，快指针遍历整个数组，当快指针遇到与慢指针不同的元素时将其赋值到慢指针后一位'，代码实现中k为慢指针、i为快指针且逻辑完全对应；signals显示public和adversarial测试全部通过，claimed_complexity为n与expected_complexity O(n)一致。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "复杂度分析步骤对时间和空间的描述与代码实现及题目期望一致，快慢指针单次遍历确为O(n)，切片返回前k个元素占O(k)空间且额外空间O(1)的说明准确。",
+      "evidence": "步骤内容称'时间复杂度：O(n)...快慢指针各遍历列表一次'；代码为单层for循环遍历一次（max_loop_depth=1）；空间部分指出'切片nums[:k]会创建新列表占用O(k)空间，额外空间O(1)'，与代码return nums[:k+1]及原地修改逻辑相符；signals中claimed_complexity为'n'、expected_complexity为'O(n)'且测试全通过。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "该步骤对空输入、单元素、重复元素、负数极值、全相同及未排序等边界的描述与代码实现及测试通过信号一致。",
+      "evidence": "代码实现中 if not nums: return [] 对应空输入；k=0 且循环从1开始对应单元素不执行；nums[i]!=nums[k] 比较不依赖数值范围；signals 显示 public 2/2、adversarial 3/3 全部通过。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "代码实现使用双指针原地去重，逻辑正确且通过全部测试，符合O(n)复杂度要求。",
+      "evidence": "signals显示public和adversarial测试均全部通过（passed: 2/2 和 3/3），代码遍历一次数组，k指针记录唯一元素位置，返回nums[:k+1]正确。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "suspicious",
+      "confidence": 0.6,
+      "error_types": [
+        "测试覆盖不足导致的伪正确"
+      ],
+      "reason": "自测说明仅列举了少量手工用例且未做大规模随机压力测试，虽当前信号显示全部通过，但覆盖不足可能隐藏未测出的问题。",
+      "evidence": "步骤内容中写明'未做大规模随机压力测试，但逻辑上线性扫描可处理 3*10^4 规模'，且仅构造了6个具体用例；signals中public和adversarial虽全通过，但样本量小（2+3）。",
+      "llm_verdict": "suspicious",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    }
+  ],
+  "checker_report": {
+    "process_ok": true,
+    "code_ok": true,
+    "pseudo_correct": false,
+    "public": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [],
+    "forensics": [],
+    "signals": {
+      "problem_id": "medium-013",
+      "entry_point": "remove_duplicates",
+      "max_loop_depth": 1,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "n",
+      "expected_complexity": "O(n)",
+      "public": {
+        "total": 2,
+        "passed": 2,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": []
+    },
+    "code": "def remove_duplicates(nums: list) -> list:\n    if not nums:\n        return []\n    k = 0\n    for i in range(1, len(nums)):\n        if nums[i] != nums[k]:\n            k += 1\n            nums[k] = nums[i]\n    return nums[:k+1]",
+    "llm_summary": {
+      "summary": "公开与对抗测试全部通过，函数实现正确，无状态或顺序依赖问题。",
+      "process_ok": true,
+      "code_ok": true,
+      "pseudo_correct": false,
+      "root_cause": "无失败用例，实现符合题目要求（双指针原地删除有序数组重复项）。",
+      "debug_hints": [
+        "无需调试，可补充边界测试如空数组、单元素、全重复等以进一步验证鲁棒性"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开与对抗测试均通过，规则层未见高置信缺陷。"
+    ],
+    "sections": {
+      "解题思路": "本题要求对列表进行原地去重，并返回去重后的前 k 个元素组成的列表。由于题目强调“原地”，但函数签名要求返回一个列表，我们可以在原数组上通过双指针技巧将不重复的元素移动到数组前部，然后截取前 k 个元素返回。选择双指针算法是因为它只需一次线性扫描，用慢指针指向当前不重复部分的末尾，快指针遍历整个数组，当快指针遇到与慢指针不同的元素时将其赋值到慢指针后一位。该算法适用于本题是因为输入规模最大为 3*10^4，线性时间可以接受，且不需要额外数组空间（除了返回的新列表切片，但切片是返回要求，原地去重过程本身是 O(1) 额外空间）。",
+      "复杂度分析": "时间复杂度：O(n)，其中 n 为输入列表长度。快慢指针各遍历列表一次，每个元素最多被访问两次（快指针读、慢指针写），因此是线性时间。\n空间复杂度：O(k)，其中 k 为去重后元素个数。原地去重过程仅使用常数个临时变量，但函数要求返回前 k 个元素的列表，Python 中切片 `nums[:k]` 会创建新列表，占用 O(k) 空间；若不计返回值的必需空间，算法本身额外空间为 O(1)。",
+      "关键边界与处理策略": "- 空输入（len(nums) == 0）：直接返回空列表，慢指针初始为 0，循环不执行，返回 `nums[:0]` 即 `[]`。\n- 单元素（len(nums) == 1）：快指针从 1 开始，循环不执行，返回 `nums[:1]` 即原单元素列表。\n- 重复元素连续或非连续：双指针仅在相邻不同时搬运，保证去重且保持原顺序。\n- 负数与极值：算法基于相等比较，不依赖数值范围，负数、大整数均正常处理。\n- 全部元素相同：慢指针始终为 0，最终返回仅含第一个元素的列表。\n- 已排序/未排序：题目示例为已排序，但算法对未排序列表同样有效（保留首次出现元素）。",
+      "代码实现": "```python\ndef remove_duplicates(nums: list) -> list:\n    if not nums:\n        return []\n    k = 0\n    for i in range(1, len(nums)):\n        if nums[i] != nums[k]:\n            k += 1\n            nums[k] = nums[i]\n    return nums[:k+1]\n```",
+      "自测说明": "我通过构造以下用例验证实现：公开示例 `[1,1,2]` 得 `[1,2]`；`[0,0,1,1,1,2,2,3,3,4]` 得 `[0,1,2,3,4]`；空列表 `[]` 得 `[]`；单元素 `[5]` 得 `[5]`；全同 `[7,7,7]` 得 `[7]`；含负数 `[-1,-1,0,2,2]` 得 `[-1,0,2]`。验证覆盖了空、单元素、重复、负数、全同等边界，结果与预期一致，未发现错误。未做大规模随机压力测试，但逻辑上线性扫描可处理 3*10^4 规模。"
+    }
+  },
+  "elapsed_sec": 47.05,
+  "recorded_at": "2026-09-11T22:46:44"
+}

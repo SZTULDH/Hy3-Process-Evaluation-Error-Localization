@@ -1,0 +1,186 @@
+{
+  "problem_id": "adversarial-011",
+  "title": "最大子数组和（暴力）",
+  "difficulty": "adversarial",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "max_sub_array_adv",
+  "source_path": "datasets\\code\\adversarial\\max_sub_array_adv.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": false,
+    "first_error_step": "step_1_approach",
+    "error_types": [
+      "算法选择错误",
+      "复杂度分析错误"
+    ],
+    "note": "O(n^2) 暴力"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "false_positive_solution": false,
+    "first_error_step": null,
+    "first_error_section": null,
+    "error_types": []
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求寻找连续子数组的最大和，且期望时间复杂度为 O(n)。我选择使用 Kadane 算法（动态规划的一种特例）。该算法维护两个变量：当前连续子数组的最大和 `current_max` 与全局最大和 `global_max`。遍历数组时，对于每个元素，判断是将其加入之前的子数组（即 `current_max + num`）还是从该元素重新开始（即 `num`），取两者较大值更新 `current_max`；随后用 `current_max` 更新 `global_max`。Kadane 算法只需一次线性扫描，无需额外数组空间，完美契合 O(n) 时间要求与题目约束。\n\n## 2. 复杂度分析\n时间复杂度：O(n)，其中 n 为数组长度。算法仅对数组进行一次从头到尾的遍历，每次迭代执行常数次比较与加法操作，因此总操作次数与 n 成正比。\n空间复杂度：O(1)。仅使用了固定数量的整型变量（`current_max`、`global_max` 及循环变量），不随输入规模增长而分配额外空间。\n\n## 3. 关键边界与处理策略\n- 空输入：题目约束 len(nums) >= 1，故无需处理空列表；若防御性考虑可抛异常，但依约束直接取首元素初始化。\n- 单元素：如 `[1]`，初始化 `current_max` 与 `global_max` 均为该元素，遍历后直接返回，结果正确。\n- 全负数：如 `[-3, -2, -5]`，Kadane 算法会在每个元素处比较“续接”与“重启”，最终保留最大的单个负数，不会错误返回 0。\n- 重复元素：如 `[2,2,2]`，算法正常累加，得到全数组和，无特殊逻辑。\n- 极值：元素可能达 -10^4 或 10^4 量级（题目未给但常见），Python int 无溢出问题；长度 10^5 在 O(n) 下可轻松处理。\n- 混合正负：如公开用例，算法通过重启机制跳过负前缀，正确捕获 `[4,-1,2,1]` 之和 6。\n\n## 4. 代码实现\n```python\ndef max_sub_array_adv(nums: list) -> int:\n    if not nums:\n        return 0\n    current_max = nums[0]\n    global_max = nums[0]\n    for num in nums[1:]:\n        current_max = max(num, current_max + num)\n        global_max = max(global_max, current_max)\n    return global_max\n```\n\n## 5. 自测说明\n我依据题目给出的公开测试用例在脑内/本地解释器中验证了实现：\n- 输入 `[-2,1,-3,4,-1,2,1,-5,4]`，手动模拟 Kadane 过程得 `global_max=6`，与期望输出一致。\n- 输入 `[1]`，返回 `1`，与期望输出一致。\n此外，我构造了全负用例 `[-5,-2,-9]` 验证返回 `-2`（最大单元素），以及单元素负 `[-3]` 返回 `-3`，均符合预期。验证覆盖：公开用例、单元素、全负数、重复元素（如 `[3,3,3]` 返回 9）。未进行大规模随机压力测试，但算法逻辑与复杂度保证在约束内正确。",
+  "sections": {
+    "解题思路": "本题要求寻找连续子数组的最大和，且期望时间复杂度为 O(n)。我选择使用 Kadane 算法（动态规划的一种特例）。该算法维护两个变量：当前连续子数组的最大和 `current_max` 与全局最大和 `global_max`。遍历数组时，对于每个元素，判断是将其加入之前的子数组（即 `current_max + num`）还是从该元素重新开始（即 `num`），取两者较大值更新 `current_max`；随后用 `current_max` 更新 `global_max`。Kadane 算法只需一次线性扫描，无需额外数组空间，完美契合 O(n) 时间要求与题目约束。",
+    "复杂度分析": "时间复杂度：O(n)，其中 n 为数组长度。算法仅对数组进行一次从头到尾的遍历，每次迭代执行常数次比较与加法操作，因此总操作次数与 n 成正比。\n空间复杂度：O(1)。仅使用了固定数量的整型变量（`current_max`、`global_max` 及循环变量），不随输入规模增长而分配额外空间。",
+    "关键边界与处理策略": "- 空输入：题目约束 len(nums) >= 1，故无需处理空列表；若防御性考虑可抛异常，但依约束直接取首元素初始化。\n- 单元素：如 `[1]`，初始化 `current_max` 与 `global_max` 均为该元素，遍历后直接返回，结果正确。\n- 全负数：如 `[-3, -2, -5]`，Kadane 算法会在每个元素处比较“续接”与“重启”，最终保留最大的单个负数，不会错误返回 0。\n- 重复元素：如 `[2,2,2]`，算法正常累加，得到全数组和，无特殊逻辑。\n- 极值：元素可能达 -10^4 或 10^4 量级（题目未给但常见），Python int 无溢出问题；长度 10^5 在 O(n) 下可轻松处理。\n- 混合正负：如公开用例，算法通过重启机制跳过负前缀，正确捕获 `[4,-1,2,1]` 之和 6。",
+    "代码实现": "```python\ndef max_sub_array_adv(nums: list) -> int:\n    if not nums:\n        return 0\n    current_max = nums[0]\n    global_max = nums[0]\n    for num in nums[1:]:\n        current_max = max(num, current_max + num)\n        global_max = max(global_max, current_max)\n    return global_max\n```",
+    "自测说明": "我依据题目给出的公开测试用例在脑内/本地解释器中验证了实现：\n- 输入 `[-2,1,-3,4,-1,2,1,-5,4]`，手动模拟 Kadane 过程得 `global_max=6`，与期望输出一致。\n- 输入 `[1]`，返回 `1`，与期望输出一致。\n此外，我构造了全负用例 `[-5,-2,-9]` 验证返回 `-2`（最大单元素），以及单元素负 `[-3]` 返回 `-3`，均符合预期。验证覆盖：公开用例、单元素、全负数、重复元素（如 `[3,3,3]` 返回 9）。未进行大规模随机压力测试，但算法逻辑与复杂度保证在约束内正确。"
+  },
+  "code": "def max_sub_array_adv(nums: list) -> int:\n    if not nums:\n        return 0\n    current_max = nums[0]\n    global_max = nums[0]\n    for num in nums[1:]:\n        current_max = max(num, current_max + num)\n        global_max = max(global_max, current_max)\n    return global_max",
+  "public": {
+    "total": 2,
+    "passed": 2,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 2,
+    "passed": 2,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "解题思路正确描述了 Kadane 算法的核心逻辑与 O(n) 复杂度，且与提供的代码实现一致，测试全部通过。",
+      "evidence": "步骤内容说明维护 current_max 和 global_max、遍历取 max(num, current_max+num) 并更新 global_max；代码实现 for num in nums[1:]: current_max = max(num, current_max + num); global_max = max(global_max, current_max)；signals 显示 public 和 adversarial 测试均 all_passed=true，claimed_complexity=n 匹配 expected_complexity=O(n)。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "valid",
+      "confidence": 0.98,
+      "error_types": [],
+      "reason": "复杂度分析步骤对时间和空间复杂度的描述与代码实现及执行信号一致，单次遍历、常数变量，符合O(n)时间和O(1)空间。",
+      "evidence": "步骤内容称'仅对数组进行一次从头到尾的遍历'、'仅使用了固定数量的整型变量'，代码实现为for num in nums[1:]单层循环且只用了current_max/global_max等变量；signals显示max_loop_depth=1、claimed_complexity=n、expected_complexity=O(n)、测试全通过。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "该步骤对空输入、单元素、全负数、重复元素、极值和混合正负的边界讨论均与题目约束及所给 Kadane 实现一致，且测试信号显示全部通过。",
+      "evidence": "步骤称'空输入：题目约束 len(nums) >= 1，故无需处理空列表'，而代码中有 `if not nums: return 0` 防御；但步骤明确说'依约束直接取首元素初始化'且'若防御性考虑可抛异常'，描述与实现有轻微不一致但非缺陷；signals 显示 public 和 adversarial 测试 all_passed=true，无失败样本。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "代码实现正确使用了Kadane算法，处理了空数组边界，循环为单层O(n)，且所有公开与对抗测试均通过。",
+      "evidence": "signals显示public和adversarial测试各2个全部passed，max_loop_depth=1，代码对空列表返回0，循环从nums[1:]开始并正确更新current_max和global_max。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "自测说明中描述的手动模拟与构造用例结果与代码实现及信号中公开/对抗测试全通过一致，且明确说明了未做大规模压力测试但不影响该步骤描述成立。",
+      "evidence": "步骤内容称输入[-2,1,-3,4,-1,2,1,-5,4]得6、[1]得1、[-5,-2,-9]得-2、[-3]得-3、[3,3,3]得9；代码实现逻辑为Kadane且signals显示public与adversarial均all_passed=true，无失败样本。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    }
+  ],
+  "checker_report": {
+    "process_ok": true,
+    "code_ok": true,
+    "pseudo_correct": false,
+    "public": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [],
+    "forensics": [],
+    "signals": {
+      "problem_id": "adversarial-011",
+      "entry_point": "max_sub_array_adv",
+      "max_loop_depth": 1,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "n",
+      "expected_complexity": "O(n)",
+      "public": {
+        "total": 2,
+        "passed": 2,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 2,
+        "passed": 2,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": []
+    },
+    "code": "def max_sub_array_adv(nums: list) -> int:\n    if not nums:\n        return 0\n    current_max = nums[0]\n    global_max = nums[0]\n    for num in nums[1:]:\n        current_max = max(num, current_max + num)\n        global_max = max(global_max, current_max)\n    return global_max",
+    "llm_summary": {
+      "summary": "公开与对抗测试均全部通过，代码功能正确，但伪代码正确性标记异常为false。",
+      "process_ok": true,
+      "code_ok": true,
+      "pseudo_correct": false,
+      "root_cause": "题目信息中 pseudo_correct 字段被显式设为 false，但公开/对抗测试均全过、code_ok 为 true，说明实际代码正确而伪代码正确性标注与执行结果不一致（可能为标注错误或伪代码未参与执行验证）。",
+      "debug_hints": [
+        "核对 pseudo_correct 字段的判定逻辑：为何在测试全过、code_ok=true 时仍标记为 false",
+        "若伪代码仅用于说明而未执行，应明确其不参与正确性判定，避免误导",
+        "确认题目配置中 pseudo_correct 是否为人工误标或自动化流水线缺陷"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开与对抗测试均通过，规则层未见高置信缺陷。"
+    ],
+    "sections": {
+      "解题思路": "本题要求寻找连续子数组的最大和，且期望时间复杂度为 O(n)。我选择使用 Kadane 算法（动态规划的一种特例）。该算法维护两个变量：当前连续子数组的最大和 `current_max` 与全局最大和 `global_max`。遍历数组时，对于每个元素，判断是将其加入之前的子数组（即 `current_max + num`）还是从该元素重新开始（即 `num`），取两者较大值更新 `current_max`；随后用 `current_max` 更新 `global_max`。Kadane 算法只需一次线性扫描，无需额外数组空间，完美契合 O(n) 时间要求与题目约束。",
+      "复杂度分析": "时间复杂度：O(n)，其中 n 为数组长度。算法仅对数组进行一次从头到尾的遍历，每次迭代执行常数次比较与加法操作，因此总操作次数与 n 成正比。\n空间复杂度：O(1)。仅使用了固定数量的整型变量（`current_max`、`global_max` 及循环变量），不随输入规模增长而分配额外空间。",
+      "关键边界与处理策略": "- 空输入：题目约束 len(nums) >= 1，故无需处理空列表；若防御性考虑可抛异常，但依约束直接取首元素初始化。\n- 单元素：如 `[1]`，初始化 `current_max` 与 `global_max` 均为该元素，遍历后直接返回，结果正确。\n- 全负数：如 `[-3, -2, -5]`，Kadane 算法会在每个元素处比较“续接”与“重启”，最终保留最大的单个负数，不会错误返回 0。\n- 重复元素：如 `[2,2,2]`，算法正常累加，得到全数组和，无特殊逻辑。\n- 极值：元素可能达 -10^4 或 10^4 量级（题目未给但常见），Python int 无溢出问题；长度 10^5 在 O(n) 下可轻松处理。\n- 混合正负：如公开用例，算法通过重启机制跳过负前缀，正确捕获 `[4,-1,2,1]` 之和 6。",
+      "代码实现": "```python\ndef max_sub_array_adv(nums: list) -> int:\n    if not nums:\n        return 0\n    current_max = nums[0]\n    global_max = nums[0]\n    for num in nums[1:]:\n        current_max = max(num, current_max + num)\n        global_max = max(global_max, current_max)\n    return global_max\n```",
+      "自测说明": "我依据题目给出的公开测试用例在脑内/本地解释器中验证了实现：\n- 输入 `[-2,1,-3,4,-1,2,1,-5,4]`，手动模拟 Kadane 过程得 `global_max=6`，与期望输出一致。\n- 输入 `[1]`，返回 `1`，与期望输出一致。\n此外，我构造了全负用例 `[-5,-2,-9]` 验证返回 `-2`（最大单元素），以及单元素负 `[-3]` 返回 `-3`，均符合预期。验证覆盖：公开用例、单元素、全负数、重复元素（如 `[3,3,3]` 返回 9）。未进行大规模随机压力测试，但算法逻辑与复杂度保证在约束内正确。"
+    }
+  },
+  "elapsed_sec": 65.29,
+  "recorded_at": "2026-09-11T23:10:46"
+}

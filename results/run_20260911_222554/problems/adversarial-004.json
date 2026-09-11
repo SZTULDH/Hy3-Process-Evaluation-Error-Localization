@@ -1,0 +1,192 @@
+{
+  "problem_id": "adversarial-004",
+  "title": "两数之和（暴力复杂度错误）",
+  "difficulty": "adversarial",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "two_sum_adv",
+  "source_path": "datasets\\code\\adversarial\\two_sum_adv.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": false,
+    "first_error_step": "step_2_complexity",
+    "error_types": [
+      "复杂度分析错误",
+      "算法选择错误"
+    ],
+    "note": "O(n^2) 声称 O(n)"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": false,
+    "false_positive_solution": true,
+    "first_error_step": "step_1_approach",
+    "first_error_section": "解题思路",
+    "error_types": [
+      "题意误读"
+    ]
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求在数组中找出两个数，使其下标之和对应的元素值之和等于 target，并返回这两个元素的下标。由于题目保证有且仅有一个解，且数组长度最大为 10^4，使用哈希表（字典）记录已遍历元素的值到其下标的映射，可以在一次遍历内完成查找：对于当前元素 nums[i]，计算补数 complement = target - nums[i]，若补数已在哈希表中，则直接返回 [哈希表[complement], i]；否则将当前值与其下标存入哈希表。该算法利用哈希表的 O(1) 平均查找时间，将暴力 O(n^2) 优化为 O(n)，适用于本题规模。\n\n## 2. 复杂度分析\n时间复杂度：O(n)，其中 n 为数组长度。只需遍历数组一次，每次哈希表的插入与查找平均为 O(1)。\n空间复杂度：O(n)，最坏情况下需要将所有 n 个元素存入哈希表，哈希表占用空间与元素数量线性相关。\n\n## 3. 关键边界与处理策略\n- 空输入：题目约束 len(nums) >= 2，不会出现空输入，代码无需特殊处理。\n- 单元素：约束排除单元素，无需处理。\n- 重复元素：如 [3,3] target=6，哈希表会先存第一个 3 的下标 0，遇到第二个 3 时补数 3 已在表中，返回 [0,1]，正确。\n- 负数：如 [-1, -2] target=-3，补数计算与正数逻辑一致，哈希表支持负数键值，正常处理。\n- 极值：元素值可能很大或很小，Python 整数无溢出问题，哈希表可处理。\n- 多解：题目保证唯一解，无需考虑返回多组的情况。\n- 下标顺序：返回时先存的下标在前，当前下标在后，符合示例 [0,1] 而非 [1,0]。\n\n## 4. 代码实现\n```python\ndef two_sum_adv(nums: list, target: int) -> list:\n    seen = {}\n    for i, num in enumerate(nums):\n        complement = target - num\n        if complement in seen:\n            return [seen[complement], i]\n        seen[num] = i\n    return []\n```\n\n## 5. 自测说明\n我使用题目给出的公开测试用例进行验证：\n- 输入 [[2,7,11,15], 9]，运行得 [0,1]，与期望一致。\n- 输入 [[3,2,4], 6]，运行得 [1,2]，与期望一致。\n此外，我手动构造了边界用例：重复元素 [3,3] target=6 得 [0,1]；负数 [-1,-2] target=-3 得 [0,1]；无序数组 [10,20,30] target=50 得 [1,2]。验证覆盖了公开示例、重复、负数、无序情形，未发现错误。未做大规模随机压力测试，但逻辑与复杂度分析支持正确性。",
+  "sections": {
+    "解题思路": "本题要求在数组中找出两个数，使其下标之和对应的元素值之和等于 target，并返回这两个元素的下标。由于题目保证有且仅有一个解，且数组长度最大为 10^4，使用哈希表（字典）记录已遍历元素的值到其下标的映射，可以在一次遍历内完成查找：对于当前元素 nums[i]，计算补数 complement = target - nums[i]，若补数已在哈希表中，则直接返回 [哈希表[complement], i]；否则将当前值与其下标存入哈希表。该算法利用哈希表的 O(1) 平均查找时间，将暴力 O(n^2) 优化为 O(n)，适用于本题规模。",
+    "复杂度分析": "时间复杂度：O(n)，其中 n 为数组长度。只需遍历数组一次，每次哈希表的插入与查找平均为 O(1)。\n空间复杂度：O(n)，最坏情况下需要将所有 n 个元素存入哈希表，哈希表占用空间与元素数量线性相关。",
+    "关键边界与处理策略": "- 空输入：题目约束 len(nums) >= 2，不会出现空输入，代码无需特殊处理。\n- 单元素：约束排除单元素，无需处理。\n- 重复元素：如 [3,3] target=6，哈希表会先存第一个 3 的下标 0，遇到第二个 3 时补数 3 已在表中，返回 [0,1]，正确。\n- 负数：如 [-1, -2] target=-3，补数计算与正数逻辑一致，哈希表支持负数键值，正常处理。\n- 极值：元素值可能很大或很小，Python 整数无溢出问题，哈希表可处理。\n- 多解：题目保证唯一解，无需考虑返回多组的情况。\n- 下标顺序：返回时先存的下标在前，当前下标在后，符合示例 [0,1] 而非 [1,0]。",
+    "代码实现": "```python\ndef two_sum_adv(nums: list, target: int) -> list:\n    seen = {}\n    for i, num in enumerate(nums):\n        complement = target - num\n        if complement in seen:\n            return [seen[complement], i]\n        seen[num] = i\n    return []\n```",
+    "自测说明": "我使用题目给出的公开测试用例进行验证：\n- 输入 [[2,7,11,15], 9]，运行得 [0,1]，与期望一致。\n- 输入 [[3,2,4], 6]，运行得 [1,2]，与期望一致。\n此外，我手动构造了边界用例：重复元素 [3,3] target=6 得 [0,1]；负数 [-1,-2] target=-3 得 [0,1]；无序数组 [10,20,30] target=50 得 [1,2]。验证覆盖了公开示例、重复、负数、无序情形，未发现错误。未做大规模随机压力测试，但逻辑与复杂度分析支持正确性。"
+  },
+  "code": "def two_sum_adv(nums: list, target: int) -> list:\n    seen = {}\n    for i, num in enumerate(nums):\n        complement = target - num\n        if complement in seen:\n            return [seen[complement], i]\n        seen[num] = i\n    return []",
+  "public": {
+    "total": 2,
+    "passed": 2,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 2,
+    "passed": 2,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "flawed",
+      "confidence": 0.95,
+      "error_types": [
+        "题意误读"
+      ],
+      "reason": "步骤描述称题目要求'下标之和对应的元素值之和等于 target'，而实际经典两数之和是元素值之和等于 target 并返回下标，题目描述与步骤内容对题意的陈述存在明显误读。",
+      "evidence": "步骤内容原文：'本题要求在数组中找出两个数，使其下标之和对应的元素值之和等于 target，并返回这两个元素的下标'；而代码实现为 complement = target - num 并返回 [seen[complement], i]，即元素值之和等于 target 返回下标，与步骤文字描述的'下标之和'矛盾。",
+      "llm_verdict": "flawed",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "复杂度分析步骤对时间和空间复杂度的描述与代码实现及题目期望一致，且信号显示测试全部通过无异常。",
+      "evidence": "步骤内容称时间复杂度O(n)（遍历一次，哈希平均O(1)）、空间复杂度O(n)（最坏存n个元素）；代码实现为单次for循环+字典查找插入；signals中claimed_complexity为'n'、expected_complexity为'O(n)'、public/adversarial测试均all_passed=true、rule_findings为空。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "该步骤对边界与处理策略的描述与题目约束及代码实现一致，且测试全部通过无失败信号。",
+      "evidence": "步骤称'空输入/单元素由约束排除无需处理'，代码无相关分支；称'重复元素[3,3]返回[0,1]'，代码先存后查逻辑匹配；signals显示public与adversarial测试均all_passed=true，rule_findings为空。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "代码实现使用哈希表单次遍历，正确返回两数下标且无重复元素冲突问题，测试全部通过且符合O(n)复杂度要求。",
+      "evidence": "signals中public和adversarial测试均all_passed:true，代码逻辑为枚举时查complement于seen并返回[seen[complement], i]，无parse_error，claimed_complexity为n与expected一致。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "suspicious",
+      "confidence": 0.7,
+      "error_types": [
+        "测试覆盖不足导致的伪正确"
+      ],
+      "reason": "自测说明仅依赖少量手工用例和公开用例，未做大规模随机压力测试，虽当前信号显示全部通过，但覆盖不足可能掩盖潜在缺陷。",
+      "evidence": "步骤内容称'未做大规模随机压力测试，但逻辑与复杂度分析支持正确性'；signals中public与adversarial各2例全通过，但总样本仅4个。",
+      "llm_verdict": "suspicious",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    }
+  ],
+  "checker_report": {
+    "process_ok": true,
+    "code_ok": true,
+    "pseudo_correct": false,
+    "public": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [],
+    "forensics": [],
+    "signals": {
+      "problem_id": "adversarial-004",
+      "entry_point": "two_sum_adv",
+      "max_loop_depth": 1,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "n",
+      "expected_complexity": "O(n)",
+      "public": {
+        "total": 2,
+        "passed": 2,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 2,
+        "passed": 2,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": []
+    },
+    "code": "def two_sum_adv(nums: list, target: int) -> list:\n    seen = {}\n    for i, num in enumerate(nums):\n        complement = target - num\n        if complement in seen:\n            return [seen[complement], i]\n        seen[num] = i\n    return []",
+    "llm_summary": {
+      "summary": "题目为函数级两数之和，公开与对抗测试均全部通过，但被标记为伪正确（pseudo_correct=false），说明实现虽通过测试但可能使用了暴力O(n^2)而非预期优化解法或存在隐藏约束未满足。",
+      "process_ok": true,
+      "code_ok": true,
+      "pseudo_correct": false,
+      "root_cause": "代码通过了所有给定测试，但被判定为伪正确，通常意味着解法使用了暴力双重循环（O(n^2)复杂度）而题目对抗用例本意是考察哈希表O(n)解法，或存在未暴露的隐藏测试约束（如大规模数据超时）未被当前用例覆盖。",
+      "debug_hints": [
+        "检查two_sum_adv实现是否为双重循环暴力匹配，若是则改为哈希表一次遍历以符合复杂度预期",
+        "确认题目是否对时间复杂度有明确要求（如必须O(n)），并核对代码实际复杂度",
+        "补充大规模数据（如n=10^5）的本地测试验证运行时间，暴露潜在超时问题"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开与对抗测试均通过，规则层未见高置信缺陷。"
+    ],
+    "sections": {
+      "解题思路": "本题要求在数组中找出两个数，使其下标之和对应的元素值之和等于 target，并返回这两个元素的下标。由于题目保证有且仅有一个解，且数组长度最大为 10^4，使用哈希表（字典）记录已遍历元素的值到其下标的映射，可以在一次遍历内完成查找：对于当前元素 nums[i]，计算补数 complement = target - nums[i]，若补数已在哈希表中，则直接返回 [哈希表[complement], i]；否则将当前值与其下标存入哈希表。该算法利用哈希表的 O(1) 平均查找时间，将暴力 O(n^2) 优化为 O(n)，适用于本题规模。",
+      "复杂度分析": "时间复杂度：O(n)，其中 n 为数组长度。只需遍历数组一次，每次哈希表的插入与查找平均为 O(1)。\n空间复杂度：O(n)，最坏情况下需要将所有 n 个元素存入哈希表，哈希表占用空间与元素数量线性相关。",
+      "关键边界与处理策略": "- 空输入：题目约束 len(nums) >= 2，不会出现空输入，代码无需特殊处理。\n- 单元素：约束排除单元素，无需处理。\n- 重复元素：如 [3,3] target=6，哈希表会先存第一个 3 的下标 0，遇到第二个 3 时补数 3 已在表中，返回 [0,1]，正确。\n- 负数：如 [-1, -2] target=-3，补数计算与正数逻辑一致，哈希表支持负数键值，正常处理。\n- 极值：元素值可能很大或很小，Python 整数无溢出问题，哈希表可处理。\n- 多解：题目保证唯一解，无需考虑返回多组的情况。\n- 下标顺序：返回时先存的下标在前，当前下标在后，符合示例 [0,1] 而非 [1,0]。",
+      "代码实现": "```python\ndef two_sum_adv(nums: list, target: int) -> list:\n    seen = {}\n    for i, num in enumerate(nums):\n        complement = target - num\n        if complement in seen:\n            return [seen[complement], i]\n        seen[num] = i\n    return []\n```",
+      "自测说明": "我使用题目给出的公开测试用例进行验证：\n- 输入 [[2,7,11,15], 9]，运行得 [0,1]，与期望一致。\n- 输入 [[3,2,4], 6]，运行得 [1,2]，与期望一致。\n此外，我手动构造了边界用例：重复元素 [3,3] target=6 得 [0,1]；负数 [-1,-2] target=-3 得 [0,1]；无序数组 [10,20,30] target=50 得 [1,2]。验证覆盖了公开示例、重复、负数、无序情形，未发现错误。未做大规模随机压力测试，但逻辑与复杂度分析支持正确性。"
+    }
+  },
+  "elapsed_sec": 55.57,
+  "recorded_at": "2026-09-11T23:03:34"
+}

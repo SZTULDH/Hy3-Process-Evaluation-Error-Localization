@@ -1,0 +1,182 @@
+{
+  "problem_id": "easy-009",
+  "title": "判断全正数",
+  "difficulty": "easy",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "all_positive",
+  "source_path": "datasets\\code\\easy\\all_positive.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "first_error_step": null,
+    "error_types": [],
+    "note": "正确对照样本"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "false_positive_solution": false,
+    "first_error_step": null,
+    "first_error_section": null,
+    "error_types": []
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求判断一个列表中的所有元素是否都严格大于 0，空列表视为 True。由于只需要遍历列表一次并检查每个元素是否满足条件，使用简单的线性扫描（for 循环或内置 all 函数）即可。算法选择：遍历列表，若遇到任何元素 <= 0 立即返回 False；遍历结束未发现则返回 True。数据结构为原始列表，无需额外结构。该方法的正确性基于全称量词的短路求值，适用于本题的小规模约束（长度最多 10^4）。\n\n## 2. 复杂度分析\n时间复杂度：O(n)，其中 n 为列表长度。最坏情况下需要检查每个元素一次，最好情况（首元素非正或空列表）为 O(1)。\n空间复杂度：O(1)，仅使用常数级别的临时变量（如循环变量），不随输入规模增长。\n\n## 3. 关键边界与处理策略\n- 空列表：len(nums) == 0，按题意直接返回 True，循环不执行自然满足。\n- 单元素列表：若元素 > 0 返回 True，否则 False，线性扫描可正确处理。\n- 重复元素：如 [2,2,2] 全正返回 True；[2,0,2] 含 0 返回 False，扫描遇到 0 即短路。\n- 负数：如 [-1, 2] 遇到 -1 返回 False，符合严格大于 0 的要求。\n- 极值：元素可能很大（如 10^9）或很小（如 -10^9），Python 整数比较无溢出问题，直接比较即可。\n- 非数字类型：题目隐含输入为数字列表，不作特殊处理，若混入非数字会抛 TypeError，但不在约束内。\n\n## 4. 代码实现\n```python\ndef all_positive(nums: list) -> bool:\n    for x in nums:\n        if x <= 0:\n            return False\n    return True\n```\n\n## 5. 自测说明\n我通过手动构造用例验证实现：\n- 输入 [1,2,3] 得 True，与公开示例一致；\n- 输入 [1,0,2] 得 False，与公开示例一致；\n- 输入 [] 得 True，与公开示例一致；\n- 补充 [-5] 得 False，[0] 得 False，[10] 得 True，[3,-1,4] 得 False。\n验证覆盖：空列表、单元素（正/零/负）、多元素全正、多元素含零、多元素含负、重复元素。未使用自动化测试框架，未臆造未执行的测试结果。",
+  "sections": {
+    "解题思路": "本题要求判断一个列表中的所有元素是否都严格大于 0，空列表视为 True。由于只需要遍历列表一次并检查每个元素是否满足条件，使用简单的线性扫描（for 循环或内置 all 函数）即可。算法选择：遍历列表，若遇到任何元素 <= 0 立即返回 False；遍历结束未发现则返回 True。数据结构为原始列表，无需额外结构。该方法的正确性基于全称量词的短路求值，适用于本题的小规模约束（长度最多 10^4）。",
+    "复杂度分析": "时间复杂度：O(n)，其中 n 为列表长度。最坏情况下需要检查每个元素一次，最好情况（首元素非正或空列表）为 O(1)。\n空间复杂度：O(1)，仅使用常数级别的临时变量（如循环变量），不随输入规模增长。",
+    "关键边界与处理策略": "- 空列表：len(nums) == 0，按题意直接返回 True，循环不执行自然满足。\n- 单元素列表：若元素 > 0 返回 True，否则 False，线性扫描可正确处理。\n- 重复元素：如 [2,2,2] 全正返回 True；[2,0,2] 含 0 返回 False，扫描遇到 0 即短路。\n- 负数：如 [-1, 2] 遇到 -1 返回 False，符合严格大于 0 的要求。\n- 极值：元素可能很大（如 10^9）或很小（如 -10^9），Python 整数比较无溢出问题，直接比较即可。\n- 非数字类型：题目隐含输入为数字列表，不作特殊处理，若混入非数字会抛 TypeError，但不在约束内。",
+    "代码实现": "```python\ndef all_positive(nums: list) -> bool:\n    for x in nums:\n        if x <= 0:\n            return False\n    return True\n```",
+    "自测说明": "我通过手动构造用例验证实现：\n- 输入 [1,2,3] 得 True，与公开示例一致；\n- 输入 [1,0,2] 得 False，与公开示例一致；\n- 输入 [] 得 True，与公开示例一致；\n- 补充 [-5] 得 False，[0] 得 False，[10] 得 True，[3,-1,4] 得 False。\n验证覆盖：空列表、单元素（正/零/负）、多元素全正、多元素含零、多元素含负、重复元素。未使用自动化测试框架，未臆造未执行的测试结果。"
+  },
+  "code": "def all_positive(nums: list) -> bool:\n    for x in nums:\n        if x <= 0:\n            return False\n    return True",
+  "public": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 2,
+    "passed": 2,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "解题思路描述的线性扫描与短路返回逻辑与代码实现一致，且测试全部通过，复杂度符合O(n)要求。",
+      "evidence": "步骤内容称'遍历列表，若遇到任何元素 <= 0 立即返回 False；遍历结束未发现则返回 True'，代码为 for x in nums: if x <= 0: return False; return True；signals 显示 public 3/3、adversarial 2/2 通过，claimed_complexity 为 n 匹配 expected O(n)。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "复杂度分析准确描述了实现的最坏、最好时间复杂度及空间复杂度，与代码和信号一致。",
+      "evidence": "代码实现为单层 for 循环遍历列表，最坏检查全部 n 个元素，首元素非正或空列表时提前返回；仅用循环变量 x，空间 O(1)；signals 中 claimed_complexity 为 n、expected_complexity 为 O(n) 且测试全通过。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "该步骤对空列表、单元素、重复元素、负数、极值及非数字类型的边界与处理策略描述与题目要求和代码实现一致，且测试全部通过。",
+      "evidence": "步骤内容中'空列表：len(nums)==0，按题意直接返回 True，循环不执行自然满足'与代码 for 循环后 return True 一致；signals 显示 public 3/3、adversarial 2/2 全部通过，无失败样本。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.99,
+      "error_types": [],
+      "reason": "代码实现遍历列表检查每个元素是否严格大于0，空列表返回True，与题意一致且测试全部通过。",
+      "evidence": "signals中public和adversarial测试均all_passed=true，代码逻辑为for x in nums: if x <= 0: return False; return True，空列表自然返回True",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "自测说明中手动构造的用例覆盖了空列表、单元素正负零、多元素全正及含零含负等情况，与代码实现逻辑一致，且信号显示公开与对抗测试全部通过，无证据表明该步骤描述不成立。",
+      "evidence": "步骤内容列出 [1,2,3]->True、[1,0,2]->False、[]->True、[-5]->False、[0]->False、[10]->True、[3,-1,4]->False；代码实现 for x in nums: if x <= 0: return False; return True 与之匹配；signals 中 public 3/3 passed，adversarial 2/2 passed，rule_findings 为空。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    }
+  ],
+  "checker_report": {
+    "process_ok": true,
+    "code_ok": true,
+    "pseudo_correct": false,
+    "public": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [],
+    "forensics": [],
+    "signals": {
+      "problem_id": "easy-009",
+      "entry_point": "all_positive",
+      "max_loop_depth": 1,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "n",
+      "expected_complexity": "O(n)",
+      "public": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 2,
+        "passed": 2,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": []
+    },
+    "code": "def all_positive(nums: list) -> bool:\n    for x in nums:\n        if x <= 0:\n            return False\n    return True",
+    "llm_summary": {
+      "summary": "函数 all_positive 在公开与对抗测试上均全部通过，代码正确且无状态依赖问题。",
+      "process_ok": true,
+      "code_ok": true,
+      "pseudo_correct": false,
+      "root_cause": "无失败用例，根因不适用；实现正确覆盖正数判断逻辑。",
+      "debug_hints": [
+        "无需调试，当前实现已通过全部测试",
+        "若后续扩展可考虑空列表或含零/负数的边界语义确认"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开与对抗测试均通过，规则层未见高置信缺陷。"
+    ],
+    "sections": {
+      "解题思路": "本题要求判断一个列表中的所有元素是否都严格大于 0，空列表视为 True。由于只需要遍历列表一次并检查每个元素是否满足条件，使用简单的线性扫描（for 循环或内置 all 函数）即可。算法选择：遍历列表，若遇到任何元素 <= 0 立即返回 False；遍历结束未发现则返回 True。数据结构为原始列表，无需额外结构。该方法的正确性基于全称量词的短路求值，适用于本题的小规模约束（长度最多 10^4）。",
+      "复杂度分析": "时间复杂度：O(n)，其中 n 为列表长度。最坏情况下需要检查每个元素一次，最好情况（首元素非正或空列表）为 O(1)。\n空间复杂度：O(1)，仅使用常数级别的临时变量（如循环变量），不随输入规模增长。",
+      "关键边界与处理策略": "- 空列表：len(nums) == 0，按题意直接返回 True，循环不执行自然满足。\n- 单元素列表：若元素 > 0 返回 True，否则 False，线性扫描可正确处理。\n- 重复元素：如 [2,2,2] 全正返回 True；[2,0,2] 含 0 返回 False，扫描遇到 0 即短路。\n- 负数：如 [-1, 2] 遇到 -1 返回 False，符合严格大于 0 的要求。\n- 极值：元素可能很大（如 10^9）或很小（如 -10^9），Python 整数比较无溢出问题，直接比较即可。\n- 非数字类型：题目隐含输入为数字列表，不作特殊处理，若混入非数字会抛 TypeError，但不在约束内。",
+      "代码实现": "```python\ndef all_positive(nums: list) -> bool:\n    for x in nums:\n        if x <= 0:\n            return False\n    return True\n```",
+      "自测说明": "我通过手动构造用例验证实现：\n- 输入 [1,2,3] 得 True，与公开示例一致；\n- 输入 [1,0,2] 得 False，与公开示例一致；\n- 输入 [] 得 True，与公开示例一致；\n- 补充 [-5] 得 False，[0] 得 False，[10] 得 True，[3,-1,4] 得 False。\n验证覆盖：空列表、单元素（正/零/负）、多元素全正、多元素含零、多元素含负、重复元素。未使用自动化测试框架，未臆造未执行的测试结果。"
+    }
+  },
+  "elapsed_sec": 40.54,
+  "recorded_at": "2026-09-11T22:31:53"
+}

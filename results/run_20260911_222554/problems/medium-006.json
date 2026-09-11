@@ -1,0 +1,225 @@
+{
+  "problem_id": "medium-006",
+  "title": "二进制中 1 的个数",
+  "difficulty": "medium",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "hamming_weight",
+  "source_path": "datasets\\code\\medium\\hamming_weight.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "first_error_step": null,
+    "error_types": [],
+    "note": "正确对照样本"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": false,
+    "false_positive_solution": true,
+    "first_error_step": "step_2_complexity",
+    "first_error_section": "复杂度分析",
+    "error_types": [
+      "复杂度分析错误"
+    ]
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求计算一个非负整数 n 的二进制表示中 1 的个数（即汉明重量）。由于 n 的范围是 0 到 2^31-1，可以直接使用位运算技巧：利用 `n & (n - 1)` 每次消去 n 的二进制表示中最右侧的一个 1，直到 n 变为 0，消去次数即为 1 的个数。该算法不需要将整数转为字符串或数组，仅用常数空间且循环次数等于 1 的个数，高效且简洁。也可直接使用 Python 内置函数 `bin(n).count('1')`，但位运算更体现算法本质且避免类型转换开销。\n\n## 2. 复杂度分析\n时间复杂度：O(k)，其中 k 是 n 的二进制中 1 的个数。最坏情况下 n 的二进制全为 1（如 2^31-1 有 31 个 1），时间复杂度为 O(log n)，即 O(31) = O(1) 在本题约束下。推理依据：每次 `n & (n-1)` 消去一个 1，循环执行 k 次。\n空间复杂度：O(1)。只使用了固定数量的整型变量（如计数器），与输入规模无关。\n\n## 3. 关键边界与处理策略\n- 空输入：题目函数签名明确接收 int 参数 n，不存在空输入；若误传 None 会抛 TypeError，但按约束 n 为整数，不需处理。\n- 单元素/零值：n = 0 时，二进制无 1，循环不执行，直接返回 0，符合公开用例。\n- 重复元素：本题输入为单个整数，不涉及重复元素概念。\n- 负数：约束规定 0 <= n <= 2^31-1，无负数；若扩展需考虑补码，但本题不需。\n- 极值：n = 2^31-1（2147483647）时二进制为 31 个 1，算法循环 31 次返回 31，正确；n = 2^31-1 内最大偶数如 2^31-2 也可正常处理。\n- 2 的幂：如 128（2^7）只有最高位一个 1，`n&(n-1)` 一次归零，返回 1，符合用例。\n\n## 4. 代码实现\n```python\ndef hamming_weight(n: int) -> int:\n    count = 0\n    while n:\n        n &= n - 1\n        count += 1\n    return count\n```\n\n## 5. 自测说明\n我通过以下方式验证实现：在脑中及草稿推演公开用例——n=11（二进制 1011）执行 `n&=n-1` 三次后归零返回 3；n=128（10000000）一次归零返回 1；n=0 不进循环返回 0。另验证边界 n=2^31-1 应返回 31，n=1 返回 1。验证覆盖：公开用例、零值、2 的幂、最大值，未实际运行代码但逻辑与位运算性质保证正确，未臆造运行结果。",
+  "sections": {
+    "解题思路": "本题要求计算一个非负整数 n 的二进制表示中 1 的个数（即汉明重量）。由于 n 的范围是 0 到 2^31-1，可以直接使用位运算技巧：利用 `n & (n - 1)` 每次消去 n 的二进制表示中最右侧的一个 1，直到 n 变为 0，消去次数即为 1 的个数。该算法不需要将整数转为字符串或数组，仅用常数空间且循环次数等于 1 的个数，高效且简洁。也可直接使用 Python 内置函数 `bin(n).count('1')`，但位运算更体现算法本质且避免类型转换开销。",
+    "复杂度分析": "时间复杂度：O(k)，其中 k 是 n 的二进制中 1 的个数。最坏情况下 n 的二进制全为 1（如 2^31-1 有 31 个 1），时间复杂度为 O(log n)，即 O(31) = O(1) 在本题约束下。推理依据：每次 `n & (n-1)` 消去一个 1，循环执行 k 次。\n空间复杂度：O(1)。只使用了固定数量的整型变量（如计数器），与输入规模无关。",
+    "关键边界与处理策略": "- 空输入：题目函数签名明确接收 int 参数 n，不存在空输入；若误传 None 会抛 TypeError，但按约束 n 为整数，不需处理。\n- 单元素/零值：n = 0 时，二进制无 1，循环不执行，直接返回 0，符合公开用例。\n- 重复元素：本题输入为单个整数，不涉及重复元素概念。\n- 负数：约束规定 0 <= n <= 2^31-1，无负数；若扩展需考虑补码，但本题不需。\n- 极值：n = 2^31-1（2147483647）时二进制为 31 个 1，算法循环 31 次返回 31，正确；n = 2^31-1 内最大偶数如 2^31-2 也可正常处理。\n- 2 的幂：如 128（2^7）只有最高位一个 1，`n&(n-1)` 一次归零，返回 1，符合用例。",
+    "代码实现": "```python\ndef hamming_weight(n: int) -> int:\n    count = 0\n    while n:\n        n &= n - 1\n        count += 1\n    return count\n```",
+    "自测说明": "我通过以下方式验证实现：在脑中及草稿推演公开用例——n=11（二进制 1011）执行 `n&=n-1` 三次后归零返回 3；n=128（10000000）一次归零返回 1；n=0 不进循环返回 0。另验证边界 n=2^31-1 应返回 31，n=1 返回 1。验证覆盖：公开用例、零值、2 的幂、最大值，未实际运行代码但逻辑与位运算性质保证正确，未臆造运行结果。"
+  },
+  "code": "def hamming_weight(n: int) -> int:\n    count = 0\n    while n:\n        n &= n - 1\n        count += 1\n    return count",
+  "public": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 2,
+    "passed": 2,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [
+    {
+      "section": "复杂度分析",
+      "error_type": "COMPLEXITY",
+      "error_type_label": "复杂度分析错误",
+      "detail": "声称时间复杂度 logn，但代码中检测到最大循环嵌套深度为 1，实际下界约为 n。",
+      "evidence": "AST 静态分析：max_loop_depth=1, recursive=False",
+      "confidence": 0.7,
+      "source": "rule"
+    }
+  ],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "suspicious",
+      "confidence": 0.7,
+      "error_types": [
+        "复杂度分析错误"
+      ],
+      "reason": "步骤中称算法循环次数等于1的个数且高效，但未明确时间复杂度为O(k)（k为1的个数，最坏O(log n)），而signals中规则发现指出声称logn但静态分析误判实际下界约为n，存在复杂度表述与静态信号冲突需澄清。",
+      "evidence": "步骤内容：'循环次数等于 1 的个数'；signals: rule_findings 中 detail='声称时间复杂度 logn，但代码中检测到最大循环嵌套深度为 1，实际下界约为 n'，confidence=0.7",
+      "llm_verdict": "suspicious",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "flawed",
+      "confidence": 0.95,
+      "error_types": [
+        "复杂度分析错误"
+      ],
+      "reason": "声称时间复杂度 logn，但代码中检测到最大循环嵌套深度为 1，实际下界约为 n。 Critic 补充：步骤中称时间复杂度为 O(k) 且最坏 O(log n)，但将 O(31) 说成 O(1) 在本题约束下与题目期望 O(log n) 及实际按位长度分析不一致，且静态规则已标记复杂度分析错误。",
+      "evidence": "AST 静态分析：max_loop_depth=1, recursive=False",
+      "llm_verdict": "flawed",
+      "rule_types": [
+        "复杂度分析错误"
+      ],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "suspicious",
+      "confidence": 0.6,
+      "error_types": [
+        "复杂度分析错误"
+      ],
+      "reason": "步骤中声称算法对极值循环31次且符合O(log n)，但静态信号指出实际循环次数与n的二进制位数相关而非log n，且规则发现复杂度分析错误，步骤描述与信号证据存在潜在不一致。",
+      "evidence": "步骤内容：'n = 2^31-1（2147483647）时二进制为 31 个 1，算法循环 31 次返回 31，正确'；signals中rule_findings: {'section': '复杂度分析', 'error_type_label': '复杂度分析错误', 'detail': '声称时间复杂度 logn，但代码中检测到最大循环嵌套深度为 1，实际下界约为 n。', 'evidence': 'AST 静态分析：max_loop_depth=1, recursive=False'}",
+      "llm_verdict": "suspicious",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "代码实现使用 n &= n-1 技巧，每次消除最低位的 1，循环次数等于二进制中 1 的个数，最坏 O(log n) 位长即 O(log n)，测试全部通过，实现正确。",
+      "evidence": "public: total=3 passed=3 failed=0; adversarial: total=2 passed=2 failed=0; 代码为 while n: n &= n-1; count+=1",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "suspicious",
+      "confidence": 0.6,
+      "error_types": [
+        "测试覆盖不足导致的伪正确"
+      ],
+      "reason": "自测说明仅通过脑推和草稿验证少量用例且未实际运行代码，虽公开与对抗测试均通过，但验证方式依赖主观推演而非执行证据，存在覆盖不足风险。",
+      "evidence": "步骤内容称'未实际运行代码但逻辑与位运算性质保证正确'；signals 中 public 3/3 passed、adversarial 2/2 passed，但 rule_findings 指出复杂度分析错误（与自测无关），自测本身无执行记录。",
+      "llm_verdict": "suspicious",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    }
+  ],
+  "checker_report": {
+    "process_ok": false,
+    "code_ok": true,
+    "pseudo_correct": true,
+    "public": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [
+      {
+        "section": "复杂度分析",
+        "error_type": "COMPLEXITY",
+        "error_type_label": "复杂度分析错误",
+        "detail": "声称时间复杂度 logn，但代码中检测到最大循环嵌套深度为 1，实际下界约为 n。",
+        "evidence": "AST 静态分析：max_loop_depth=1, recursive=False",
+        "confidence": 0.7,
+        "source": "rule"
+      }
+    ],
+    "forensics": [],
+    "signals": {
+      "problem_id": "medium-006",
+      "entry_point": "hamming_weight",
+      "max_loop_depth": 1,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "logn",
+      "expected_complexity": "O(log n)",
+      "public": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 2,
+        "passed": 2,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": [
+        {
+          "section": "复杂度分析",
+          "error_type": "COMPLEXITY",
+          "error_type_label": "复杂度分析错误",
+          "detail": "声称时间复杂度 logn，但代码中检测到最大循环嵌套深度为 1，实际下界约为 n。",
+          "evidence": "AST 静态分析：max_loop_depth=1, recursive=False",
+          "confidence": 0.7,
+          "source": "rule"
+        }
+      ]
+    },
+    "code": "def hamming_weight(n: int) -> int:\n    count = 0\n    while n:\n        n &= n - 1\n        count += 1\n    return count",
+    "llm_summary": {
+      "summary": "代码功能正确通过全部测试，但复杂度分析声称logn与实际单层循环O(n)不符。",
+      "process_ok": false,
+      "code_ok": true,
+      "pseudo_correct": true,
+      "root_cause": "解题过程中复杂度分析部分错误：代码使用单层循环逐位统计（或类似线性扫描），时间复杂度应为O(n)（n为位数），却误写为O(log n)。",
+      "debug_hints": [
+        "检查代码中循环结构：若为for/while遍历所有二进制位，则时间复杂度是O(位数)即O(log n)若n是整数值？注意题目输入是整数，位数=log2(n)+1，所以遍历位数其实是O(log n)；但AST说max_loop_depth=1且下界约n，可能代码是for i in range(32)固定32次或while n: n&=n-1（次数=1的个数，最坏O(log n)）；需确认分析里n定义混淆：若n指输入整数值，位操作次数O(log n)正确；若n指二进制长度则O(n)。应统一表述为O(log n)（以整数数值规模）或O(k)（k为位数），并修正AST误判说明。",
+        "在解题过程文档中明确复杂度分析所采用的n的含义，避免评审规则误报。"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开测试通过但对抗失败：优先检查边界归一化、空/单元素、类型边界，并用 sandbox-debugger 在失败入参上下断点观察局部变量。",
+      "[COMPLEXITY] 声称时间复杂度 logn，但代码中检测到最大循环嵌套深度为 1，实际下界约为 n。"
+    ],
+    "sections": {
+      "解题思路": "本题要求计算一个非负整数 n 的二进制表示中 1 的个数（即汉明重量）。由于 n 的范围是 0 到 2^31-1，可以直接使用位运算技巧：利用 `n & (n - 1)` 每次消去 n 的二进制表示中最右侧的一个 1，直到 n 变为 0，消去次数即为 1 的个数。该算法不需要将整数转为字符串或数组，仅用常数空间且循环次数等于 1 的个数，高效且简洁。也可直接使用 Python 内置函数 `bin(n).count('1')`，但位运算更体现算法本质且避免类型转换开销。",
+      "复杂度分析": "时间复杂度：O(k)，其中 k 是 n 的二进制中 1 的个数。最坏情况下 n 的二进制全为 1（如 2^31-1 有 31 个 1），时间复杂度为 O(log n)，即 O(31) = O(1) 在本题约束下。推理依据：每次 `n & (n-1)` 消去一个 1，循环执行 k 次。\n空间复杂度：O(1)。只使用了固定数量的整型变量（如计数器），与输入规模无关。",
+      "关键边界与处理策略": "- 空输入：题目函数签名明确接收 int 参数 n，不存在空输入；若误传 None 会抛 TypeError，但按约束 n 为整数，不需处理。\n- 单元素/零值：n = 0 时，二进制无 1，循环不执行，直接返回 0，符合公开用例。\n- 重复元素：本题输入为单个整数，不涉及重复元素概念。\n- 负数：约束规定 0 <= n <= 2^31-1，无负数；若扩展需考虑补码，但本题不需。\n- 极值：n = 2^31-1（2147483647）时二进制为 31 个 1，算法循环 31 次返回 31，正确；n = 2^31-1 内最大偶数如 2^31-2 也可正常处理。\n- 2 的幂：如 128（2^7）只有最高位一个 1，`n&(n-1)` 一次归零，返回 1，符合用例。",
+      "代码实现": "```python\ndef hamming_weight(n: int) -> int:\n    count = 0\n    while n:\n        n &= n - 1\n        count += 1\n    return count\n```",
+      "自测说明": "我通过以下方式验证实现：在脑中及草稿推演公开用例——n=11（二进制 1011）执行 `n&=n-1` 三次后归零返回 3；n=128（10000000）一次归零返回 1；n=0 不进循环返回 0。另验证边界 n=2^31-1 应返回 31，n=1 返回 1。验证覆盖：公开用例、零值、2 的幂、最大值，未实际运行代码但逻辑与位运算性质保证正确，未臆造运行结果。"
+    }
+  },
+  "elapsed_sec": 73.79,
+  "recorded_at": "2026-09-11T22:39:44"
+}

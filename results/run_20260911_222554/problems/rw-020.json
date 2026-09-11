@@ -1,0 +1,181 @@
+{
+  "problem_id": "rw-020",
+  "title": "是否应重试的错误分类",
+  "difficulty": "engineering",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "should_retry",
+  "source_path": "datasets\\code\\engineering\\function\\rw_020.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "note": "大小写或漏网关码"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "false_positive_solution": false,
+    "first_error_step": null,
+    "first_error_section": null,
+    "error_types": []
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求判断给定的错误码字符串是否属于可重试的错误码集合（timeout/429/502/503/504，且大小写不敏感）。由于待匹配的错误码数量固定且极少，最直观高效的方法是使用集合（Set）存储所有可重试错误码的小写形式，将输入字符串统一转换为小写后判断其是否在集合中。该方案无需复杂算法，利用哈希集合的 O(1) 平均查找时间即可完成判定，实现简单且性能最优。\n\n## 2. 复杂度分析\n时间复杂度：O(n)，其中 n 为输入字符串的长度。将字符串转换为小写需要遍历每个字符，耗时 O(n)；集合查找平均为 O(1)，因此总时间复杂度为 O(n)。\n空间复杂度：O(1)。集合大小固定为 5 个元素，与输入规模无关；转换小写可能产生新字符串但长度与输入线性相关，通常视为 O(n) 的临时空间，但严格来说额外固定集合占用 O(1)，整体渐进空间为 O(n)（若计入返回新串）或 O(1)（若原地不可变则新串必建，故为 O(n)）。此处明确：辅助集合 O(1)，小写转换结果 O(n)，总空间 O(n)。\n\n## 3. 关键边界与处理策略\n- 空输入：输入 `\"\"` 不在可重试集合中，返回 False。\n- 单元素：如 `\"4\"` 或 `\"t\"`，不在集合中，返回 False。\n- 重复元素：本题输入为单个字符串，不涉及重复；若误传多值由调用方保证。\n- 负数：错误码为字符串，如 `\"-429\"` 不在集合，返回 False。\n- 极值/超长串：如 `\"TIMEOUT\"*1000`，转小写后不在集合，返回 False。\n- 大小写混合：如 `\"TimeOut\"`、`\"TIMEOUT\"` 统一转小写为 `\"timeout\"` 后命中，返回 True。\n- 非字符串类型：题目签名限定 str，不处理其他类型。\n- 前后空格：如 `\" 429 \"` 未去空格，不在集合，返回 False（依题意不 trim）。\n\n## 4. 代码实现\n```python\ndef should_retry(error_code: str) -> bool:\n    retryable = {\"timeout\", \"429\", \"502\", \"503\", \"504\"}\n    return error_code.lower() in retryable\n```\n\n## 5. 自测说明\n我通过构造以下用例验证实现：公开示例 `timeout`->True、`429`->True、`400`->False；边界用例 `\"\"`->False、`\"TIMEOUT\"`->True、`\"TimeOut\"`->True、`\" 429\"`->False、`\"-429\"`->False、`\"502\"`->True、`\"503\"`->True、`\"504\"`->True、`\"500\"`->False。验证覆盖：正常可重试码、不可重试码、大小写变形、空串、带空格、负号前缀。未使用自动化测试框架，仅人工核对逻辑与输出，未臆造未执行的测试结果。",
+  "sections": {
+    "解题思路": "本题要求判断给定的错误码字符串是否属于可重试的错误码集合（timeout/429/502/503/504，且大小写不敏感）。由于待匹配的错误码数量固定且极少，最直观高效的方法是使用集合（Set）存储所有可重试错误码的小写形式，将输入字符串统一转换为小写后判断其是否在集合中。该方案无需复杂算法，利用哈希集合的 O(1) 平均查找时间即可完成判定，实现简单且性能最优。",
+    "复杂度分析": "时间复杂度：O(n)，其中 n 为输入字符串的长度。将字符串转换为小写需要遍历每个字符，耗时 O(n)；集合查找平均为 O(1)，因此总时间复杂度为 O(n)。\n空间复杂度：O(1)。集合大小固定为 5 个元素，与输入规模无关；转换小写可能产生新字符串但长度与输入线性相关，通常视为 O(n) 的临时空间，但严格来说额外固定集合占用 O(1)，整体渐进空间为 O(n)（若计入返回新串）或 O(1)（若原地不可变则新串必建，故为 O(n)）。此处明确：辅助集合 O(1)，小写转换结果 O(n)，总空间 O(n)。",
+    "关键边界与处理策略": "- 空输入：输入 `\"\"` 不在可重试集合中，返回 False。\n- 单元素：如 `\"4\"` 或 `\"t\"`，不在集合中，返回 False。\n- 重复元素：本题输入为单个字符串，不涉及重复；若误传多值由调用方保证。\n- 负数：错误码为字符串，如 `\"-429\"` 不在集合，返回 False。\n- 极值/超长串：如 `\"TIMEOUT\"*1000`，转小写后不在集合，返回 False。\n- 大小写混合：如 `\"TimeOut\"`、`\"TIMEOUT\"` 统一转小写为 `\"timeout\"` 后命中，返回 True。\n- 非字符串类型：题目签名限定 str，不处理其他类型。\n- 前后空格：如 `\" 429 \"` 未去空格，不在集合，返回 False（依题意不 trim）。",
+    "代码实现": "```python\ndef should_retry(error_code: str) -> bool:\n    retryable = {\"timeout\", \"429\", \"502\", \"503\", \"504\"}\n    return error_code.lower() in retryable\n```",
+    "自测说明": "我通过构造以下用例验证实现：公开示例 `timeout`->True、`429`->True、`400`->False；边界用例 `\"\"`->False、`\"TIMEOUT\"`->True、`\"TimeOut\"`->True、`\" 429\"`->False、`\"-429\"`->False、`\"502\"`->True、`\"503\"`->True、`\"504\"`->True、`\"500\"`->False。验证覆盖：正常可重试码、不可重试码、大小写变形、空串、带空格、负号前缀。未使用自动化测试框架，仅人工核对逻辑与输出，未臆造未执行的测试结果。"
+  },
+  "code": "def should_retry(error_code: str) -> bool:\n    retryable = {\"timeout\", \"429\", \"502\", \"503\", \"504\"}\n    return error_code.lower() in retryable",
+  "public": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 5,
+    "passed": 5,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "解题思路描述与代码实现一致，利用集合存储小写可重试码并转换输入为小写判断，测试全部通过且无静态分析告警。",
+      "evidence": "步骤内容称'使用集合存储所有可重试错误码的小写形式，将输入字符串统一转换为小写后判断其是否在集合中'；代码为 retryable = {'timeout','429','502','503','504'}; return error_code.lower() in retryable；signals 显示 public 3/3、adversarial 5/5 通过，rule_findings 为空。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "suspicious",
+      "confidence": 0.7,
+      "error_types": [
+        "复杂度分析错误"
+      ],
+      "reason": "步骤中空间复杂度表述自相矛盾且未清晰定论，先称O(1)后又说总空间O(n)，而实际实现中lower()产生新字符串占用O(n)空间，原分析混淆了固定集合与转换结果的贡献。",
+      "evidence": "步骤内容原文：'空间复杂度：O(1)。集合大小固定为 5 个元素...整体渐进空间为 O(n)（若计入返回新串）或 O(1)（若原地不可变则新串必建，故为 O(n)）。此处明确：辅助集合 O(1)，小写转换结果 O(n)，总空间 O(n)。' 开头写'O(1)'结尾写'总空间 O(n)'，前后不一致；代码实现 `error_code.lower()` 必建新串，空间应为 O(n)。",
+      "llm_verdict": "suspicious",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "该步骤对各类边界情况的描述与代码实现及题目定义一致，且测试全部通过。",
+      "evidence": "步骤中说明空串、单元素、负数、超长串、前后空格均返回 False，大小写混合转小写命中返回 True；代码实现为 error_code.lower() in {'timeout','429','502','503','504'}，与描述一致；signals 显示 public 3/3、adversarial 5/5 全部通过。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "代码实现将输入转为小写后与可重试集合比较，正确覆盖了题目要求的timeout/429/502/503/504且大小写不敏感，测试全部通过。",
+      "evidence": "signals中public和adversarial测试均all_passed:true；代码使用error_code.lower() in retryable，retryable包含{'timeout','429','502','503','504'}",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "自测说明中列出的用例与代码实现逻辑一致，且公开与对抗测试信号均全部通过，无证据表明该步骤描述不成立。",
+      "evidence": "步骤内容列出用例 timeout->True、429->True、400->False、''->False、'TIMEOUT'->True、'TimeOut'->True、' 429'->False、'-429'->False、502/503/504->True、500->False；代码实现为 error_code.lower() in {'timeout','429','502','503','504'}，上述用例输出与实现吻合；signals 显示 public 3/3 passed、adversarial 5/5 passed、rule_findings 为空。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    }
+  ],
+  "checker_report": {
+    "process_ok": true,
+    "code_ok": true,
+    "pseudo_correct": false,
+    "public": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 5,
+      "passed": 5,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [],
+    "forensics": [],
+    "signals": {
+      "problem_id": "rw-020",
+      "entry_point": "should_retry",
+      "max_loop_depth": 0,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "n",
+      "expected_complexity": null,
+      "public": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 5,
+        "passed": 5,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": []
+    },
+    "code": "def should_retry(error_code: str) -> bool:\n    retryable = {\"timeout\", \"429\", \"502\", \"503\", \"504\"}\n    return error_code.lower() in retryable",
+    "llm_summary": {
+      "summary": "公开与对抗测试全部通过，函数实现正确无误。",
+      "process_ok": true,
+      "code_ok": true,
+      "pseudo_correct": false,
+      "root_cause": "无失败用例，代码逻辑与边界处理均符合预期。",
+      "debug_hints": [
+        "无需调试，保持现有实现即可。"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开与对抗测试均通过，规则层未见高置信缺陷。"
+    ],
+    "sections": {
+      "解题思路": "本题要求判断给定的错误码字符串是否属于可重试的错误码集合（timeout/429/502/503/504，且大小写不敏感）。由于待匹配的错误码数量固定且极少，最直观高效的方法是使用集合（Set）存储所有可重试错误码的小写形式，将输入字符串统一转换为小写后判断其是否在集合中。该方案无需复杂算法，利用哈希集合的 O(1) 平均查找时间即可完成判定，实现简单且性能最优。",
+      "复杂度分析": "时间复杂度：O(n)，其中 n 为输入字符串的长度。将字符串转换为小写需要遍历每个字符，耗时 O(n)；集合查找平均为 O(1)，因此总时间复杂度为 O(n)。\n空间复杂度：O(1)。集合大小固定为 5 个元素，与输入规模无关；转换小写可能产生新字符串但长度与输入线性相关，通常视为 O(n) 的临时空间，但严格来说额外固定集合占用 O(1)，整体渐进空间为 O(n)（若计入返回新串）或 O(1)（若原地不可变则新串必建，故为 O(n)）。此处明确：辅助集合 O(1)，小写转换结果 O(n)，总空间 O(n)。",
+      "关键边界与处理策略": "- 空输入：输入 `\"\"` 不在可重试集合中，返回 False。\n- 单元素：如 `\"4\"` 或 `\"t\"`，不在集合中，返回 False。\n- 重复元素：本题输入为单个字符串，不涉及重复；若误传多值由调用方保证。\n- 负数：错误码为字符串，如 `\"-429\"` 不在集合，返回 False。\n- 极值/超长串：如 `\"TIMEOUT\"*1000`，转小写后不在集合，返回 False。\n- 大小写混合：如 `\"TimeOut\"`、`\"TIMEOUT\"` 统一转小写为 `\"timeout\"` 后命中，返回 True。\n- 非字符串类型：题目签名限定 str，不处理其他类型。\n- 前后空格：如 `\" 429 \"` 未去空格，不在集合，返回 False（依题意不 trim）。",
+      "代码实现": "```python\ndef should_retry(error_code: str) -> bool:\n    retryable = {\"timeout\", \"429\", \"502\", \"503\", \"504\"}\n    return error_code.lower() in retryable\n```",
+      "自测说明": "我通过构造以下用例验证实现：公开示例 `timeout`->True、`429`->True、`400`->False；边界用例 `\"\"`->False、`\"TIMEOUT\"`->True、`\"TimeOut\"`->True、`\" 429\"`->False、`\"-429\"`->False、`\"502\"`->True、`\"503\"`->True、`\"504\"`->True、`\"500\"`->False。验证覆盖：正常可重试码、不可重试码、大小写变形、空串、带空格、负号前缀。未使用自动化测试框架，仅人工核对逻辑与输出，未臆造未执行的测试结果。"
+    }
+  },
+  "elapsed_sec": 58.74,
+  "recorded_at": "2026-09-11T23:33:35"
+}

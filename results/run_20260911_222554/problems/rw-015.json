@@ -1,0 +1,180 @@
+{
+  "problem_id": "rw-015",
+  "title": "过滤 Hop-by-hop 头",
+  "difficulty": "engineering",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "filter_hop_headers",
+  "source_path": "datasets\\code\\engineering\\function\\rw_015.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "note": "大小写敏感会漏过滤"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "false_positive_solution": false,
+    "first_error_step": null,
+    "first_error_section": null,
+    "error_types": []
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求从给定的 HTTP 头部字典中移除特定的 hop-by-hop 头部字段（connection、keep-alive、te、trailers、transfer-encoding、upgrade），且匹配时大小写不敏感。由于输入是一个字典（键为字符串，代表头部名），我们只需遍历字典的键，将键名统一转换为小写后与预定义的待移除集合进行比对，若不在集合中则保留该键值对。选择哈希表（Python 中的 set）存储待移除的小写头部名，使得每次查询的时间复杂度为 O(1)；整体只需一次线性遍历，算法简单高效且直接满足题意。\n\n## 2. 复杂度分析\n- 时间复杂度：O(n)，其中 n 是输入字典中键值对的数量。我们需要遍历字典的每一个键一次，每次进行小写转换和集合查询均为 O(1) 操作，因此总时间随输入规模线性增长。\n- 空间复杂度：O(m + k)，其中 m 是待移除头部名的数量（固定为 6，可视为 O(1)），k 是输出字典中保留的键值对数量（最坏情况下等于 n）。我们额外使用了一个固定大小的集合存储待移除名称，以及一个新字典存储结果，故空间与保留的头部数量成正比。\n\n## 3. 关键边界与处理策略\n- 空输入 `{}`：直接返回空字典，遍历不执行，自然处理。\n- 单元素字典：如 `{'Host': 'a.com'}`，正常遍历并保留，逻辑覆盖。\n- 重复元素：字典键本身唯一，不存在重复键；若不同大小写视为同一头部（如 'Connection' 和 'connection' 不会同时作为键出现，因字典键区分大小写但业务上视为同一 hop 头），我们按小写统一判定并移除，符合 HTTP 语义。\n- 负数/非字符串值：题目约束未提及，但字典值可为任意对象；我们仅依据键名过滤，不关心值类型，直接保留原值。\n- 极值/超长字典：线性遍历可处理，无递归或嵌套爆栈风险。\n- 大小写混合：如 'CONNECTION'、'Upgrade'，通过 `lower()` 归一后匹配移除。\n- 非目标头部含相似词：如 'Connectionless' 不在移除列表，不会被误删，因我们精确匹配集合内字符串。\n\n## 4. 代码实现\n```python\ndef filter_hop_headers(headers: dict) -> dict:\n    hop_set = {'connection', 'keep-alive', 'te', 'trailers', 'transfer-encoding', 'upgrade'}\n    result = {}\n    for key, value in headers.items():\n        if key.lower() not in hop_set:\n            result[key] = value\n    return result\n```\n\n## 5. 自测说明\n我通过构造本地测试样例对实现进行了验证：使用题目给出的公开测试用例（如含 Connection 的字典、仅含 Content-Type 的字典、空字典）直接调用函数，比对输出与期望一致；额外补充了大小写混合用例（如 'CONNECTION'、'UpGrade'）确认被移除，以及含非 hop 头（如 'Host'、'Accept'）确认保留。验证覆盖了空输入、单元素、多元素、大小写变异及公开用例场景，未发现不符。未对超大字典或异常类型做性能压测，但逻辑上线性安全。",
+  "sections": {
+    "解题思路": "本题要求从给定的 HTTP 头部字典中移除特定的 hop-by-hop 头部字段（connection、keep-alive、te、trailers、transfer-encoding、upgrade），且匹配时大小写不敏感。由于输入是一个字典（键为字符串，代表头部名），我们只需遍历字典的键，将键名统一转换为小写后与预定义的待移除集合进行比对，若不在集合中则保留该键值对。选择哈希表（Python 中的 set）存储待移除的小写头部名，使得每次查询的时间复杂度为 O(1)；整体只需一次线性遍历，算法简单高效且直接满足题意。",
+    "复杂度分析": "- 时间复杂度：O(n)，其中 n 是输入字典中键值对的数量。我们需要遍历字典的每一个键一次，每次进行小写转换和集合查询均为 O(1) 操作，因此总时间随输入规模线性增长。\n- 空间复杂度：O(m + k)，其中 m 是待移除头部名的数量（固定为 6，可视为 O(1)），k 是输出字典中保留的键值对数量（最坏情况下等于 n）。我们额外使用了一个固定大小的集合存储待移除名称，以及一个新字典存储结果，故空间与保留的头部数量成正比。",
+    "关键边界与处理策略": "- 空输入 `{}`：直接返回空字典，遍历不执行，自然处理。\n- 单元素字典：如 `{'Host': 'a.com'}`，正常遍历并保留，逻辑覆盖。\n- 重复元素：字典键本身唯一，不存在重复键；若不同大小写视为同一头部（如 'Connection' 和 'connection' 不会同时作为键出现，因字典键区分大小写但业务上视为同一 hop 头），我们按小写统一判定并移除，符合 HTTP 语义。\n- 负数/非字符串值：题目约束未提及，但字典值可为任意对象；我们仅依据键名过滤，不关心值类型，直接保留原值。\n- 极值/超长字典：线性遍历可处理，无递归或嵌套爆栈风险。\n- 大小写混合：如 'CONNECTION'、'Upgrade'，通过 `lower()` 归一后匹配移除。\n- 非目标头部含相似词：如 'Connectionless' 不在移除列表，不会被误删，因我们精确匹配集合内字符串。",
+    "代码实现": "```python\ndef filter_hop_headers(headers: dict) -> dict:\n    hop_set = {'connection', 'keep-alive', 'te', 'trailers', 'transfer-encoding', 'upgrade'}\n    result = {}\n    for key, value in headers.items():\n        if key.lower() not in hop_set:\n            result[key] = value\n    return result\n```",
+    "自测说明": "我通过构造本地测试样例对实现进行了验证：使用题目给出的公开测试用例（如含 Connection 的字典、仅含 Content-Type 的字典、空字典）直接调用函数，比对输出与期望一致；额外补充了大小写混合用例（如 'CONNECTION'、'UpGrade'）确认被移除，以及含非 hop 头（如 'Host'、'Accept'）确认保留。验证覆盖了空输入、单元素、多元素、大小写变异及公开用例场景，未发现不符。未对超大字典或异常类型做性能压测，但逻辑上线性安全。"
+  },
+  "code": "def filter_hop_headers(headers: dict) -> dict:\n    hop_set = {'connection', 'keep-alive', 'te', 'trailers', 'transfer-encoding', 'upgrade'}\n    result = {}\n    for key, value in headers.items():\n        if key.lower() not in hop_set:\n            result[key] = value\n    return result",
+  "public": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "解题思路准确描述了使用小写集合与线性遍历实现大小写不敏感移除指定头部，与代码实现一致且测试全部通过。",
+      "evidence": "步骤内容称'将键名统一转换为小写后与预定义的待移除集合进行比对，若不在集合中则保留'，代码实现为 `if key.lower() not in hop_set: result[key] = value`，signals 显示 public 与 adversarial 测试均 all_passed=true。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "复杂度分析步骤对时间和空间复杂度的描述与代码实现一致，且信号显示测试全部通过无静态问题。",
+      "evidence": "代码实现中单次遍历 headers.items() 且集合查询为 O(1)，与步骤中 O(n) 时间、O(m+k) 空间描述相符；signals 中 public 与 adversarial 测试均 all_passed=true，rule_findings 为空。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "该步骤对空输入、单元素、重复键、值类型、大小写混合及相似词等边界的描述与代码实现一致，且测试全部通过无失败信号。",
+      "evidence": "步骤称'通过 lower() 归一后匹配移除'、'精确匹配集合内字符串'、'仅依据键名过滤不关心值类型'，代码为 `if key.lower() not in hop_set: result[key]=value`；signals 显示 public 3/3、adversarial 3/3 全通过，rule_findings 为空。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "代码实现正确移除了指定 hop-by-hop 头（大小写不敏感），且所有公开与对抗测试均通过，无静态分析告警。",
+      "evidence": "signals 显示 public 3/3 passed, adversarial 3/3 passed, rule_findings 为空；代码使用 key.lower() 比对 hop_set 并保留非 hop 头，符合题目要求。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "自测说明中描述的测试场景（公开用例、大小写混合、非hop头保留、空/单/多元素）与代码实现及signals中public/adversarial全通过一致，且明确说明了未做性能压测但逻辑线性安全，无具体依据判定不成立。",
+      "evidence": "signals显示public total 3 passed 3 failed 0，adversarial total 3 passed 3 failed 0；步骤内容提到'使用题目给出的公开测试用例...额外补充了大小写混合用例...含非 hop 头确认保留...未对超大字典或异常类型做性能压测，但逻辑上线性安全'，与代码for循环单次遍历O(n)相符。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    }
+  ],
+  "checker_report": {
+    "process_ok": true,
+    "code_ok": true,
+    "pseudo_correct": false,
+    "public": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [],
+    "forensics": [],
+    "signals": {
+      "problem_id": "rw-015",
+      "entry_point": "filter_hop_headers",
+      "max_loop_depth": 1,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "n",
+      "expected_complexity": null,
+      "public": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": []
+    },
+    "code": "def filter_hop_headers(headers: dict) -> dict:\n    hop_set = {'connection', 'keep-alive', 'te', 'trailers', 'transfer-encoding', 'upgrade'}\n    result = {}\n    for key, value in headers.items():\n        if key.lower() not in hop_set:\n            result[key] = value\n    return result",
+    "llm_summary": {
+      "summary": "公开与对抗测试全部通过，函数实现正确，但伪代码未被判定为正确。",
+      "process_ok": true,
+      "code_ok": true,
+      "pseudo_correct": false,
+      "root_cause": "代码执行结果全绿，但提供的伪代码（或解题过程描述）与最终代码逻辑不一致或缺失，导致 pseudo_correct 被置为 false。",
+      "debug_hints": [
+        "核对解题过程中的伪代码/步骤描述是否与 filter_hop_headers 实际代码逻辑一致",
+        "若伪代码缺失，补充与代码等价的伪代码说明；若不一致，修正伪代码以匹配实现"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开与对抗测试均通过，规则层未见高置信缺陷。"
+    ],
+    "sections": {
+      "解题思路": "本题要求从给定的 HTTP 头部字典中移除特定的 hop-by-hop 头部字段（connection、keep-alive、te、trailers、transfer-encoding、upgrade），且匹配时大小写不敏感。由于输入是一个字典（键为字符串，代表头部名），我们只需遍历字典的键，将键名统一转换为小写后与预定义的待移除集合进行比对，若不在集合中则保留该键值对。选择哈希表（Python 中的 set）存储待移除的小写头部名，使得每次查询的时间复杂度为 O(1)；整体只需一次线性遍历，算法简单高效且直接满足题意。",
+      "复杂度分析": "- 时间复杂度：O(n)，其中 n 是输入字典中键值对的数量。我们需要遍历字典的每一个键一次，每次进行小写转换和集合查询均为 O(1) 操作，因此总时间随输入规模线性增长。\n- 空间复杂度：O(m + k)，其中 m 是待移除头部名的数量（固定为 6，可视为 O(1)），k 是输出字典中保留的键值对数量（最坏情况下等于 n）。我们额外使用了一个固定大小的集合存储待移除名称，以及一个新字典存储结果，故空间与保留的头部数量成正比。",
+      "关键边界与处理策略": "- 空输入 `{}`：直接返回空字典，遍历不执行，自然处理。\n- 单元素字典：如 `{'Host': 'a.com'}`，正常遍历并保留，逻辑覆盖。\n- 重复元素：字典键本身唯一，不存在重复键；若不同大小写视为同一头部（如 'Connection' 和 'connection' 不会同时作为键出现，因字典键区分大小写但业务上视为同一 hop 头），我们按小写统一判定并移除，符合 HTTP 语义。\n- 负数/非字符串值：题目约束未提及，但字典值可为任意对象；我们仅依据键名过滤，不关心值类型，直接保留原值。\n- 极值/超长字典：线性遍历可处理，无递归或嵌套爆栈风险。\n- 大小写混合：如 'CONNECTION'、'Upgrade'，通过 `lower()` 归一后匹配移除。\n- 非目标头部含相似词：如 'Connectionless' 不在移除列表，不会被误删，因我们精确匹配集合内字符串。",
+      "代码实现": "```python\ndef filter_hop_headers(headers: dict) -> dict:\n    hop_set = {'connection', 'keep-alive', 'te', 'trailers', 'transfer-encoding', 'upgrade'}\n    result = {}\n    for key, value in headers.items():\n        if key.lower() not in hop_set:\n            result[key] = value\n    return result\n```",
+      "自测说明": "我通过构造本地测试样例对实现进行了验证：使用题目给出的公开测试用例（如含 Connection 的字典、仅含 Content-Type 的字典、空字典）直接调用函数，比对输出与期望一致；额外补充了大小写混合用例（如 'CONNECTION'、'UpGrade'）确认被移除，以及含非 hop 头（如 'Host'、'Accept'）确认保留。验证覆盖了空输入、单元素、多元素、大小写变异及公开用例场景，未发现不符。未对超大字典或异常类型做性能压测，但逻辑上线性安全。"
+    }
+  },
+  "elapsed_sec": 62.64,
+  "recorded_at": "2026-09-11T23:29:35"
+}

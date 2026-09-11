@@ -1,0 +1,187 @@
+{
+  "problem_id": "adversarial-001",
+  "title": "有效的括号",
+  "difficulty": "adversarial",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "is_valid_brackets",
+  "source_path": "datasets\\code\\adversarial\\valid_brackets.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": false,
+    "process_valid": false,
+    "first_error_step": "step_1_approach",
+    "error_types": [
+      "算法选择错误",
+      "题意误读"
+    ],
+    "note": "刻意设计的困难样本：错误出在解题思路本身（用计数代替栈，无法表达嵌套顺序）。规则通道只能从对抗测试失败定位到“代码实现”步骤，属于预期中的定位偏差，用于衡量规则通道的能力边界。"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "false_positive_solution": false,
+    "first_error_step": null,
+    "first_error_section": null,
+    "error_types": []
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求判断仅由 `()[]{}` 组成的字符串是否为合法括号串，核心在于“后打开的括号必须先闭合”，即符合栈的先进后出特性。因此选择**栈**作为主要数据结构：遍历字符串，遇到左括号 `(`、`[`、`{` 时压入栈；遇到右括号时，若栈为空或栈顶左括号与当前右括号类型不匹配，则非法；否则弹出栈顶。遍历结束后，若栈为空说明全部正确闭合，返回 True，否则返回 False。该算法天然支持嵌套顺序检查，且仅一次线性扫描即可完成。\n\n## 2. 复杂度分析\n时间复杂度：O(n)，其中 n 为字符串长度。我们只从头到尾遍历字符串一次，每个字符的入栈/出栈操作均为 O(1)，故总时间为 O(n)。\n空间复杂度：O(n)，最坏情况下（如全为左括号）栈中需存储 n 个元素，辅助哈希表（用于括号映射）大小固定为 3，可忽略，故渐进空间为 O(n)。\n\n## 3. 关键边界与处理策略\n- 空字符串 `\"\"`：长度为 0，遍历后栈为空，直接返回 True（题目约束允许 len=0，且空串视为合法）。\n- 单元素字符串如 `\"(\"` 或 `\")\"`：若为左括号则栈残留返回 False；若为右括号则栈空直接返回 False。\n- 重复/连续同类括号如 `\"((\"`、`\"()\"`：按栈逻辑正常处理，前者残留返回 False，后者匹配返回 True。\n- 交叉嵌套如 `\"([)]\"`：遇到 `)` 时栈顶为 `[`，类型不匹配，立即返回 False。\n- 仅由一种括号组成如 `\"[]\"`、`\"[[]\"`：前者 True，后者残留 False。\n- 极值长度 10^4：算法 O(n) 可轻松处理，无递归避免栈溢出。\n- 字符串只含 `()[]{}`：无需处理其他字符，映射表仅覆盖这三类。\n\n## 4. 代码实现\n```python\ndef is_valid_brackets(s: str) -> bool:\n    stack = []\n    mapping = {')': '(', ']': '[', '}': '{'}\n    for ch in s:\n        if ch in mapping:\n            if not stack or stack[-1] != mapping[ch]:\n                return False\n            stack.pop()\n        else:\n            stack.append(ch)\n    return not stack\n```\n\n## 5. 自测说明\n我通过构造本地测试集验证实现：覆盖了公开示例 `()`、`([])`、`{[]}` 均返回 True；补充了空串 `\"\"` 返回 True；单元素 `\"(\"` 返回 False、`\")\"` 返回 False；错误嵌套 `\"([)]\"` 返回 False；未闭合 `\"(()\"` 返回 False；以及长串（如 10000 个 `(` 后跟 10000 个 `)`）返回 True。验证覆盖了空输入、单元素、重复、交叉、极值及题目给定样例，未发现不符预期行为，但仅基于上述构造用例，未使用随机大规模模糊测试。",
+  "sections": {
+    "解题思路": "本题要求判断仅由 `()[]{}` 组成的字符串是否为合法括号串，核心在于“后打开的括号必须先闭合”，即符合栈的先进后出特性。因此选择**栈**作为主要数据结构：遍历字符串，遇到左括号 `(`、`[`、`{` 时压入栈；遇到右括号时，若栈为空或栈顶左括号与当前右括号类型不匹配，则非法；否则弹出栈顶。遍历结束后，若栈为空说明全部正确闭合，返回 True，否则返回 False。该算法天然支持嵌套顺序检查，且仅一次线性扫描即可完成。",
+    "复杂度分析": "时间复杂度：O(n)，其中 n 为字符串长度。我们只从头到尾遍历字符串一次，每个字符的入栈/出栈操作均为 O(1)，故总时间为 O(n)。\n空间复杂度：O(n)，最坏情况下（如全为左括号）栈中需存储 n 个元素，辅助哈希表（用于括号映射）大小固定为 3，可忽略，故渐进空间为 O(n)。",
+    "关键边界与处理策略": "- 空字符串 `\"\"`：长度为 0，遍历后栈为空，直接返回 True（题目约束允许 len=0，且空串视为合法）。\n- 单元素字符串如 `\"(\"` 或 `\")\"`：若为左括号则栈残留返回 False；若为右括号则栈空直接返回 False。\n- 重复/连续同类括号如 `\"((\"`、`\"()\"`：按栈逻辑正常处理，前者残留返回 False，后者匹配返回 True。\n- 交叉嵌套如 `\"([)]\"`：遇到 `)` 时栈顶为 `[`，类型不匹配，立即返回 False。\n- 仅由一种括号组成如 `\"[]\"`、`\"[[]\"`：前者 True，后者残留 False。\n- 极值长度 10^4：算法 O(n) 可轻松处理，无递归避免栈溢出。\n- 字符串只含 `()[]{}`：无需处理其他字符，映射表仅覆盖这三类。",
+    "代码实现": "```python\ndef is_valid_brackets(s: str) -> bool:\n    stack = []\n    mapping = {')': '(', ']': '[', '}': '{'}\n    for ch in s:\n        if ch in mapping:\n            if not stack or stack[-1] != mapping[ch]:\n                return False\n            stack.pop()\n        else:\n            stack.append(ch)\n    return not stack\n```",
+    "自测说明": "我通过构造本地测试集验证实现：覆盖了公开示例 `()`、`([])`、`{[]}` 均返回 True；补充了空串 `\"\"` 返回 True；单元素 `\"(\"` 返回 False、`\")\"` 返回 False；错误嵌套 `\"([)]\"` 返回 False；未闭合 `\"(()\"` 返回 False；以及长串（如 10000 个 `(` 后跟 10000 个 `)`）返回 True。验证覆盖了空输入、单元素、重复、交叉、极值及题目给定样例，未发现不符预期行为，但仅基于上述构造用例，未使用随机大规模模糊测试。"
+  },
+  "code": "def is_valid_brackets(s: str) -> bool:\n    stack = []\n    mapping = {')': '(', ']': '[', '}': '{'}\n    for ch in s:\n        if ch in mapping:\n            if not stack or stack[-1] != mapping[ch]:\n                return False\n            stack.pop()\n        else:\n            stack.append(ch)\n    return not stack",
+  "public": {
+    "total": 5,
+    "passed": 5,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 4,
+    "passed": 4,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "valid",
+      "confidence": 0.98,
+      "error_types": [],
+      "reason": "解题思路准确描述了栈方法处理括号匹配的核心逻辑，与代码实现一致，且信号显示所有测试通过无异常。",
+      "evidence": "步骤内容称'遇到左括号压入栈；遇到右括号时若栈为空或栈顶不匹配则非法否则弹出；遍历结束栈空返回True'，代码实现中mapping处理右括号、else分支append左括号、return not stack，完全对应；signals中public与adversarial测试均all_passed=true，rule_findings为空。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "valid",
+      "confidence": 0.98,
+      "error_types": [],
+      "reason": "复杂度分析步骤对时间和空间复杂度的推导与代码实现及题目期望一致，无错误。",
+      "evidence": "步骤内容称时间复杂度 O(n) 因遍历一次且栈操作 O(1)，空间 O(n) 因最坏全左括号栈存 n 个、哈希表固定大小忽略；代码实现确为单循环遍历、栈操作、固定大小 mapping；signals 显示 claimed_complexity 为 n、expected_complexity 为 O(n) 且测试全通过。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "该步骤列出的边界情况与处理策略与代码实现一致，且测试全部通过无失败信号。",
+      "evidence": "步骤中说明空串返回True、单元素左右括号均False、'([)]'类型不匹配返回False、仅一种括号按栈残留判断，代码实现中mapping仅覆盖三类括号、遇右括号检查栈顶、最后return not stack，与描述完全吻合；signals显示public和adversarial测试均all_passed=true。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.98,
+      "error_types": [],
+      "reason": "代码实现使用栈结构正确处理了括号匹配与嵌套顺序，且公开与对抗测试全部通过，无静态分析告警。",
+      "evidence": "signals 中 public: 5/5 passed, adversarial: 4/4 passed, rule_findings: []；代码对右括号检查栈顶匹配、左括号入栈、末尾检查栈空，逻辑与题意一致。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "suspicious",
+      "confidence": 0.6,
+      "error_types": [
+        "测试覆盖不足导致的伪正确"
+      ],
+      "reason": "自测说明中仅使用构造用例且明确未做随机大规模模糊测试，虽当前信号显示测试全通过，但覆盖充分性存疑，可能遗漏边界或特殊模式。",
+      "evidence": "步骤内容写明'仅基于上述构造用例，未使用随机大规模模糊测试'；signals中public与adversarial均all_passed但用例总数仅9个。",
+      "llm_verdict": "suspicious",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    }
+  ],
+  "checker_report": {
+    "process_ok": true,
+    "code_ok": true,
+    "pseudo_correct": false,
+    "public": {
+      "total": 5,
+      "passed": 5,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 4,
+      "passed": 4,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [],
+    "forensics": [],
+    "signals": {
+      "problem_id": "adversarial-001",
+      "entry_point": "is_valid_brackets",
+      "max_loop_depth": 1,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "n",
+      "expected_complexity": "O(n)",
+      "public": {
+        "total": 5,
+        "passed": 5,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 4,
+        "passed": 4,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": []
+    },
+    "code": "def is_valid_brackets(s: str) -> bool:\n    stack = []\n    mapping = {')': '(', ']': '[', '}': '{'}\n    for ch in s:\n        if ch in mapping:\n            if not stack or stack[-1] != mapping[ch]:\n                return False\n            stack.pop()\n        else:\n            stack.append(ch)\n    return not stack",
+    "llm_summary": {
+      "summary": "公开与对抗测试全部通过，函数级实现正确，无状态依赖问题。",
+      "process_ok": true,
+      "code_ok": true,
+      "pseudo_correct": false,
+      "root_cause": "无失败用例，根因不适用；题目为函数级且所有测试通过，不存在状态未复位或顺序依赖问题。",
+      "debug_hints": [
+        "无需调试，当前实现已通过全部公开与对抗测试",
+        "若后续扩展类级版本需注意跨调用状态复位"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开与对抗测试均通过，规则层未见高置信缺陷。"
+    ],
+    "sections": {
+      "解题思路": "本题要求判断仅由 `()[]{}` 组成的字符串是否为合法括号串，核心在于“后打开的括号必须先闭合”，即符合栈的先进后出特性。因此选择**栈**作为主要数据结构：遍历字符串，遇到左括号 `(`、`[`、`{` 时压入栈；遇到右括号时，若栈为空或栈顶左括号与当前右括号类型不匹配，则非法；否则弹出栈顶。遍历结束后，若栈为空说明全部正确闭合，返回 True，否则返回 False。该算法天然支持嵌套顺序检查，且仅一次线性扫描即可完成。",
+      "复杂度分析": "时间复杂度：O(n)，其中 n 为字符串长度。我们只从头到尾遍历字符串一次，每个字符的入栈/出栈操作均为 O(1)，故总时间为 O(n)。\n空间复杂度：O(n)，最坏情况下（如全为左括号）栈中需存储 n 个元素，辅助哈希表（用于括号映射）大小固定为 3，可忽略，故渐进空间为 O(n)。",
+      "关键边界与处理策略": "- 空字符串 `\"\"`：长度为 0，遍历后栈为空，直接返回 True（题目约束允许 len=0，且空串视为合法）。\n- 单元素字符串如 `\"(\"` 或 `\")\"`：若为左括号则栈残留返回 False；若为右括号则栈空直接返回 False。\n- 重复/连续同类括号如 `\"((\"`、`\"()\"`：按栈逻辑正常处理，前者残留返回 False，后者匹配返回 True。\n- 交叉嵌套如 `\"([)]\"`：遇到 `)` 时栈顶为 `[`，类型不匹配，立即返回 False。\n- 仅由一种括号组成如 `\"[]\"`、`\"[[]\"`：前者 True，后者残留 False。\n- 极值长度 10^4：算法 O(n) 可轻松处理，无递归避免栈溢出。\n- 字符串只含 `()[]{}`：无需处理其他字符，映射表仅覆盖这三类。",
+      "代码实现": "```python\ndef is_valid_brackets(s: str) -> bool:\n    stack = []\n    mapping = {')': '(', ']': '[', '}': '{'}\n    for ch in s:\n        if ch in mapping:\n            if not stack or stack[-1] != mapping[ch]:\n                return False\n            stack.pop()\n        else:\n            stack.append(ch)\n    return not stack\n```",
+      "自测说明": "我通过构造本地测试集验证实现：覆盖了公开示例 `()`、`([])`、`{[]}` 均返回 True；补充了空串 `\"\"` 返回 True；单元素 `\"(\"` 返回 False、`\")\"` 返回 False；错误嵌套 `\"([)]\"` 返回 False；未闭合 `\"(()\"` 返回 False；以及长串（如 10000 个 `(` 后跟 10000 个 `)`）返回 True。验证覆盖了空输入、单元素、重复、交叉、极值及题目给定样例，未发现不符预期行为，但仅基于上述构造用例，未使用随机大规模模糊测试。"
+    }
+  },
+  "elapsed_sec": 41.33,
+  "recorded_at": "2026-09-11T23:01:15"
+}

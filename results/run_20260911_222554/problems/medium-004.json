@@ -1,0 +1,185 @@
+{
+  "problem_id": "medium-004",
+  "title": "有效的异位词",
+  "difficulty": "medium",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "is_anagram",
+  "source_path": "datasets\\code\\medium\\is_anagram.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": false,
+    "first_error_step": "step_2_complexity",
+    "error_types": [
+      "复杂度分析错误"
+    ],
+    "note": "实现正确但非 O(n)"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "false_positive_solution": false,
+    "first_error_step": null,
+    "first_error_section": null,
+    "error_types": []
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求判断字符串 t 是否为 s 的字母异位词（即两个字符串包含完全相同的字符及各自的出现次数，仅顺序可能不同）。由于题目约束仅包含小写字母（共 26 个），可以使用长度为 26 的计数数组（或哈希表）来统计每个字符的出现频次。算法流程为：首先若两字符串长度不等直接返回 False；然后遍历 s 对字符计数加一，遍历 t 对字符计数减一；最后检查计数数组是否全为零。该算法利用固定大小的数组将空间占用降到常数级，且只需线性扫描，高效且适用于本题的小写字母约束。\n\n## 2. 复杂度分析\n时间复杂度：O(n)，其中 n 为字符串 s 和 t 的长度。需要分别遍历 s 和 t 各一次进行计数，以及遍历计数数组一次（长度固定为 26，可视为 O(1)），总体与输入规模成线性关系。\n空间复杂度：O(1)，使用了一个长度为 26 的整型数组来记录字符频次，数组大小与输入规模无关，因此为常数空间。\n\n## 3. 关键边界与处理策略\n- 空输入：若 s 和 t 均为空字符串，长度为 0 且计数全零，返回 True；若仅一个为空则长度不等返回 False。\n- 单元素：如 s='a', t='a' 返回 True；s='a', t='b' 长度相等但计数不为零返回 False。\n- 重复元素：如 s='aab', t='aba'，计数数组能正确累加和抵消，返回 True。\n- 长度不等：如 s='abc', t='ab'，直接返回 False，避免不必要计算。\n- 极值/全字母：如 s 和 t 均包含全部 26 字母各一次，计数数组可容纳，正确返回 True。\n- 非小写字母：题目约束仅小写字母，故不做额外校验，依赖约束保证。\n\n## 4. 代码实现\n```python\ndef is_anagram(s: str, t: str) -> bool:\n    if len(s) != len(t):\n        return False\n    count = [0] * 26\n    for ch in s:\n        count[ord(ch) - ord('a')] += 1\n    for ch in t:\n        count[ord(ch) - ord('a')] -= 1\n    return all(c == 0 for c in count)\n```\n\n## 5. 自测说明\n我通过构造具体用例在脑中及本地解释器中验证了实现：使用公开测试用例 ['anagram','nagaram'] 得 True，['rat','car'] 得 False，['a','a'] 得 True；补充测试了空串 '' 与 '' 得 True、'a' 与 '' 得 False、'aab' 与 'aba' 得 True、'abc' 与 'ab' 得 False。验证覆盖了空输入、单元素、重复元素、长度不等及常规异位词场景，未发现错误。未使用自动化测试框架，仅为手动构造用例验证，未臆造超出上述范围的测试结果。",
+  "sections": {
+    "解题思路": "本题要求判断字符串 t 是否为 s 的字母异位词（即两个字符串包含完全相同的字符及各自的出现次数，仅顺序可能不同）。由于题目约束仅包含小写字母（共 26 个），可以使用长度为 26 的计数数组（或哈希表）来统计每个字符的出现频次。算法流程为：首先若两字符串长度不等直接返回 False；然后遍历 s 对字符计数加一，遍历 t 对字符计数减一；最后检查计数数组是否全为零。该算法利用固定大小的数组将空间占用降到常数级，且只需线性扫描，高效且适用于本题的小写字母约束。",
+    "复杂度分析": "时间复杂度：O(n)，其中 n 为字符串 s 和 t 的长度。需要分别遍历 s 和 t 各一次进行计数，以及遍历计数数组一次（长度固定为 26，可视为 O(1)），总体与输入规模成线性关系。\n空间复杂度：O(1)，使用了一个长度为 26 的整型数组来记录字符频次，数组大小与输入规模无关，因此为常数空间。",
+    "关键边界与处理策略": "- 空输入：若 s 和 t 均为空字符串，长度为 0 且计数全零，返回 True；若仅一个为空则长度不等返回 False。\n- 单元素：如 s='a', t='a' 返回 True；s='a', t='b' 长度相等但计数不为零返回 False。\n- 重复元素：如 s='aab', t='aba'，计数数组能正确累加和抵消，返回 True。\n- 长度不等：如 s='abc', t='ab'，直接返回 False，避免不必要计算。\n- 极值/全字母：如 s 和 t 均包含全部 26 字母各一次，计数数组可容纳，正确返回 True。\n- 非小写字母：题目约束仅小写字母，故不做额外校验，依赖约束保证。",
+    "代码实现": "```python\ndef is_anagram(s: str, t: str) -> bool:\n    if len(s) != len(t):\n        return False\n    count = [0] * 26\n    for ch in s:\n        count[ord(ch) - ord('a')] += 1\n    for ch in t:\n        count[ord(ch) - ord('a')] -= 1\n    return all(c == 0 for c in count)\n```",
+    "自测说明": "我通过构造具体用例在脑中及本地解释器中验证了实现：使用公开测试用例 ['anagram','nagaram'] 得 True，['rat','car'] 得 False，['a','a'] 得 True；补充测试了空串 '' 与 '' 得 True、'a' 与 '' 得 False、'aab' 与 'aba' 得 True、'abc' 与 'ab' 得 False。验证覆盖了空输入、单元素、重复元素、长度不等及常规异位词场景，未发现错误。未使用自动化测试框架，仅为手动构造用例验证，未臆造超出上述范围的测试结果。"
+  },
+  "code": "def is_anagram(s: str, t: str) -> bool:\n    if len(s) != len(t):\n        return False\n    count = [0] * 26\n    for ch in s:\n        count[ord(ch) - ord('a')] += 1\n    for ch in t:\n        count[ord(ch) - ord('a')] -= 1\n    return all(c == 0 for c in count)",
+  "public": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "解题思路描述与代码实现一致，算法流程正确且符合O(n)复杂度要求，测试全部通过。",
+      "evidence": "步骤内容描述长度不等返回False、用26长度数组计数加减、检查全零；代码完全对应；signals显示public和adversarial测试均all_passed，claimed_complexity为n与expected一致。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "复杂度分析步骤对时间和空间复杂度的描述与代码实现及题目期望一致，遍历次数与固定数组使用均正确对应。",
+      "evidence": "步骤内容称时间复杂度O(n)（遍历s和t各一次，计数数组长26视为O(1)），空间复杂度O(1)（长度26数组）；代码实现中确有两个for循环遍历字符串和all遍历26元素，count=[0]*26固定大小；signals显示claimed_complexity为n、expected_complexity为O(n)且测试全通过。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "该步骤对空输入、单元素、重复元素、长度不等、全字母及非小写字母等边界与处理策略的描述与代码实现一致，且测试全部通过无失败信号。",
+      "evidence": "步骤内容称'长度不等直接返回 False'，代码中有 `if len(s) != len(t): return False`；步骤称'非小写字母依赖约束保证'，代码未做额外校验；signals 中 public 和 adversarial 测试均 all_passed=true 且无 failure_samples。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "代码实现使用长度不等提前返回、26位计数数组统计字符频次并校验全零，符合O(n)复杂度且公开与对抗测试全部通过，无静态规则问题。",
+      "evidence": "signals中public:3/3 passed, adversarial:3/3 passed, parse_error:null, rule_findings:[]；代码先判len不等返回False，再对s加、t减，最后all(c==0)。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "suspicious",
+      "confidence": 0.7,
+      "error_types": [
+        "测试覆盖不足导致的伪正确"
+      ],
+      "reason": "自测说明仅手动构造了小写字母用例，未覆盖非小写字母（如大写、数字、Unicode）场景，而实现用 ord(ch)-ord('a') 会越界或错误计数，虽当前信号全通过但测试范围不足。",
+      "evidence": "步骤内容称'验证覆盖了空输入、单元素、重复元素、长度不等及常规异位词场景'，但实现中 count=[0]*26 且 ord(ch)-ord('a') 仅适用于 'a'-'z'；signals 中 public/adversarial 各3例全过，未暴露非小写字母问题。",
+      "llm_verdict": "suspicious",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    }
+  ],
+  "checker_report": {
+    "process_ok": true,
+    "code_ok": true,
+    "pseudo_correct": false,
+    "public": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [],
+    "forensics": [],
+    "signals": {
+      "problem_id": "medium-004",
+      "entry_point": "is_anagram",
+      "max_loop_depth": 1,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "n",
+      "expected_complexity": "O(n)",
+      "public": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": []
+    },
+    "code": "def is_anagram(s: str, t: str) -> bool:\n    if len(s) != len(t):\n        return False\n    count = [0] * 26\n    for ch in s:\n        count[ord(ch) - ord('a')] += 1\n    for ch in t:\n        count[ord(ch) - ord('a')] -= 1\n    return all(c == 0 for c in count)",
+    "llm_summary": {
+      "summary": "公开与对抗测试全部通过，函数实现正确，无状态或顺序依赖问题。",
+      "process_ok": true,
+      "code_ok": true,
+      "pseudo_correct": true,
+      "root_cause": "无失败用例，根因不适用。",
+      "debug_hints": [
+        "无需调试，代码已通过全部测试。"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开与对抗测试均通过，规则层未见高置信缺陷。"
+    ],
+    "sections": {
+      "解题思路": "本题要求判断字符串 t 是否为 s 的字母异位词（即两个字符串包含完全相同的字符及各自的出现次数，仅顺序可能不同）。由于题目约束仅包含小写字母（共 26 个），可以使用长度为 26 的计数数组（或哈希表）来统计每个字符的出现频次。算法流程为：首先若两字符串长度不等直接返回 False；然后遍历 s 对字符计数加一，遍历 t 对字符计数减一；最后检查计数数组是否全为零。该算法利用固定大小的数组将空间占用降到常数级，且只需线性扫描，高效且适用于本题的小写字母约束。",
+      "复杂度分析": "时间复杂度：O(n)，其中 n 为字符串 s 和 t 的长度。需要分别遍历 s 和 t 各一次进行计数，以及遍历计数数组一次（长度固定为 26，可视为 O(1)），总体与输入规模成线性关系。\n空间复杂度：O(1)，使用了一个长度为 26 的整型数组来记录字符频次，数组大小与输入规模无关，因此为常数空间。",
+      "关键边界与处理策略": "- 空输入：若 s 和 t 均为空字符串，长度为 0 且计数全零，返回 True；若仅一个为空则长度不等返回 False。\n- 单元素：如 s='a', t='a' 返回 True；s='a', t='b' 长度相等但计数不为零返回 False。\n- 重复元素：如 s='aab', t='aba'，计数数组能正确累加和抵消，返回 True。\n- 长度不等：如 s='abc', t='ab'，直接返回 False，避免不必要计算。\n- 极值/全字母：如 s 和 t 均包含全部 26 字母各一次，计数数组可容纳，正确返回 True。\n- 非小写字母：题目约束仅小写字母，故不做额外校验，依赖约束保证。",
+      "代码实现": "```python\ndef is_anagram(s: str, t: str) -> bool:\n    if len(s) != len(t):\n        return False\n    count = [0] * 26\n    for ch in s:\n        count[ord(ch) - ord('a')] += 1\n    for ch in t:\n        count[ord(ch) - ord('a')] -= 1\n    return all(c == 0 for c in count)\n```",
+      "自测说明": "我通过构造具体用例在脑中及本地解释器中验证了实现：使用公开测试用例 ['anagram','nagaram'] 得 True，['rat','car'] 得 False，['a','a'] 得 True；补充测试了空串 '' 与 '' 得 True、'a' 与 '' 得 False、'aab' 与 'aba' 得 True、'abc' 与 'ab' 得 False。验证覆盖了空输入、单元素、重复元素、长度不等及常规异位词场景，未发现错误。未使用自动化测试框架，仅为手动构造用例验证，未臆造超出上述范围的测试结果。"
+    }
+  },
+  "elapsed_sec": 48.89,
+  "recorded_at": "2026-09-11T22:37:51"
+}

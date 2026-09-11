@@ -1,0 +1,348 @@
+{
+  "problem_id": "rw-003",
+  "title": "固定窗口限流判定",
+  "difficulty": "engineering",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "rate_limit_allow",
+  "source_path": "datasets\\code\\engineering\\function\\rw_003.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "note": "闭开区间错误会导致边界对抗失败。"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": false,
+    "process_valid": false,
+    "false_positive_solution": true,
+    "first_error_step": "step_1_approach",
+    "first_error_section": "解题思路",
+    "error_types": [
+      "复杂度分析错误",
+      "边界处理缺失",
+      "测试覆盖不足导致的伪正确",
+      "描述与实现不一致",
+      "实现逻辑缺陷",
+      "题意误读"
+    ]
+  },
+  "raw_solution": "## 1. 解题思路\n本题需要判断在滑动时间窗口 `(now - window_sec, now]` 内，给定 key 的历史请求时间戳数量是否小于上限 `limit`。由于 `timestamps` 已经是升序排列，我们可以使用二分查找来快速定位窗口左边界 `now - window_sec` 的第一个大于该值的位置，从而得到窗口内的时间戳个数。若个数小于 `limit` 则允许本次请求（返回 `True`），否则拒绝（返回 `False`）。选择二分查找是因为它能在 O(log n) 时间内完成边界定位，适用于可能较大的历史列表，且实现简单高效。\n\n## 2. 复杂度分析\n时间复杂度：O(log n)，其中 n 为 `timestamps` 的长度。使用二分查找在有序数组中寻找左边界，每次迭代将搜索范围减半，因此为对数复杂度。\n空间复杂度：O(1)，仅使用常数级别的额外变量（如左右指针、中点索引等），不随输入规模增长。\n\n## 3. 关键边界与处理策略\n- 空输入：`timestamps` 为空列表时，窗口内计数为 0，必然小于 `limit`（除非 `limit` 为 0，但题目未说明，按常规 limit>=1 处理），返回 `True`。\n- 单元素：列表仅一个时间戳，二分查找正常处理，判断该元素是否在窗口内并计数。\n- 重复元素：升序列表中可能有相同时间戳，二分查找找到第一个大于 `now - window_sec` 的位置，重复元素会被一并计入，符合统计要求。\n- 负数时间戳：时间戳可能为负（如系统启动前），二分查找基于数值比较，不受影响。\n- 极值：`now` 或 `window_sec` 极大/极小时，计算 `now - window_sec` 可能溢出或精度问题，Python float 可处理常规范围；若 `window_sec` 为 0，则区间为 `(now, now]` 即空区间，计数为 0，返回 `True`。\n- `limit` 为 0：若上限为 0，则任何请求都不允许，但题目示例未覆盖，按逻辑应返回 `False`（窗口内计数 >= 0 即不满足 <0，故返回 `False`）。\n- 窗口左边界恰好等于某时间戳：区间为开区间，不计入等于 `now - window_sec` 的点，二分查找用“大于”而非“大于等于”正确处理。\n\n## 4. 代码实现\n```python\ndef rate_limit_allow(timestamps: list, now: float, window_sec: float, limit: int) -> bool:\n    left_bound = now - window_sec\n    # 二分查找第一个大于 left_bound 的索引\n    lo, hi = 0, len(timestamps)\n    while lo < hi:\n        mid = (lo + hi) // 2\n        if timestamps[mid] <= left_bound:\n            lo = mid + 1\n        else:\n            hi = mid\n    count = len(timestamps) - lo\n    return count < limit\n```\n\n## 5. 自测说明\n我通过构造以下用例验证实现：\n1. 公开用例：`[[], 10.0, 60.0, 5]` -> 空列表，count=0 <5，返回 True，与期望一致。\n2. 公开用例：`[[1.0,2.0,3.0], 10.0, 60.0, 5]` -> 窗口 ( -50, 10 ] 包含全部 3 个，count=3 <5，返回 True，与期望一致。\n3. 公开用例：`[[8.0,9.0,9.5,9.8,9.9], 10.0, 5.0, 5]` -> 窗口 (5,10] 包含全部 5 个，count=5 不 <5，返回 False，与期望一致。\n4. 边界：单元素 `[[10.0], 10.0, 0.0, 1]` -> 窗口 (10,10] 空，count=0 <1，True。\n5. 边界：重复元素 `[[5.0,5.0,5.0], 10.0, 5.0, 2]` -> 窗口 (5,10] 不含 5.0，count=0 <2，True。\n6. 边界：limit=0 `[[1.0], 2.0, 10.0, 0]` -> count=1 不 <0，False。\n验证覆盖：空列表、单元素、重复元素、开区间边界、limit 为 0、公开用例。未覆盖：极大浮点数溢出（Python 无此问题）、负数时间戳（逻辑同正数未单独构造但代码支持）。未臆造测试结果，上述均为实际推演。",
+  "sections": {
+    "解题思路": "本题需要判断在滑动时间窗口 `(now - window_sec, now]` 内，给定 key 的历史请求时间戳数量是否小于上限 `limit`。由于 `timestamps` 已经是升序排列，我们可以使用二分查找来快速定位窗口左边界 `now - window_sec` 的第一个大于该值的位置，从而得到窗口内的时间戳个数。若个数小于 `limit` 则允许本次请求（返回 `True`），否则拒绝（返回 `False`）。选择二分查找是因为它能在 O(log n) 时间内完成边界定位，适用于可能较大的历史列表，且实现简单高效。",
+    "复杂度分析": "时间复杂度：O(log n)，其中 n 为 `timestamps` 的长度。使用二分查找在有序数组中寻找左边界，每次迭代将搜索范围减半，因此为对数复杂度。\n空间复杂度：O(1)，仅使用常数级别的额外变量（如左右指针、中点索引等），不随输入规模增长。",
+    "关键边界与处理策略": "- 空输入：`timestamps` 为空列表时，窗口内计数为 0，必然小于 `limit`（除非 `limit` 为 0，但题目未说明，按常规 limit>=1 处理），返回 `True`。\n- 单元素：列表仅一个时间戳，二分查找正常处理，判断该元素是否在窗口内并计数。\n- 重复元素：升序列表中可能有相同时间戳，二分查找找到第一个大于 `now - window_sec` 的位置，重复元素会被一并计入，符合统计要求。\n- 负数时间戳：时间戳可能为负（如系统启动前），二分查找基于数值比较，不受影响。\n- 极值：`now` 或 `window_sec` 极大/极小时，计算 `now - window_sec` 可能溢出或精度问题，Python float 可处理常规范围；若 `window_sec` 为 0，则区间为 `(now, now]` 即空区间，计数为 0，返回 `True`。\n- `limit` 为 0：若上限为 0，则任何请求都不允许，但题目示例未覆盖，按逻辑应返回 `False`（窗口内计数 >= 0 即不满足 <0，故返回 `False`）。\n- 窗口左边界恰好等于某时间戳：区间为开区间，不计入等于 `now - window_sec` 的点，二分查找用“大于”而非“大于等于”正确处理。",
+    "代码实现": "```python\ndef rate_limit_allow(timestamps: list, now: float, window_sec: float, limit: int) -> bool:\n    left_bound = now - window_sec\n    # 二分查找第一个大于 left_bound 的索引\n    lo, hi = 0, len(timestamps)\n    while lo < hi:\n        mid = (lo + hi) // 2\n        if timestamps[mid] <= left_bound:\n            lo = mid + 1\n        else:\n            hi = mid\n    count = len(timestamps) - lo\n    return count < limit\n```",
+    "自测说明": "我通过构造以下用例验证实现：\n1. 公开用例：`[[], 10.0, 60.0, 5]` -> 空列表，count=0 <5，返回 True，与期望一致。\n2. 公开用例：`[[1.0,2.0,3.0], 10.0, 60.0, 5]` -> 窗口 ( -50, 10 ] 包含全部 3 个，count=3 <5，返回 True，与期望一致。\n3. 公开用例：`[[8.0,9.0,9.5,9.8,9.9], 10.0, 5.0, 5]` -> 窗口 (5,10] 包含全部 5 个，count=5 不 <5，返回 False，与期望一致。\n4. 边界：单元素 `[[10.0], 10.0, 0.0, 1]` -> 窗口 (10,10] 空，count=0 <1，True。\n5. 边界：重复元素 `[[5.0,5.0,5.0], 10.0, 5.0, 2]` -> 窗口 (5,10] 不含 5.0，count=0 <2，True。\n6. 边界：limit=0 `[[1.0], 2.0, 10.0, 0]` -> count=1 不 <0，False。\n验证覆盖：空列表、单元素、重复元素、开区间边界、limit 为 0、公开用例。未覆盖：极大浮点数溢出（Python 无此问题）、负数时间戳（逻辑同正数未单独构造但代码支持）。未臆造测试结果，上述均为实际推演。"
+  },
+  "code": "def rate_limit_allow(timestamps: list, now: float, window_sec: float, limit: int) -> bool:\n    left_bound = now - window_sec\n    # 二分查找第一个大于 left_bound 的索引\n    lo, hi = 0, len(timestamps)\n    while lo < hi:\n        mid = (lo + hi) // 2\n        if timestamps[mid] <= left_bound:\n            lo = mid + 1\n        else:\n            hi = mid\n    count = len(timestamps) - lo\n    return count < limit",
+  "public": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 4,
+    "passed": 3,
+    "failed": 1,
+    "all_passed": false,
+    "failure_samples": [
+      {
+        "index": 1,
+        "args": [
+          [
+            5.0,
+            6.0,
+            7.0
+          ],
+          10.0,
+          5.0,
+          3
+        ],
+        "expected": false,
+        "status": "wrong_answer",
+        "actual": true,
+        "error": "",
+        "duration_ms": 0.031
+      }
+    ]
+  },
+  "rule_findings": [
+    {
+      "section": "代码实现",
+      "error_type": "FALSE_POSITIVE",
+      "error_type_label": "测试覆盖不足导致的伪正确",
+      "detail": "公开测试全部通过（3/3），但对抗测试 1/4 失败——典型的“结果看似正确、实现逻辑有缺陷”的伪正确样本。",
+      "evidence": "[{'index': 1, 'args': [[5.0, 6.0, 7.0], 10.0, 5.0, 3], 'expected': False, 'status': 'wrong_answer', 'actual': True, 'error': '', 'duration_ms': 0.031}]",
+      "confidence": 0.95,
+      "source": "rule"
+    },
+    {
+      "section": "复杂度分析",
+      "error_type": "COMPLEXITY",
+      "error_type_label": "复杂度分析错误",
+      "detail": "声称时间复杂度 logn，但代码中检测到最大循环嵌套深度为 1，实际下界约为 n。",
+      "evidence": "AST 静态分析：max_loop_depth=1, recursive=False",
+      "confidence": 0.7,
+      "source": "rule"
+    }
+  ],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "flawed",
+      "confidence": 0.95,
+      "error_types": [
+        "实现逻辑缺陷",
+        "题意误读"
+      ],
+      "reason": "解题思路称用二分查找定位窗口左边界并统计个数，但对抗测试显示当历史时间戳全在窗口内且等于 limit 时返回了 True（应拒绝），说明思路中'个数小于 limit 则允许'未正确对应题目语义或边界包含关系，且实际执行失败证明实现有缺陷。",
+      "evidence": "对抗测试样本：args=[[5.0,6.0,7.0],10.0,5.0,3]，窗口为(5.0,10.0]，历史时间戳5.0不在区间内、6.0和7.0在区间内共2个<3应允许？但expected=false、actual=true；结合代码left_bound=5.0，二分找第一个>5.0的索引为1，count=3-1=2，2<3返回true，而expected=false，表明题目统计区间或limit语义与思路描述不一致（如应含左边界或limit为不超过而非小于），思路描述与题目期望不符。",
+      "llm_verdict": "flawed",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "flawed",
+      "confidence": 0.95,
+      "error_types": [
+        "复杂度分析错误"
+      ],
+      "reason": "声称时间复杂度 logn，但代码中检测到最大循环嵌套深度为 1，实际下界约为 n。 Critic 补充：步骤声称时间复杂度 O(log n) 但实际代码为单次 while 循环遍历式二分（lo/hi 指针移动），在给定实现中 while 循环最多执行 O(log n) 次，但静态信号 rule_findings 明确指出复杂度分析错误且 claimed_complexity 与检测不符；更关键的是对抗测试失败表明实现逻辑有缺陷，而复杂度分析步骤未反映真实执行行为且与 rule 判定冲突。",
+      "evidence": "AST 静态分析：max_loop_depth=1, recursive=False",
+      "llm_verdict": "flawed",
+      "rule_types": [
+        "复杂度分析错误"
+      ],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "flawed",
+      "confidence": 0.95,
+      "error_types": [
+        "边界处理缺失",
+        "描述与实现不一致"
+      ],
+      "reason": "步骤中称 limit 为 0 时返回 False，但代码实现为 count < limit，当 limit=0 时 count>=0 恒真故返回 False 看似一致；然而对抗测试显示 [5,6,7], now=10, window=5, limit=3 时期望 false 实际 true，说明步骤对窗口区间 (now-window, now] 的边界处理描述（如左开右闭、二分用大于）与实现虽文字相符，但实现实际把 5.0 计入（left_bound=5.0，timestamps[mid]<=5.0 时 lo 右移，5.0 被排除？实际 5.0<=5.0 故 lo 移到 6.0，count=2<3 返回 true），而期望 false 表明题目统计区间或语义与步骤描述不符，步骤未识别出该边界语义错误。",
+      "evidence": "对抗测试 failure_samples: args=[[5.0,6.0,7.0],10.0,5.0,3], expected=false, actual=true；步骤内容称'窗口左边界恰好等于某时间戳：区间为开区间，不计入等于 now-window_sec 的点'，但按此实现 5.0 被排除后 count=2 仍 <3 返回 true，与 expected=false 矛盾，说明步骤对边界与 limit 交互的假设错误。",
+      "llm_verdict": "flawed",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "flawed",
+      "confidence": 0.95,
+      "error_types": [
+        "测试覆盖不足导致的伪正确",
+        "实现逻辑缺陷"
+      ],
+      "reason": "公开测试全部通过（3/3），但对抗测试 1/4 失败——典型的“结果看似正确、实现逻辑有缺陷”的伪正确样本。 Critic 补充：对抗测试样本 [5.0,6.0,7.0], now=10.0, window_sec=5.0, limit=3 期望 false 但实际返回 true，说明窗口区间统计逻辑错误：left_bound=5.0，二分找到第一个>5.0的索引为1（值6.0），count=3-1=2，2<3 返回 true，但区间 (5.0,10.0] 应包含 6.0,7.0 共2个历史请求，加上本次请求共3个，limit=3 应拒绝（返回 false），实现未将本次请求计入或边界处理有误。",
+      "evidence": "[{'index': 1, 'args': [[5.0, 6.0, 7.0], 10.0, 5.0, 3], 'expected': False, 'status': 'wrong_answer', 'actual': True, 'error': '', 'duration_ms': 0.031}]",
+      "llm_verdict": "flawed",
+      "rule_types": [
+        "测试覆盖不足导致的伪正确"
+      ],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "flawed",
+      "confidence": 0.95,
+      "error_types": [
+        "测试覆盖不足导致的伪正确"
+      ],
+      "reason": "自测说明声称覆盖充分且未臆造结果，但对抗测试显示存在未覆盖的失败用例（[5,6,7],10,5,3 应 False 却返回 True），说明自测用例遗漏了窗口左边界恰好等于某时间戳且 limit 等于窗口内数量的场景。",
+      "evidence": "signals 中 adversarial failure_samples: {'index': 1, 'args': [[5.0, 6.0, 7.0], 10.0, 5.0, 3], 'expected': false, 'actual': true}；自测说明第 5 项仅测了重复 5.0 在 (5,10] 外返回 True，未测 5.0 恰在边界且 count=3 不 <3 的情况。",
+      "llm_verdict": "flawed",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    }
+  ],
+  "checker_report": {
+    "process_ok": false,
+    "code_ok": false,
+    "pseudo_correct": true,
+    "public": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 4,
+      "passed": 3,
+      "failed": 1,
+      "all_passed": false,
+      "failure_samples": [
+        {
+          "index": 1,
+          "args": [
+            [
+              5.0,
+              6.0,
+              7.0
+            ],
+            10.0,
+            5.0,
+            3
+          ],
+          "expected": false,
+          "status": "wrong_answer",
+          "actual": true,
+          "error": "",
+          "duration_ms": 0.031
+        }
+      ]
+    },
+    "findings": [
+      {
+        "section": "代码实现",
+        "error_type": "FALSE_POSITIVE",
+        "error_type_label": "测试覆盖不足导致的伪正确",
+        "detail": "公开测试全部通过（3/3），但对抗测试 1/4 失败——典型的“结果看似正确、实现逻辑有缺陷”的伪正确样本。",
+        "evidence": "[{'index': 1, 'args': [[5.0, 6.0, 7.0], 10.0, 5.0, 3], 'expected': False, 'status': 'wrong_answer', 'actual': True, 'error': '', 'duration_ms': 0.031}]",
+        "confidence": 0.95,
+        "source": "rule"
+      },
+      {
+        "section": "复杂度分析",
+        "error_type": "COMPLEXITY",
+        "error_type_label": "复杂度分析错误",
+        "detail": "声称时间复杂度 logn，但代码中检测到最大循环嵌套深度为 1，实际下界约为 n。",
+        "evidence": "AST 静态分析：max_loop_depth=1, recursive=False",
+        "confidence": 0.7,
+        "source": "rule"
+      }
+    ],
+    "forensics": [
+      {
+        "case_index": 1,
+        "kind": "function",
+        "method": null,
+        "args": [
+          [
+            5.0,
+            6.0,
+            7.0
+          ],
+          10.0,
+          5.0,
+          3
+        ],
+        "expected": false,
+        "actual": true,
+        "status": "wrong_answer",
+        "forensic": {
+          "ok": false,
+          "error": "UnicodeEncodeError: 'utf-8' codec can't encode character '\\udcac' in position 140: surrogates not allowed"
+        },
+        "summary": "[forensics unavailable] UnicodeEncodeError: 'utf-8' codec can't encode character '\\udcac' in position 140: surrogates not allowed"
+      }
+    ],
+    "signals": {
+      "problem_id": "rw-003",
+      "entry_point": "rate_limit_allow",
+      "max_loop_depth": 1,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "logn",
+      "expected_complexity": null,
+      "public": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 4,
+        "passed": 3,
+        "failed": 1,
+        "all_passed": false,
+        "failure_samples": [
+          {
+            "index": 1,
+            "args": [
+              [
+                5.0,
+                6.0,
+                7.0
+              ],
+              10.0,
+              5.0,
+              3
+            ],
+            "expected": false,
+            "status": "wrong_answer",
+            "actual": true,
+            "error": "",
+            "duration_ms": 0.031
+          }
+        ]
+      },
+      "rule_findings": [
+        {
+          "section": "代码实现",
+          "error_type": "FALSE_POSITIVE",
+          "error_type_label": "测试覆盖不足导致的伪正确",
+          "detail": "公开测试全部通过（3/3），但对抗测试 1/4 失败——典型的“结果看似正确、实现逻辑有缺陷”的伪正确样本。",
+          "evidence": "[{'index': 1, 'args': [[5.0, 6.0, 7.0], 10.0, 5.0, 3], 'expected': False, 'status': 'wrong_answer', 'actual': True, 'error': '', 'duration_ms': 0.031}]",
+          "confidence": 0.95,
+          "source": "rule"
+        },
+        {
+          "section": "复杂度分析",
+          "error_type": "COMPLEXITY",
+          "error_type_label": "复杂度分析错误",
+          "detail": "声称时间复杂度 logn，但代码中检测到最大循环嵌套深度为 1，实际下界约为 n。",
+          "evidence": "AST 静态分析：max_loop_depth=1, recursive=False",
+          "confidence": 0.7,
+          "source": "rule"
+        }
+      ]
+    },
+    "code": "def rate_limit_allow(timestamps: list, now: float, window_sec: float, limit: int) -> bool:\n    left_bound = now - window_sec\n    # 二分查找第一个大于 left_bound 的索引\n    lo, hi = 0, len(timestamps)\n    while lo < hi:\n        mid = (lo + hi) // 2\n        if timestamps[mid] <= left_bound:\n            lo = mid + 1\n        else:\n            hi = mid\n    count = len(timestamps) - lo\n    return count < limit",
+    "llm_summary": {
+      "summary": "公开测试全过但对抗测试有失败，固定窗口限流逻辑在边界时间戳处理上存在缺陷导致伪正确。",
+      "process_ok": true,
+      "code_ok": false,
+      "pseudo_correct": true,
+      "root_cause": "对抗用例 args=[[5.0,6.0,7.0], 10.0, 5.0, 3] 期望 false 但返回 true，说明在窗口大小 10.0、当前时间 5.0、限流阈值 3 时，代码错误地将时间戳 5.0/6.0/7.0 全部或部分计入了当前窗口（可能未正确处理窗口左边界开闭或未来时间戳），导致计数达到 3 而误判为允许。",
+      "debug_hints": [
+        "检查固定窗口的边界定义：窗口应为 [current - window_size, current] 还是 (current - window_size, current]，确认 5.0 是否属于以 10.0 为窗口、当前 5.0 的窗口（即窗口 [-5.0, 5.0] 或 ( -5.0, 5.0] 等）。",
+        "验证时间戳 6.0 和 7.0 大于当前时间 5.0 时是否应被过滤（未来请求不应计入历史窗口）。",
+        "打印对抗用例中每个时间戳与窗口边界的比较结果及最终计数，定位多计入了哪个时间戳。",
+        "修正复杂度分析描述：实际为 O(n) 单次遍历，而非 logn。"
+      ],
+      "failed_case_analysis": [
+        "对抗用例 index=1: args=[[5.0,6.0,7.0], 10.0, 5.0, 3]，expected=false，actual=true。窗口大小 10.0、当前时间 5.0，合法窗口应为 [-5.0, 5.0]（或类似左闭右闭/左开右闭）。时间戳 5.0 在边界上，6.0 和 7.0 为未来时间不应计入；若代码将 5.0、6.0、7.0 均计入则计数=3 达到阈值 3 返回 true，但正确行为应仅计 5.0（或甚至不计未来戳）使计数<3 返回 false。根因是未排除未来时间戳或窗口上界错误包含了 >current 的值。"
+      ]
+    },
+    "debug_hints": [
+      "公开测试通过但对抗失败：优先检查边界归一化、空/单元素、类型边界，并用 sandbox-debugger 在失败入参上下断点观察局部变量。",
+      "[FALSE_POSITIVE] 公开测试全部通过（3/3），但对抗测试 1/4 失败——典型的“结果看似正确、实现逻辑有缺陷”的伪正确样本。",
+      "[COMPLEXITY] 声称时间复杂度 logn，但代码中检测到最大循环嵌套深度为 1，实际下界约为 n。"
+    ],
+    "sections": {
+      "解题思路": "本题需要判断在滑动时间窗口 `(now - window_sec, now]` 内，给定 key 的历史请求时间戳数量是否小于上限 `limit`。由于 `timestamps` 已经是升序排列，我们可以使用二分查找来快速定位窗口左边界 `now - window_sec` 的第一个大于该值的位置，从而得到窗口内的时间戳个数。若个数小于 `limit` 则允许本次请求（返回 `True`），否则拒绝（返回 `False`）。选择二分查找是因为它能在 O(log n) 时间内完成边界定位，适用于可能较大的历史列表，且实现简单高效。",
+      "复杂度分析": "时间复杂度：O(log n)，其中 n 为 `timestamps` 的长度。使用二分查找在有序数组中寻找左边界，每次迭代将搜索范围减半，因此为对数复杂度。\n空间复杂度：O(1)，仅使用常数级别的额外变量（如左右指针、中点索引等），不随输入规模增长。",
+      "关键边界与处理策略": "- 空输入：`timestamps` 为空列表时，窗口内计数为 0，必然小于 `limit`（除非 `limit` 为 0，但题目未说明，按常规 limit>=1 处理），返回 `True`。\n- 单元素：列表仅一个时间戳，二分查找正常处理，判断该元素是否在窗口内并计数。\n- 重复元素：升序列表中可能有相同时间戳，二分查找找到第一个大于 `now - window_sec` 的位置，重复元素会被一并计入，符合统计要求。\n- 负数时间戳：时间戳可能为负（如系统启动前），二分查找基于数值比较，不受影响。\n- 极值：`now` 或 `window_sec` 极大/极小时，计算 `now - window_sec` 可能溢出或精度问题，Python float 可处理常规范围；若 `window_sec` 为 0，则区间为 `(now, now]` 即空区间，计数为 0，返回 `True`。\n- `limit` 为 0：若上限为 0，则任何请求都不允许，但题目示例未覆盖，按逻辑应返回 `False`（窗口内计数 >= 0 即不满足 <0，故返回 `False`）。\n- 窗口左边界恰好等于某时间戳：区间为开区间，不计入等于 `now - window_sec` 的点，二分查找用“大于”而非“大于等于”正确处理。",
+      "代码实现": "```python\ndef rate_limit_allow(timestamps: list, now: float, window_sec: float, limit: int) -> bool:\n    left_bound = now - window_sec\n    # 二分查找第一个大于 left_bound 的索引\n    lo, hi = 0, len(timestamps)\n    while lo < hi:\n        mid = (lo + hi) // 2\n        if timestamps[mid] <= left_bound:\n            lo = mid + 1\n        else:\n            hi = mid\n    count = len(timestamps) - lo\n    return count < limit\n```",
+      "自测说明": "我通过构造以下用例验证实现：\n1. 公开用例：`[[], 10.0, 60.0, 5]` -> 空列表，count=0 <5，返回 True，与期望一致。\n2. 公开用例：`[[1.0,2.0,3.0], 10.0, 60.0, 5]` -> 窗口 ( -50, 10 ] 包含全部 3 个，count=3 <5，返回 True，与期望一致。\n3. 公开用例：`[[8.0,9.0,9.5,9.8,9.9], 10.0, 5.0, 5]` -> 窗口 (5,10] 包含全部 5 个，count=5 不 <5，返回 False，与期望一致。\n4. 边界：单元素 `[[10.0], 10.0, 0.0, 1]` -> 窗口 (10,10] 空，count=0 <1，True。\n5. 边界：重复元素 `[[5.0,5.0,5.0], 10.0, 5.0, 2]` -> 窗口 (5,10] 不含 5.0，count=0 <2，True。\n6. 边界：limit=0 `[[1.0], 2.0, 10.0, 0]` -> count=1 不 <0，False。\n验证覆盖：空列表、单元素、重复元素、开区间边界、limit 为 0、公开用例。未覆盖：极大浮点数溢出（Python 无此问题）、负数时间戳（逻辑同正数未单独构造但代码支持）。未臆造测试结果，上述均为实际推演。"
+    }
+  },
+  "elapsed_sec": 88.23,
+  "recorded_at": "2026-09-11T23:18:00"
+}

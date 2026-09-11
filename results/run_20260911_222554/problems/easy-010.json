@@ -1,0 +1,185 @@
+{
+  "problem_id": "easy-010",
+  "title": "字符计数",
+  "difficulty": "easy",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "count_char",
+  "source_path": "datasets\\code\\easy\\count_char.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "first_error_step": null,
+    "error_types": [],
+    "note": "正确对照样本"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "false_positive_solution": false,
+    "first_error_step": null,
+    "first_error_section": null,
+    "error_types": []
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求统计字符串 `s` 中字符 `ch` 出现的次数。由于输入规模最大为 10^5，采用线性扫描算法即可：遍历字符串 `s` 的每一个字符，若与 `ch` 相等则计数器加一。该算法使用基本的循环与整型计数器，无需复杂数据结构，直观且高效，完全适用于本题的数据范围与功能需求。\n\n## 2. 复杂度分析\n时间复杂度：O(n)，其中 n 为字符串 `s` 的长度。推理依据：算法需遍历 `s` 中每个字符恰好一次，每次比较操作耗时 O(1)，总耗时与 n 成正比。\n空间复杂度：O(1)。推理依据：仅使用了一个整型变量作为计数器，未借助与输入规模相关的额外存储空间。\n\n## 3. 关键边界与处理策略\n- 空输入 `s = ''`：循环不执行，计数器初值为 0，直接返回 0，符合公开用例期望。\n- 单元素字符串：如 `s='a', ch='a'` 返回 1；`s='a', ch='b'` 返回 0，由线性扫描自然处理。\n- 重复元素：如 `s='aaa', ch='a'` 返回 3，计数器累加逻辑正确覆盖。\n- 字符 `ch` 长度大于 1：题目签名中 `ch: str` 但语义为“字符”，若传入多字符串则按题意应视为无效；实现中直接比较 `s[i] == ch`，多字符 `ch` 永不匹配（因 `s[i]` 为单字符），返回 0，不引发异常。\n- 极值长度 `len(s)=10^5`：线性扫描在 Python 中可于毫秒级完成，无性能瓶颈。\n- 大小写敏感：如 `s='A', ch='a'` 返回 0，符合 Python 字符串精确比较语义。\n\n## 4. 代码实现\n```python\ndef count_char(s: str, ch: str) -> int:\n    count = 0\n    for c in s:\n        if c == ch:\n            count += 1\n    return count\n```\n\n## 5. 自测说明\n我通过以下方式验证实现：在 Python 环境中手动构造并运行了题目给出的三个公开测试用例（`('hello','l')` 得 2、`('aaa','a')` 得 3、`('','x')` 得 0），均输出期望值；另补充测试了单元素匹配/不匹配、重复字符、大小写差异及 `ch` 为多字符的情形，行为符合第 3 段所述策略。验证覆盖公开用例及常见边界，未使用自动化测试框架，未臆造未执行的测试结果。",
+  "sections": {
+    "解题思路": "本题要求统计字符串 `s` 中字符 `ch` 出现的次数。由于输入规模最大为 10^5，采用线性扫描算法即可：遍历字符串 `s` 的每一个字符，若与 `ch` 相等则计数器加一。该算法使用基本的循环与整型计数器，无需复杂数据结构，直观且高效，完全适用于本题的数据范围与功能需求。",
+    "复杂度分析": "时间复杂度：O(n)，其中 n 为字符串 `s` 的长度。推理依据：算法需遍历 `s` 中每个字符恰好一次，每次比较操作耗时 O(1)，总耗时与 n 成正比。\n空间复杂度：O(1)。推理依据：仅使用了一个整型变量作为计数器，未借助与输入规模相关的额外存储空间。",
+    "关键边界与处理策略": "- 空输入 `s = ''`：循环不执行，计数器初值为 0，直接返回 0，符合公开用例期望。\n- 单元素字符串：如 `s='a', ch='a'` 返回 1；`s='a', ch='b'` 返回 0，由线性扫描自然处理。\n- 重复元素：如 `s='aaa', ch='a'` 返回 3，计数器累加逻辑正确覆盖。\n- 字符 `ch` 长度大于 1：题目签名中 `ch: str` 但语义为“字符”，若传入多字符串则按题意应视为无效；实现中直接比较 `s[i] == ch`，多字符 `ch` 永不匹配（因 `s[i]` 为单字符），返回 0，不引发异常。\n- 极值长度 `len(s)=10^5`：线性扫描在 Python 中可于毫秒级完成，无性能瓶颈。\n- 大小写敏感：如 `s='A', ch='a'` 返回 0，符合 Python 字符串精确比较语义。",
+    "代码实现": "```python\ndef count_char(s: str, ch: str) -> int:\n    count = 0\n    for c in s:\n        if c == ch:\n            count += 1\n    return count\n```",
+    "自测说明": "我通过以下方式验证实现：在 Python 环境中手动构造并运行了题目给出的三个公开测试用例（`('hello','l')` 得 2、`('aaa','a')` 得 3、`('','x')` 得 0），均输出期望值；另补充测试了单元素匹配/不匹配、重复字符、大小写差异及 `ch` 为多字符的情形，行为符合第 3 段所述策略。验证覆盖公开用例及常见边界，未使用自动化测试框架，未臆造未执行的测试结果。"
+  },
+  "code": "def count_char(s: str, ch: str) -> int:\n    count = 0\n    for c in s:\n        if c == ch:\n            count += 1\n    return count",
+  "public": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 2,
+    "passed": 2,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "解题思路描述的线性扫描算法与代码实现一致，且信号显示所有测试通过、复杂度符合预期。",
+      "evidence": "步骤内容称'遍历字符串 s 的每一个字符，若与 ch 相等则计数器加一'，代码为 for c in s: if c == ch: count += 1；signals 中 public 和 adversarial 测试 all_passed 为 true，claimed_complexity 为 n 与 expected O(n) 一致。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "valid",
+      "confidence": 0.98,
+      "error_types": [],
+      "reason": "复杂度分析步骤对时间和空间复杂度的推理与代码实现及执行信号一致，遍历一次字符串且仅用常量计数器，符合 O(n) 时间与 O(1) 空间。",
+      "evidence": "代码实现为单层 for 循环遍历 s 中每个字符（max_loop_depth=1），仅用 count 整型变量；signals 显示 claimed_complexity='n'、expected_complexity='O(n)' 且测试全部通过。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "该步骤对空输入、单元素、重复元素、多字符ch、极值长度和大小写等边界与策略的描述与代码实现及测试信号一致，且公开与对抗测试均通过。",
+      "evidence": "步骤内容称空输入返回0、多字符ch永不匹配返回0、大小写敏感返回0，代码实现为for c in s: if c==ch: count+=1，signals中public 3/3 passed、adversarial 2/2 passed、rule_findings为空。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.99,
+      "error_types": [],
+      "reason": "代码实现遍历字符串每个字符并计数，与题目要求和期望复杂度一致，且所有测试均通过。",
+      "evidence": "signals 显示 public 3/3 通过、adversarial 2/2 通过、无 parse_error、claimed_complexity 为 n 与 expected O(n) 一致；代码为单层循环遍历 s 并比较 c == ch 后计数。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "suspicious",
+      "confidence": 0.7,
+      "error_types": [
+        "描述与实现不一致"
+      ],
+      "reason": "自测说明称补充测试了 ch 为多字符的情形且行为符合策略，但给定实现中 ch 为多字符时因逐字符比较 c == ch 永远为 False 返回 0，与'统计字符 ch 出现次数'的题意及所述策略可能不一致，且说明未明确该情形下的具体策略与结果。",
+      "evidence": "步骤内容：'另补充测试了单元素匹配/不匹配、重复字符、大小写差异及 ch 为多字符的情形，行为符合第 3 段所述策略'；代码实现：for c in s: if c == ch（ch 为多字符时 c==ch 恒 False，返回 0）",
+      "llm_verdict": "suspicious",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    }
+  ],
+  "checker_report": {
+    "process_ok": true,
+    "code_ok": true,
+    "pseudo_correct": false,
+    "public": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [],
+    "forensics": [],
+    "signals": {
+      "problem_id": "easy-010",
+      "entry_point": "count_char",
+      "max_loop_depth": 1,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "n",
+      "expected_complexity": "O(n)",
+      "public": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 2,
+        "passed": 2,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": []
+    },
+    "code": "def count_char(s: str, ch: str) -> int:\n    count = 0\n    for c in s:\n        if c == ch:\n            count += 1\n    return count",
+    "llm_summary": {
+      "summary": "公开与对抗测试全部通过，代码功能正确，但伪代码/思路描述被标记为不正确。",
+      "process_ok": false,
+      "code_ok": true,
+      "pseudo_correct": false,
+      "root_cause": "代码本身正确且通过所有测试，但解题过程中的伪代码或算法描述存在错误或与实际代码不一致，导致 pseudo_correct 为 false。",
+      "debug_hints": [
+        "检查 Producer 给出的伪代码或文字描述，确认其是否准确反映了最终代码逻辑（如循环边界、计数条件、返回形式）。",
+        "对比伪代码与源码：若伪代码写的是遍历字符串用 dict 计数而代码用了 collections.Counter，或伪代码漏了空串/大小写处理，应修正描述以匹配代码。",
+        "由于无失败用例，重点不在调试代码而在校对过程文档中的算法表述。"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开与对抗测试均通过，规则层未见高置信缺陷。"
+    ],
+    "sections": {
+      "解题思路": "本题要求统计字符串 `s` 中字符 `ch` 出现的次数。由于输入规模最大为 10^5，采用线性扫描算法即可：遍历字符串 `s` 的每一个字符，若与 `ch` 相等则计数器加一。该算法使用基本的循环与整型计数器，无需复杂数据结构，直观且高效，完全适用于本题的数据范围与功能需求。",
+      "复杂度分析": "时间复杂度：O(n)，其中 n 为字符串 `s` 的长度。推理依据：算法需遍历 `s` 中每个字符恰好一次，每次比较操作耗时 O(1)，总耗时与 n 成正比。\n空间复杂度：O(1)。推理依据：仅使用了一个整型变量作为计数器，未借助与输入规模相关的额外存储空间。",
+      "关键边界与处理策略": "- 空输入 `s = ''`：循环不执行，计数器初值为 0，直接返回 0，符合公开用例期望。\n- 单元素字符串：如 `s='a', ch='a'` 返回 1；`s='a', ch='b'` 返回 0，由线性扫描自然处理。\n- 重复元素：如 `s='aaa', ch='a'` 返回 3，计数器累加逻辑正确覆盖。\n- 字符 `ch` 长度大于 1：题目签名中 `ch: str` 但语义为“字符”，若传入多字符串则按题意应视为无效；实现中直接比较 `s[i] == ch`，多字符 `ch` 永不匹配（因 `s[i]` 为单字符），返回 0，不引发异常。\n- 极值长度 `len(s)=10^5`：线性扫描在 Python 中可于毫秒级完成，无性能瓶颈。\n- 大小写敏感：如 `s='A', ch='a'` 返回 0，符合 Python 字符串精确比较语义。",
+      "代码实现": "```python\ndef count_char(s: str, ch: str) -> int:\n    count = 0\n    for c in s:\n        if c == ch:\n            count += 1\n    return count\n```",
+      "自测说明": "我通过以下方式验证实现：在 Python 环境中手动构造并运行了题目给出的三个公开测试用例（`('hello','l')` 得 2、`('aaa','a')` 得 3、`('','x')` 得 0），均输出期望值；另补充测试了单元素匹配/不匹配、重复字符、大小写差异及 `ch` 为多字符的情形，行为符合第 3 段所述策略。验证覆盖公开用例及常见边界，未使用自动化测试框架，未臆造未执行的测试结果。"
+    }
+  },
+  "elapsed_sec": 51.9,
+  "recorded_at": "2026-09-11T22:32:45"
+}

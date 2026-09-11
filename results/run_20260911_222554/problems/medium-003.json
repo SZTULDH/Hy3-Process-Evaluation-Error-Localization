@@ -1,0 +1,184 @@
+{
+  "problem_id": "medium-003",
+  "title": "合并区间",
+  "difficulty": "medium",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "merge_intervals",
+  "source_path": "datasets\\code\\medium\\merge_intervals.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": false,
+    "process_valid": false,
+    "first_error_step": "step_3_edge_cases",
+    "error_types": [
+      "边界处理缺失",
+      "实现逻辑缺陷"
+    ],
+    "note": "伪正确样本：合并时把右端点直接赋值为 cur[1]，未取 max。当后一个区间被前一个区间完全包含时右端点反而被缩小。边界讨论中遗漏了“完全包含”这一情形。"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "false_positive_solution": false,
+    "first_error_step": null,
+    "first_error_section": null,
+    "error_types": []
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求合并所有重叠的闭区间，并按左端点升序排列。选择**排序 + 线性扫描**的算法：首先将所有区间按左端点升序排序（若左端点相同则按右端点升序），这样重叠的区间必然相邻；随后初始化一个结果列表，依次遍历排序后的区间，若当前区间与结果列表中最后一个区间重叠（即当前区间的左端点 <= 最后一个区间的右端点），则更新最后一个区间的右端点为两者较大值，否则将当前区间加入结果列表。该算法利用排序将重叠区间聚集，通过一次遍历完成合并，逻辑清晰且高效。\n\n## 2. 复杂度分析\n时间复杂度：O(n log n)，其中 n 为区间数量。排序区间列表需要 O(n log n) 时间，线性扫描合并需要 O(n) 时间，总体由排序主导。\n空间复杂度：O(n)（或 O(log n) 取决于排序实现）。结果列表最多存储 n 个合并后的区间，占用 O(n) 空间；若使用原地排序（如 Python 的 sort 方法），额外空间为递归栈的 O(log n)，但输出列表本身不计入额外空间时通常记为 O(n) 用于存放结果。\n\n## 3. 关键边界与处理策略\n- 空输入（len(intervals) == 0）：直接返回空列表，无需排序和扫描。\n- 单元素（len(intervals) == 1）：排序后直接返回该区间，扫描逻辑自然处理。\n- 重复元素（完全相同的区间）：排序后相邻，扫描时因左端点 <= 右端点会合并为一个。\n- 端点相接（如 [1,4] 和 [4,5]）：闭区间定义下重叠，合并为 [1,5]。\n- 负数与极值：区间端点可能为负数或极大值，排序和比较使用标准整数运算，不影响正确性。\n- 左端点相同右端点不同：排序后按右端点升序，扫描时合并为最大右端点。\n\n## 4. 代码实现\n```python\ndef merge_intervals(intervals: list) -> list:\n    if not intervals:\n        return []\n    intervals.sort(key=lambda x: (x[0], x[1]))\n    merged = [intervals[0][:]]\n    for curr in intervals[1:]:\n        last = merged[-1]\n        if curr[0] <= last[1]:\n            last[1] = max(last[1], curr[1])\n        else:\n            merged.append(curr[:])\n    return merged\n```\n\n## 5. 自测说明\n我使用题目给出的公开测试用例验证实现：输入 `[[1,3],[2,6],[8,10],[15,18]]` 得到 `[[1,6],[8,10],[15,18]]`；输入 `[[1,4],[4,5]]` 得到 `[[1,5]]`；输入 `[[1,2]]` 得到 `[[1,2]]`。此外，我手动构造了空列表 `[]` 返回 `[]`，单元素 `[[5,5]]` 返回 `[[5,5]]`，重复区间 `[[1,2],[1,2]]` 返回 `[[1,2]]`，以及乱序输入 `[[3,5],[1,2],[4,8]]` 返回 `[[1,2],[3,8]]`。验证覆盖了空、单元素、重复、相接、乱序及公开用例，未发现错误。",
+  "sections": {
+    "解题思路": "本题要求合并所有重叠的闭区间，并按左端点升序排列。选择**排序 + 线性扫描**的算法：首先将所有区间按左端点升序排序（若左端点相同则按右端点升序），这样重叠的区间必然相邻；随后初始化一个结果列表，依次遍历排序后的区间，若当前区间与结果列表中最后一个区间重叠（即当前区间的左端点 <= 最后一个区间的右端点），则更新最后一个区间的右端点为两者较大值，否则将当前区间加入结果列表。该算法利用排序将重叠区间聚集，通过一次遍历完成合并，逻辑清晰且高效。",
+    "复杂度分析": "时间复杂度：O(n log n)，其中 n 为区间数量。排序区间列表需要 O(n log n) 时间，线性扫描合并需要 O(n) 时间，总体由排序主导。\n空间复杂度：O(n)（或 O(log n) 取决于排序实现）。结果列表最多存储 n 个合并后的区间，占用 O(n) 空间；若使用原地排序（如 Python 的 sort 方法），额外空间为递归栈的 O(log n)，但输出列表本身不计入额外空间时通常记为 O(n) 用于存放结果。",
+    "关键边界与处理策略": "- 空输入（len(intervals) == 0）：直接返回空列表，无需排序和扫描。\n- 单元素（len(intervals) == 1）：排序后直接返回该区间，扫描逻辑自然处理。\n- 重复元素（完全相同的区间）：排序后相邻，扫描时因左端点 <= 右端点会合并为一个。\n- 端点相接（如 [1,4] 和 [4,5]）：闭区间定义下重叠，合并为 [1,5]。\n- 负数与极值：区间端点可能为负数或极大值，排序和比较使用标准整数运算，不影响正确性。\n- 左端点相同右端点不同：排序后按右端点升序，扫描时合并为最大右端点。",
+    "代码实现": "```python\ndef merge_intervals(intervals: list) -> list:\n    if not intervals:\n        return []\n    intervals.sort(key=lambda x: (x[0], x[1]))\n    merged = [intervals[0][:]]\n    for curr in intervals[1:]:\n        last = merged[-1]\n        if curr[0] <= last[1]:\n            last[1] = max(last[1], curr[1])\n        else:\n            merged.append(curr[:])\n    return merged\n```",
+    "自测说明": "我使用题目给出的公开测试用例验证实现：输入 `[[1,3],[2,6],[8,10],[15,18]]` 得到 `[[1,6],[8,10],[15,18]]`；输入 `[[1,4],[4,5]]` 得到 `[[1,5]]`；输入 `[[1,2]]` 得到 `[[1,2]]`。此外，我手动构造了空列表 `[]` 返回 `[]`，单元素 `[[5,5]]` 返回 `[[5,5]]`，重复区间 `[[1,2],[1,2]]` 返回 `[[1,2]]`，以及乱序输入 `[[3,5],[1,2],[4,8]]` 返回 `[[1,2],[3,8]]`。验证覆盖了空、单元素、重复、相接、乱序及公开用例，未发现错误。"
+  },
+  "code": "def merge_intervals(intervals: list) -> list:\n    if not intervals:\n        return []\n    intervals.sort(key=lambda x: (x[0], x[1]))\n    merged = [intervals[0][:]]\n    for curr in intervals[1:]:\n        last = merged[-1]\n        if curr[0] <= last[1]:\n            last[1] = max(last[1], curr[1])\n        else:\n            merged.append(curr[:])\n    return merged",
+  "public": {
+    "total": 4,
+    "passed": 4,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "valid",
+      "confidence": 0.98,
+      "error_types": [],
+      "reason": "解题思路描述的排序+线性扫描合并重叠区间方法与代码实现一致，且测试全部通过，复杂度符合预期。",
+      "evidence": "步骤内容说明按左端点排序后线性扫描合并，代码实现使用 intervals.sort(key=lambda x: (x[0], x[1])) 并遍历合并；signals 显示 public 4/4、adversarial 3/3 通过，claimed_complexity 为 nlogn 与 expected 一致。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "复杂度分析正确指出排序主导O(n log n)、扫描O(n)，空间上结果列表O(n)且排序额外空间说明合理，与实现一致。",
+      "evidence": "步骤内容称'排序区间列表需要 O(n log n) 时间，线性扫描合并需要 O(n) 时间，总体由排序主导'；代码实现中 intervals.sort 为 O(n log n)，单层 for 循环为 O(n)；空间上 merged 最多存 n 个区间，与描述一致。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "该步骤对空输入、单元素、重复、端点相接、负数极值、左同右异等边界的描述与代码实现及闭区间合并语义一致，且测试全部通过。",
+      "evidence": "步骤称'端点相接（如 [1,4] 和 [4,5]）：闭区间定义下重叠，合并为 [1,5]'，代码中条件为 curr[0] <= last[1] 即 4<=4 成立并合并；signals 显示 public 4/4、adversarial 3/3 全通过，rule_findings 为空。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "代码实现正确排序并合并重叠区间，公开与对抗测试全部通过，无静态规则问题，符合O(n log n)复杂度。",
+      "evidence": "signals显示public 4/4 passed, adversarial 3/3 passed, parse_error null, rule_findings []；代码先按左端点排序再线性扫描合并，逻辑与标准解法一致。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "自测说明中列举的测试用例（空、单元素、重复、相接、乱序及公开用例）与代码实现行为一致，且 signals 显示公开与对抗测试全部通过，无失败证据。",
+      "evidence": "signals 中 public.all_passed=true, adversarial.all_passed=true, failure_samples=[]；步骤中手动构造用例如 []->[], [[5,5]]->[[5,5]], [[1,2],[1,2]]->[[1,2]], [[3,5],[1,2],[4,8]]->[[1,2],[3,8]] 与代码排序后合并逻辑吻合。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    }
+  ],
+  "checker_report": {
+    "process_ok": true,
+    "code_ok": true,
+    "pseudo_correct": false,
+    "public": {
+      "total": 4,
+      "passed": 4,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [],
+    "forensics": [],
+    "signals": {
+      "problem_id": "medium-003",
+      "entry_point": "merge_intervals",
+      "max_loop_depth": 1,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "nlogn",
+      "expected_complexity": "O(n log n)",
+      "public": {
+        "total": 4,
+        "passed": 4,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": []
+    },
+    "code": "def merge_intervals(intervals: list) -> list:\n    if not intervals:\n        return []\n    intervals.sort(key=lambda x: (x[0], x[1]))\n    merged = [intervals[0][:]]\n    for curr in intervals[1:]:\n        last = merged[-1]\n        if curr[0] <= last[1]:\n            last[1] = max(last[1], curr[1])\n        else:\n            merged.append(curr[:])\n    return merged",
+    "llm_summary": {
+      "summary": "公开与对抗测试全部通过，函数实现正确，无需修改。",
+      "process_ok": true,
+      "code_ok": true,
+      "pseudo_correct": false,
+      "root_cause": "无失败用例，根因不适用；实现正确处理了区间排序与合并逻辑。",
+      "debug_hints": [
+        "保持当前实现即可，无需调试；若后续扩展可增加对空输入和单点区间的边界检查（当前已覆盖）。"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开与对抗测试均通过，规则层未见高置信缺陷。"
+    ],
+    "sections": {
+      "解题思路": "本题要求合并所有重叠的闭区间，并按左端点升序排列。选择**排序 + 线性扫描**的算法：首先将所有区间按左端点升序排序（若左端点相同则按右端点升序），这样重叠的区间必然相邻；随后初始化一个结果列表，依次遍历排序后的区间，若当前区间与结果列表中最后一个区间重叠（即当前区间的左端点 <= 最后一个区间的右端点），则更新最后一个区间的右端点为两者较大值，否则将当前区间加入结果列表。该算法利用排序将重叠区间聚集，通过一次遍历完成合并，逻辑清晰且高效。",
+      "复杂度分析": "时间复杂度：O(n log n)，其中 n 为区间数量。排序区间列表需要 O(n log n) 时间，线性扫描合并需要 O(n) 时间，总体由排序主导。\n空间复杂度：O(n)（或 O(log n) 取决于排序实现）。结果列表最多存储 n 个合并后的区间，占用 O(n) 空间；若使用原地排序（如 Python 的 sort 方法），额外空间为递归栈的 O(log n)，但输出列表本身不计入额外空间时通常记为 O(n) 用于存放结果。",
+      "关键边界与处理策略": "- 空输入（len(intervals) == 0）：直接返回空列表，无需排序和扫描。\n- 单元素（len(intervals) == 1）：排序后直接返回该区间，扫描逻辑自然处理。\n- 重复元素（完全相同的区间）：排序后相邻，扫描时因左端点 <= 右端点会合并为一个。\n- 端点相接（如 [1,4] 和 [4,5]）：闭区间定义下重叠，合并为 [1,5]。\n- 负数与极值：区间端点可能为负数或极大值，排序和比较使用标准整数运算，不影响正确性。\n- 左端点相同右端点不同：排序后按右端点升序，扫描时合并为最大右端点。",
+      "代码实现": "```python\ndef merge_intervals(intervals: list) -> list:\n    if not intervals:\n        return []\n    intervals.sort(key=lambda x: (x[0], x[1]))\n    merged = [intervals[0][:]]\n    for curr in intervals[1:]:\n        last = merged[-1]\n        if curr[0] <= last[1]:\n            last[1] = max(last[1], curr[1])\n        else:\n            merged.append(curr[:])\n    return merged\n```",
+      "自测说明": "我使用题目给出的公开测试用例验证实现：输入 `[[1,3],[2,6],[8,10],[15,18]]` 得到 `[[1,6],[8,10],[15,18]]`；输入 `[[1,4],[4,5]]` 得到 `[[1,5]]`；输入 `[[1,2]]` 得到 `[[1,2]]`。此外，我手动构造了空列表 `[]` 返回 `[]`，单元素 `[[5,5]]` 返回 `[[5,5]]`，重复区间 `[[1,2],[1,2]]` 返回 `[[1,2]]`，以及乱序输入 `[[3,5],[1,2],[4,8]]` 返回 `[[1,2],[3,8]]`。验证覆盖了空、单元素、重复、相接、乱序及公开用例，未发现错误。"
+    }
+  },
+  "elapsed_sec": 49.83,
+  "recorded_at": "2026-09-11T22:37:02"
+}

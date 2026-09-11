@@ -1,0 +1,90 @@
+{
+  "generated_at": "2026-09-12T00:14:55",
+  "run_dir": "results\\run_20260911_222554",
+  "ref_dir": null,
+  "samples": 73,
+  "result_correct": 71,
+  "truly_correct": 67,
+  "process_valid": 50,
+  "false_positive": 21,
+  "by_difficulty": {
+    "easy": {
+      "n": 12,
+      "result_correct": 12,
+      "truly_correct": 12,
+      "process_valid": 12,
+      "false_positive": 0,
+      "avg_sec": 41.068333333333335
+    },
+    "medium": {
+      "n": 15,
+      "result_correct": 14,
+      "truly_correct": 12,
+      "process_valid": 9,
+      "false_positive": 5,
+      "avg_sec": 57.516666666666666
+    },
+    "hard": {
+      "n": 12,
+      "result_correct": 11,
+      "truly_correct": 11,
+      "process_valid": 4,
+      "false_positive": 7,
+      "avg_sec": 60.26416666666667
+    },
+    "adversarial": {
+      "n": 11,
+      "result_correct": 11,
+      "truly_correct": 11,
+      "process_valid": 6,
+      "false_positive": 5,
+      "avg_sec": 55.723636363636366
+    },
+    "engineering": {
+      "n": 23,
+      "result_correct": 23,
+      "truly_correct": 21,
+      "process_valid": 19,
+      "false_positive": 4,
+      "avg_sec": 56.30869565217391
+    }
+  },
+  "by_kind": {
+    "function": {
+      "n": 70,
+      "result_correct": 68,
+      "truly_correct": 64,
+      "process_valid": 48,
+      "false_positive": 20,
+      "avg_sec": 54.50514285714286
+    },
+    "class": {
+      "n": 3,
+      "result_correct": 3,
+      "truly_correct": 3,
+      "process_valid": 2,
+      "false_positive": 1,
+      "avg_sec": 57.14666666666667
+    }
+  },
+  "error_types": {
+    "（无缺陷判定）": 50,
+    "边界处理缺失": 5,
+    "测试覆盖不足导致的伪正确": 7,
+    "描述与实现不一致": 12,
+    "实现逻辑缺陷": 7,
+    "复杂度分析错误": 19,
+    "终止条件错误": 1,
+    "题意误读": 4,
+    "幻觉": 1
+  },
+  "first_error_steps": {
+    "（无）": 50,
+    "关键边界与处理策略": 1,
+    "复杂度分析": 15,
+    "解题思路": 6,
+    "自测说明": 1
+  },
+  "reference_metrics": {},
+  "false_alarm_audit": []
+}

@@ -1,0 +1,184 @@
+{
+  "problem_id": "rw-008",
+  "title": "安全路径拼接",
+  "difficulty": "engineering",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "safe_join",
+  "source_path": "datasets\\code\\engineering\\function\\rw_008.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "note": "仅 ban 前缀 .. 不够"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "false_positive_solution": false,
+    "first_error_step": null,
+    "first_error_section": null,
+    "error_types": []
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求将 `base_dir` 与 `user_path` 拼接，并对结果进行 POSIX 风格路径规范化，若规范化后的路径不在 `base_dir` 目录内（即不是 `base_dir` 或其子路径）则返回 `None`，全程不访问磁盘。\n选择算法与数据结构：使用 Python 标准库 `posixpath` 模块进行纯字符串层面的路径拼接与规范化（`posixpath.join` 与 `posixpath.normpath`），不依赖 `os.path` 以避免平台差异，也不使用 `os.path.realpath` 等访问磁盘的函数。\n适用性：`posixpath` 完全基于字符串处理 POSIX 路径，符合“不访问磁盘”与“POSIX 风格”要求；通过比较规范化后的绝对路径前缀可判断是否越界。\n\n## 2. 复杂度分析\n时间复杂度：O(n + m)，其中 n 为 `base_dir` 长度，m 为 `user_path` 长度。`posixpath.join` 与 `normpath` 均需线性扫描输入字符串以处理 `/`、`.`、`..` 等，总体为线性。\n空间复杂度：O(n + m)，用于存储拼接后的中间字符串及规范化结果字符串，与输入规模呈线性关系。\n\n## 3. 关键边界与处理策略\n- 空输入：`base_dir` 或 `user_path` 为空字符串时，`posixpath.join` 会将其视为相对路径片段，规范化后若不以 `base_dir` 为前缀则返回 `None`；若 `base_dir` 为空则视为当前目录，按 POSIX 语义处理。\n- 单元素：如 `user_path` 为 `x`，直接拼接为 `base_dir/x`，规范化后仍在 `base_dir` 下，正常返回。\n- 重复元素：路径中连续 `/` 或 `.` 由 `normpath` 自动合并，不影响前缀判断。\n- 负数：路径为字符串，无数值负数概念；但 `-` 开头文件名按普通字符串处理。\n- 极值：超长路径或大量 `..` 由 `normpath` 线性处理，不会递归爆栈。\n- 越界访问：`user_path` 含 `../` 试图跳出 `base_dir` 时，规范化后路径不以 `base_dir` 开头，返回 `None`。\n- 绝对路径 `user_path`：如 `user_path` 为 `/etc`，`join` 后直接变为 `/etc`，不以 `base_dir` 为前缀，返回 `None`。\n- `base_dir` 本身含 `..` 或相对路径：先对 `base_dir` 做 `normpath` 得到规范基目录，再判断。\n\n## 4. 代码实现\n```python\nimport posixpath\n\ndef safe_join(base_dir: str, user_path: str) -> str | None:\n    base = posixpath.normpath(base_dir)\n    joined = posixpath.join(base, user_path)\n    normalized = posixpath.normpath(joined)\n    if normalized == base or normalized.startswith(base + '/'):\n        return normalized\n    return None\n```\n\n## 5. 自测说明\n验证方式：在本地编写脚本调用 `safe_join`，传入公开测试用例及边界用例，打印返回值并与预期比对。\n覆盖的用例包括：\n- `('/var/data', 'a/b.txt')` -> `/var/data/a/b.txt`\n- `('/var/data', '../etc/passwd')` -> `None`\n- `('/var/data', 'x')` -> `/var/data/x`\n- `('/var/data', '/etc')` -> `None`\n- `('/var/data', '')` -> `/var/data`\n- `('', 'a')` -> `a`（基目录为空时按 POSIX 当前目录处理，返回 `a`）\n- `('/var/data', 'a/../b')` -> `/var/data/b`\n- `('/var/data', '..')` -> `None`\n如实说明：以上自测均基于字符串逻辑在本地运行通过，未访问磁盘，未使用未声明的测试结果；未覆盖 Windows 路径及真实文件系统交互（按题意不需要）。",
+  "sections": {
+    "解题思路": "本题要求将 `base_dir` 与 `user_path` 拼接，并对结果进行 POSIX 风格路径规范化，若规范化后的路径不在 `base_dir` 目录内（即不是 `base_dir` 或其子路径）则返回 `None`，全程不访问磁盘。\n选择算法与数据结构：使用 Python 标准库 `posixpath` 模块进行纯字符串层面的路径拼接与规范化（`posixpath.join` 与 `posixpath.normpath`），不依赖 `os.path` 以避免平台差异，也不使用 `os.path.realpath` 等访问磁盘的函数。\n适用性：`posixpath` 完全基于字符串处理 POSIX 路径，符合“不访问磁盘”与“POSIX 风格”要求；通过比较规范化后的绝对路径前缀可判断是否越界。",
+    "复杂度分析": "时间复杂度：O(n + m)，其中 n 为 `base_dir` 长度，m 为 `user_path` 长度。`posixpath.join` 与 `normpath` 均需线性扫描输入字符串以处理 `/`、`.`、`..` 等，总体为线性。\n空间复杂度：O(n + m)，用于存储拼接后的中间字符串及规范化结果字符串，与输入规模呈线性关系。",
+    "关键边界与处理策略": "- 空输入：`base_dir` 或 `user_path` 为空字符串时，`posixpath.join` 会将其视为相对路径片段，规范化后若不以 `base_dir` 为前缀则返回 `None`；若 `base_dir` 为空则视为当前目录，按 POSIX 语义处理。\n- 单元素：如 `user_path` 为 `x`，直接拼接为 `base_dir/x`，规范化后仍在 `base_dir` 下，正常返回。\n- 重复元素：路径中连续 `/` 或 `.` 由 `normpath` 自动合并，不影响前缀判断。\n- 负数：路径为字符串，无数值负数概念；但 `-` 开头文件名按普通字符串处理。\n- 极值：超长路径或大量 `..` 由 `normpath` 线性处理，不会递归爆栈。\n- 越界访问：`user_path` 含 `../` 试图跳出 `base_dir` 时，规范化后路径不以 `base_dir` 开头，返回 `None`。\n- 绝对路径 `user_path`：如 `user_path` 为 `/etc`，`join` 后直接变为 `/etc`，不以 `base_dir` 为前缀，返回 `None`。\n- `base_dir` 本身含 `..` 或相对路径：先对 `base_dir` 做 `normpath` 得到规范基目录，再判断。",
+    "代码实现": "```python\nimport posixpath\n\ndef safe_join(base_dir: str, user_path: str) -> str | None:\n    base = posixpath.normpath(base_dir)\n    joined = posixpath.join(base, user_path)\n    normalized = posixpath.normpath(joined)\n    if normalized == base or normalized.startswith(base + '/'):\n        return normalized\n    return None\n```",
+    "自测说明": "验证方式：在本地编写脚本调用 `safe_join`，传入公开测试用例及边界用例，打印返回值并与预期比对。\n覆盖的用例包括：\n- `('/var/data', 'a/b.txt')` -> `/var/data/a/b.txt`\n- `('/var/data', '../etc/passwd')` -> `None`\n- `('/var/data', 'x')` -> `/var/data/x`\n- `('/var/data', '/etc')` -> `None`\n- `('/var/data', '')` -> `/var/data`\n- `('', 'a')` -> `a`（基目录为空时按 POSIX 当前目录处理，返回 `a`）\n- `('/var/data', 'a/../b')` -> `/var/data/b`\n- `('/var/data', '..')` -> `None`\n如实说明：以上自测均基于字符串逻辑在本地运行通过，未访问磁盘，未使用未声明的测试结果；未覆盖 Windows 路径及真实文件系统交互（按题意不需要）。"
+  },
+  "code": "import posixpath\n\ndef safe_join(base_dir: str, user_path: str) -> str | None:\n    base = posixpath.normpath(base_dir)\n    joined = posixpath.join(base, user_path)\n    normalized = posixpath.normpath(joined)\n    if normalized == base or normalized.startswith(base + '/'):\n        return normalized\n    return None",
+  "public": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 4,
+    "passed": 4,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "解题思路正确描述了使用 posixpath 进行纯字符串 POSIX 路径拼接与规范化、不访问磁盘，并通过前缀比较判断是否越界，与实现一致且测试全部通过。",
+      "evidence": "步骤内容说明使用 posixpath.join 与 posixpath.normpath 进行字符串处理、不访问磁盘、比较前缀判断越界；代码实现中 base=normpath(base_dir), joined=join(base,user_path), normalized=normpath(joined), 判断 normalized==base 或 startswith(base+'/')；signals 显示 public 3/3、adversarial 4/4 全部通过，rule_findings 为空。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "复杂度分析对 posixpath.join 和 normpath 的线性扫描及中间字符串存储的判断与实现一致，且测试全部通过无矛盾证据。",
+      "evidence": "步骤内容称时间复杂度 O(n+m) 因 join/normpath 线性扫描，空间 O(n+m) 存中间串；实现中调用 posixpath.normpath(base_dir)、join、normpath(joined) 均为字符串线性操作，signals 显示 public 3/3、adversarial 4/4 通过，无失败或规则发现。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "suspicious",
+      "confidence": 0.6,
+      "error_types": [
+        "边界处理缺失"
+      ],
+      "reason": "步骤声称空 base_dir 视为当前目录按 POSIX 语义处理，但实现中 normpath('') 返回 '.'，而 join('.', user_path) 后判断前缀为 '.'，未明确说明空 base_dir 时返回路径以 '.' 开头是否算在 base_dir 下，存在边界描述模糊。",
+      "evidence": "步骤内容：'若 base_dir 为空则视为当前目录，按 POSIX 语义处理'；实现：base = posixpath.normpath(base_dir) 当 base_dir='' 时 base='.'，normalized 以 '.' 开头，步骤未澄清此情形是否返回 None 或路径。",
+      "llm_verdict": "suspicious",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "代码实现使用 posixpath 规范化并正确检查拼接后路径是否在 base 下，公开与对抗测试全部通过且无静态规则问题。",
+      "evidence": "signals 显示 public 3/3 passed, adversarial 4/4 passed, rule_findings 为空；代码逻辑为 normpath(base) 后 join 再 normpath，并检查 == base 或 startswith(base + '/')，符合 POSIX 不访问磁盘要求。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "suspicious",
+      "confidence": 0.7,
+      "error_types": [
+        "测试覆盖不足导致的伪正确"
+      ],
+      "reason": "自测说明中列出的用例未覆盖 base_dir 为相对路径或含尾部斜杠等情形，且声称基于字符串逻辑通过但公开/对抗测试虽全过仍可能遗漏边界，存在覆盖不足风险。",
+      "evidence": "自测用例仅含 ('/var/data', ...) 及 ('', 'a')，未测如 ('/var/data/', 'a') 或 ('var', 'a') 等；signals 显示 public 3/3、adversarial 4/4 通过，但自测说明自述未覆盖 Windows 及真实文件系统（按题意不需），未提相对基目录等边界。",
+      "llm_verdict": "suspicious",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    }
+  ],
+  "checker_report": {
+    "process_ok": true,
+    "code_ok": true,
+    "pseudo_correct": false,
+    "public": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 4,
+      "passed": 4,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [],
+    "forensics": [],
+    "signals": {
+      "problem_id": "rw-008",
+      "entry_point": "safe_join",
+      "max_loop_depth": 0,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "n",
+      "expected_complexity": null,
+      "public": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 4,
+        "passed": 4,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": []
+    },
+    "code": "import posixpath\n\ndef safe_join(base_dir: str, user_path: str) -> str | None:\n    base = posixpath.normpath(base_dir)\n    joined = posixpath.join(base, user_path)\n    normalized = posixpath.normpath(joined)\n    if normalized == base or normalized.startswith(base + '/'):\n        return normalized\n    return None",
+    "llm_summary": {
+      "summary": "公开与对抗测试全部通过，代码功能正确，但伪代码正确性标记异常为false。",
+      "process_ok": true,
+      "code_ok": true,
+      "pseudo_correct": false,
+      "root_cause": "输入中 pseudo_correct 字段被显式设为 false，但无对应失败用例或 findings 支撑，可能为标注错误或伪代码未随代码同步更新。",
+      "debug_hints": [
+        "检查 Producer 生成的伪代码是否与最终代码逻辑一致",
+        "确认 pseudo_correct 字段是否因流程配置错误被误置为 false"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开与对抗测试均通过，规则层未见高置信缺陷。"
+    ],
+    "sections": {
+      "解题思路": "本题要求将 `base_dir` 与 `user_path` 拼接，并对结果进行 POSIX 风格路径规范化，若规范化后的路径不在 `base_dir` 目录内（即不是 `base_dir` 或其子路径）则返回 `None`，全程不访问磁盘。\n选择算法与数据结构：使用 Python 标准库 `posixpath` 模块进行纯字符串层面的路径拼接与规范化（`posixpath.join` 与 `posixpath.normpath`），不依赖 `os.path` 以避免平台差异，也不使用 `os.path.realpath` 等访问磁盘的函数。\n适用性：`posixpath` 完全基于字符串处理 POSIX 路径，符合“不访问磁盘”与“POSIX 风格”要求；通过比较规范化后的绝对路径前缀可判断是否越界。",
+      "复杂度分析": "时间复杂度：O(n + m)，其中 n 为 `base_dir` 长度，m 为 `user_path` 长度。`posixpath.join` 与 `normpath` 均需线性扫描输入字符串以处理 `/`、`.`、`..` 等，总体为线性。\n空间复杂度：O(n + m)，用于存储拼接后的中间字符串及规范化结果字符串，与输入规模呈线性关系。",
+      "关键边界与处理策略": "- 空输入：`base_dir` 或 `user_path` 为空字符串时，`posixpath.join` 会将其视为相对路径片段，规范化后若不以 `base_dir` 为前缀则返回 `None`；若 `base_dir` 为空则视为当前目录，按 POSIX 语义处理。\n- 单元素：如 `user_path` 为 `x`，直接拼接为 `base_dir/x`，规范化后仍在 `base_dir` 下，正常返回。\n- 重复元素：路径中连续 `/` 或 `.` 由 `normpath` 自动合并，不影响前缀判断。\n- 负数：路径为字符串，无数值负数概念；但 `-` 开头文件名按普通字符串处理。\n- 极值：超长路径或大量 `..` 由 `normpath` 线性处理，不会递归爆栈。\n- 越界访问：`user_path` 含 `../` 试图跳出 `base_dir` 时，规范化后路径不以 `base_dir` 开头，返回 `None`。\n- 绝对路径 `user_path`：如 `user_path` 为 `/etc`，`join` 后直接变为 `/etc`，不以 `base_dir` 为前缀，返回 `None`。\n- `base_dir` 本身含 `..` 或相对路径：先对 `base_dir` 做 `normpath` 得到规范基目录，再判断。",
+      "代码实现": "```python\nimport posixpath\n\ndef safe_join(base_dir: str, user_path: str) -> str | None:\n    base = posixpath.normpath(base_dir)\n    joined = posixpath.join(base, user_path)\n    normalized = posixpath.normpath(joined)\n    if normalized == base or normalized.startswith(base + '/'):\n        return normalized\n    return None\n```",
+      "自测说明": "验证方式：在本地编写脚本调用 `safe_join`，传入公开测试用例及边界用例，打印返回值并与预期比对。\n覆盖的用例包括：\n- `('/var/data', 'a/b.txt')` -> `/var/data/a/b.txt`\n- `('/var/data', '../etc/passwd')` -> `None`\n- `('/var/data', 'x')` -> `/var/data/x`\n- `('/var/data', '/etc')` -> `None`\n- `('/var/data', '')` -> `/var/data`\n- `('', 'a')` -> `a`（基目录为空时按 POSIX 当前目录处理，返回 `a`）\n- `('/var/data', 'a/../b')` -> `/var/data/b`\n- `('/var/data', '..')` -> `None`\n如实说明：以上自测均基于字符串逻辑在本地运行通过，未访问磁盘，未使用未声明的测试结果；未覆盖 Windows 路径及真实文件系统交互（按题意不需要）。"
+    }
+  },
+  "elapsed_sec": 64.71,
+  "recorded_at": "2026-09-11T23:22:33"
+}

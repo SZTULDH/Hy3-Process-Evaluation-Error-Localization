@@ -1,0 +1,181 @@
+{
+  "problem_id": "easy-008",
+  "title": "列表最大值索引",
+  "difficulty": "easy",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "max_index",
+  "source_path": "datasets\\code\\easy\\max_index.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "first_error_step": null,
+    "error_types": [],
+    "note": "正确对照样本"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "false_positive_solution": false,
+    "first_error_step": null,
+    "first_error_section": null,
+    "error_types": []
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求返回列表中最大值首次出现的下标，若列表为空则返回 -1。由于只需遍历一次列表并记录当前遇到的最大值及其下标，采用线性扫描（单次遍历）即可解决。算法维护两个变量：当前最大值 `max_val` 和其首次出现的下标 `max_idx`。遍历时若遇到严格大于 `max_val` 的元素则更新这两个变量，遇到相等元素不更新以保证“首次”下标。该算法无需额外数据结构，适用于任意数值类型（题目未限制，但示例为整数），且能自然处理空列表。\n\n## 2. 复杂度分析\n时间复杂度：O(n)，其中 n 为列表长度。需完整遍历列表一次，每个元素进行常数次比较与可能的赋值。\n空间复杂度：O(1)，仅使用固定数量的辅助变量（max_val、max_idx 及循环变量），与输入规模无关。\n\n## 3. 关键边界与处理策略\n- 空输入（len(nums)=0）：直接返回 -1，不进入遍历逻辑。\n- 单元素（len(nums)=1）：遍历后 max_idx 为 0，返回 0，符合预期。\n- 重复最大值：仅在严格大于时更新下标，保证返回首次出现位置；若所有元素相同，返回 0。\n- 负数：比较逻辑基于数值大小，负数同样适用，如 [-5,-3] 返回 1。\n- 极值（如大整数、浮点）：Python 数值比较原生支持，无需特殊处理。\n- 混合类型（题目未明确但示例为整数）：若含不可比较类型会抛异常，但依题意假设输入为可比较数值。\n\n## 4. 代码实现\n```python\ndef max_index(nums: list) -> int:\n    if not nums:\n        return -1\n    max_val = nums[0]\n    max_idx = 0\n    for i in range(1, len(nums)):\n        if nums[i] > max_val:\n            max_val = nums[i]\n            max_idx = i\n    return max_idx\n```\n\n## 5. 自测说明\n我通过手动构造与公开用例一致的输入进行验证：对 `[[1,3,2]]` 调用返回 1；对 `[[5]]` 返回 0；对 `[[]]` 返回 -1。此外补充测试了 `[-2,-1,-1]` 返回 1、`[2,2,2]` 返回 0、`[0]` 返回 0。验证覆盖空列表、单元素、重复最大值、负数及常规多元素场景，未使用自动化测试框架，仅基于函数直接调用与打印结果比对，确认与期望一致。未测试超长列表（10^4）性能，但依复杂度分析应在 O(n) 内完成。",
+  "sections": {
+    "解题思路": "本题要求返回列表中最大值首次出现的下标，若列表为空则返回 -1。由于只需遍历一次列表并记录当前遇到的最大值及其下标，采用线性扫描（单次遍历）即可解决。算法维护两个变量：当前最大值 `max_val` 和其首次出现的下标 `max_idx`。遍历时若遇到严格大于 `max_val` 的元素则更新这两个变量，遇到相等元素不更新以保证“首次”下标。该算法无需额外数据结构，适用于任意数值类型（题目未限制，但示例为整数），且能自然处理空列表。",
+    "复杂度分析": "时间复杂度：O(n)，其中 n 为列表长度。需完整遍历列表一次，每个元素进行常数次比较与可能的赋值。\n空间复杂度：O(1)，仅使用固定数量的辅助变量（max_val、max_idx 及循环变量），与输入规模无关。",
+    "关键边界与处理策略": "- 空输入（len(nums)=0）：直接返回 -1，不进入遍历逻辑。\n- 单元素（len(nums)=1）：遍历后 max_idx 为 0，返回 0，符合预期。\n- 重复最大值：仅在严格大于时更新下标，保证返回首次出现位置；若所有元素相同，返回 0。\n- 负数：比较逻辑基于数值大小，负数同样适用，如 [-5,-3] 返回 1。\n- 极值（如大整数、浮点）：Python 数值比较原生支持，无需特殊处理。\n- 混合类型（题目未明确但示例为整数）：若含不可比较类型会抛异常，但依题意假设输入为可比较数值。",
+    "代码实现": "```python\ndef max_index(nums: list) -> int:\n    if not nums:\n        return -1\n    max_val = nums[0]\n    max_idx = 0\n    for i in range(1, len(nums)):\n        if nums[i] > max_val:\n            max_val = nums[i]\n            max_idx = i\n    return max_idx\n```",
+    "自测说明": "我通过手动构造与公开用例一致的输入进行验证：对 `[[1,3,2]]` 调用返回 1；对 `[[5]]` 返回 0；对 `[[]]` 返回 -1。此外补充测试了 `[-2,-1,-1]` 返回 1、`[2,2,2]` 返回 0、`[0]` 返回 0。验证覆盖空列表、单元素、重复最大值、负数及常规多元素场景，未使用自动化测试框架，仅基于函数直接调用与打印结果比对，确认与期望一致。未测试超长列表（10^4）性能，但依复杂度分析应在 O(n) 内完成。"
+  },
+  "code": "def max_index(nums: list) -> int:\n    if not nums:\n        return -1\n    max_val = nums[0]\n    max_idx = 0\n    for i in range(1, len(nums)):\n        if nums[i] > max_val:\n            max_val = nums[i]\n            max_idx = i\n    return max_idx",
+  "public": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 2,
+    "passed": 2,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "解题思路描述的线性扫描、维护最大值及首次下标、严格大于才更新、空列表处理与代码实现及测试信号一致，且复杂度符合O(n)要求。",
+      "evidence": "步骤内容称'遍历时若遇到严格大于 max_val 的元素则更新这两个变量，遇到相等元素不更新以保证首次下标'，代码实现中 `if nums[i] > max_val:` 与此一致；signals 显示 public 3/3、adversarial 2/2 全部通过，claimed_complexity 为 n 与 expected O(n) 相符。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "valid",
+      "confidence": 0.98,
+      "error_types": [],
+      "reason": "复杂度分析步骤对时间和空间复杂度的描述与代码实现及信号中的声明一致且正确。",
+      "evidence": "步骤内容称时间复杂度 O(n)（遍历一次、常数比较），空间 O(1)（max_val/max_idx/循环变量）；代码为单重 for 循环无递归，signals 中 max_loop_depth=1、recursive=false、claimed_complexity=n、expected_complexity=O(n)，全部吻合。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "该步骤对空输入、单元素、重复最大值、负数、极值及混合类型的边界与处理策略描述与代码实现一致，且测试全部通过，无具体依据表明其不成立。",
+      "evidence": "步骤内容称空输入返回-1、单元素返回0、重复最大值仅在严格大于时更新（代码为 if nums[i] > max_val）、负数适用；代码实现与描述一致；signals 显示 public 3/3、adversarial 2/2 全部通过，rule_findings 为空。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.98,
+      "error_types": [],
+      "reason": "代码实现正确遍历列表一次，在 O(n) 时间内返回最大值首次下标，空列表返回 -1，且所有公开与对抗测试均通过。",
+      "evidence": "signals 中 public 与 adversarial 测试全部 passed（3/3 与 2/2），代码使用单循环从索引 1 开始比较并仅在严格大于时更新，符合首次下标语义与 O(n) 复杂度要求。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "suspicious",
+      "confidence": 0.7,
+      "error_types": [
+        "测试覆盖不足导致的伪正确"
+      ],
+      "reason": "自测说明中仅手动构造了少量用例且未测试超长列表性能，虽公开与对抗测试均通过，但自测步骤本身覆盖不足，不能充分证明实现正确。",
+      "evidence": "步骤内容称'未测试超长列表（10^4）性能，但依复杂度分析应在 O(n) 内完成'，且仅列举了 [[1,3,2]]、[[5]]、[[]]、[-2,-1,-1]、[2,2,2]、[0] 等少量手动用例；signals 显示 public 3/3、adversarial 2/2 通过，但自测说明步骤未包含这些自动化测试。",
+      "llm_verdict": "suspicious",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    }
+  ],
+  "checker_report": {
+    "process_ok": true,
+    "code_ok": true,
+    "pseudo_correct": false,
+    "public": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [],
+    "forensics": [],
+    "signals": {
+      "problem_id": "easy-008",
+      "entry_point": "max_index",
+      "max_loop_depth": 1,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "n",
+      "expected_complexity": "O(n)",
+      "public": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 2,
+        "passed": 2,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": []
+    },
+    "code": "def max_index(nums: list) -> int:\n    if not nums:\n        return -1\n    max_val = nums[0]\n    max_idx = 0\n    for i in range(1, len(nums)):\n        if nums[i] > max_val:\n            max_val = nums[i]\n            max_idx = i\n    return max_idx",
+    "llm_summary": {
+      "summary": "函数 max_index 在公开与对抗测试上均全部通过，代码正确。",
+      "process_ok": true,
+      "code_ok": true,
+      "pseudo_correct": false,
+      "root_cause": "无失败用例，代码逻辑正确，不存在根因问题。",
+      "debug_hints": [],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开与对抗测试均通过，规则层未见高置信缺陷。"
+    ],
+    "sections": {
+      "解题思路": "本题要求返回列表中最大值首次出现的下标，若列表为空则返回 -1。由于只需遍历一次列表并记录当前遇到的最大值及其下标，采用线性扫描（单次遍历）即可解决。算法维护两个变量：当前最大值 `max_val` 和其首次出现的下标 `max_idx`。遍历时若遇到严格大于 `max_val` 的元素则更新这两个变量，遇到相等元素不更新以保证“首次”下标。该算法无需额外数据结构，适用于任意数值类型（题目未限制，但示例为整数），且能自然处理空列表。",
+      "复杂度分析": "时间复杂度：O(n)，其中 n 为列表长度。需完整遍历列表一次，每个元素进行常数次比较与可能的赋值。\n空间复杂度：O(1)，仅使用固定数量的辅助变量（max_val、max_idx 及循环变量），与输入规模无关。",
+      "关键边界与处理策略": "- 空输入（len(nums)=0）：直接返回 -1，不进入遍历逻辑。\n- 单元素（len(nums)=1）：遍历后 max_idx 为 0，返回 0，符合预期。\n- 重复最大值：仅在严格大于时更新下标，保证返回首次出现位置；若所有元素相同，返回 0。\n- 负数：比较逻辑基于数值大小，负数同样适用，如 [-5,-3] 返回 1。\n- 极值（如大整数、浮点）：Python 数值比较原生支持，无需特殊处理。\n- 混合类型（题目未明确但示例为整数）：若含不可比较类型会抛异常，但依题意假设输入为可比较数值。",
+      "代码实现": "```python\ndef max_index(nums: list) -> int:\n    if not nums:\n        return -1\n    max_val = nums[0]\n    max_idx = 0\n    for i in range(1, len(nums)):\n        if nums[i] > max_val:\n            max_val = nums[i]\n            max_idx = i\n    return max_idx\n```",
+      "自测说明": "我通过手动构造与公开用例一致的输入进行验证：对 `[[1,3,2]]` 调用返回 1；对 `[[5]]` 返回 0；对 `[[]]` 返回 -1。此外补充测试了 `[-2,-1,-1]` 返回 1、`[2,2,2]` 返回 0、`[0]` 返回 0。验证覆盖空列表、单元素、重复最大值、负数及常规多元素场景，未使用自动化测试框架，仅基于函数直接调用与打印结果比对，确认与期望一致。未测试超长列表（10^4）性能，但依复杂度分析应在 O(n) 内完成。"
+    }
+  },
+  "elapsed_sec": 39.96,
+  "recorded_at": "2026-09-11T22:31:12"
+}

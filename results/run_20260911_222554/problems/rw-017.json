@@ -1,0 +1,182 @@
+{
+  "problem_id": "rw-017",
+  "title": "解析查询字符串",
+  "difficulty": "engineering",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "parse_qs_simple",
+  "source_path": "datasets\\code\\engineering\\function\\rw_017.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "note": "重复键未升级 list"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "false_positive_solution": false,
+    "first_error_step": null,
+    "first_error_section": null,
+    "error_types": []
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求解析类似 URL 查询字符串（query string）的简单格式，规则为：以 `&` 分隔键值对，以 `=` 分隔键与值；若同一个键出现多次，则将其对应的值合并为列表；若输入为空串则返回空字典。\n选择算法：直接按分隔符进行字符串切分与遍历。使用 `str.split('&')` 得到键值对列表，再对每个子串用 `split('=', 1)` 拆分为键和值（限制只拆一次以保留值中的 `=`）。用字典累积结果：若键已存在且当前为字符串则转为列表，若已是列表则追加；若不存在则直接存入字符串。该法直观、无需复杂数据结构，完全契合题目规模与规则。\n\n## 2. 复杂度分析\n设输入字符串长度为 n，键值对个数为 k（k ≤ n）。\n- 时间复杂度：O(n)。`split('&')` 与 `split('=')` 均需线性扫描字符串，字典插入/追加均摊 O(1)，总体与字符数成正比。\n- 空间复杂度：O(n + k)。输出字典存储所有键与值（最坏情况所有值均为列表，总字符数 O(n)），加上切分产生的临时列表 O(k)，故为 O(n)。\n\n## 3. 关键边界与处理策略\n- 空输入 `''`：按题意返回 `{}`，在代码开头特判。\n- 单元素如 `'a=1'`：正常解析为 `{'a': '1'}`。\n- 重复键如 `'a=1&a=2'`：第二次遇到时原值为 `'1'`，转为 `['1','2']`；若已有列表则直接 append。\n- 无 `=` 的子串如 `'a'`：按 `split('=',1)` 得 `['a']`，值取空串 `''`，键为 `'a'`。\n- 值含 `=` 如 `'a=1=2'`：因限制 split 次数为 1，值为 `'1=2'`。\n- 空键值对如 `'a=&b=2'` 或 `'&'`：空键或空值均按实际切分结果处理（空键会存入 `''` 键，空值存 `''`），不抛异常。\n- 负数/特殊字符：题目无特殊约束，按原样字符串存储。\n\n## 4. 代码实现\n```python\ndef parse_qs_simple(qs: str) -> dict:\n    if not qs:\n        return {}\n    result = {}\n    pairs = qs.split('&')\n    for pair in pairs:\n        if '=' in pair:\n            key, val = pair.split('=', 1)\n        else:\n            key, val = pair, ''\n        if key in result:\n            if isinstance(result[key], list):\n                result[key].append(val)\n            else:\n                result[key] = [result[key], val]\n        else:\n            result[key] = val\n    return result\n```\n\n## 5. 自测说明\n我依据题目给出的公开测试用例及上述边界条件，在脑内/本地草稿中验证了实现：\n- 输入 `''` 返回 `{}`，与示例一致。\n- 输入 `'a=1&b=2'` 返回 `{'a': '1', 'b': '2'}`，与示例一致。\n- 输入 `'a=1&a=2'` 返回 `{'a': ['1', '2']}`，与示例一致。\n- 补充验证：`'a'` 得 `{'a': ''}`；`'a=1=2'` 得 `{'a': '1=2'}`；`'a=1&a=2&a=3'` 得 `{'a': ['1','2','3']}`；`'&'` 得 `{'': ''}`。\n验证覆盖：空串、单键值、重复键、无等号、值含等号、连续分隔符，未覆盖超长输入或编码字符（题目无要求）。未实际运行测试框架，仅静态推演。",
+  "sections": {
+    "解题思路": "本题要求解析类似 URL 查询字符串（query string）的简单格式，规则为：以 `&` 分隔键值对，以 `=` 分隔键与值；若同一个键出现多次，则将其对应的值合并为列表；若输入为空串则返回空字典。\n选择算法：直接按分隔符进行字符串切分与遍历。使用 `str.split('&')` 得到键值对列表，再对每个子串用 `split('=', 1)` 拆分为键和值（限制只拆一次以保留值中的 `=`）。用字典累积结果：若键已存在且当前为字符串则转为列表，若已是列表则追加；若不存在则直接存入字符串。该法直观、无需复杂数据结构，完全契合题目规模与规则。",
+    "复杂度分析": "设输入字符串长度为 n，键值对个数为 k（k ≤ n）。\n- 时间复杂度：O(n)。`split('&')` 与 `split('=')` 均需线性扫描字符串，字典插入/追加均摊 O(1)，总体与字符数成正比。\n- 空间复杂度：O(n + k)。输出字典存储所有键与值（最坏情况所有值均为列表，总字符数 O(n)），加上切分产生的临时列表 O(k)，故为 O(n)。",
+    "关键边界与处理策略": "- 空输入 `''`：按题意返回 `{}`，在代码开头特判。\n- 单元素如 `'a=1'`：正常解析为 `{'a': '1'}`。\n- 重复键如 `'a=1&a=2'`：第二次遇到时原值为 `'1'`，转为 `['1','2']`；若已有列表则直接 append。\n- 无 `=` 的子串如 `'a'`：按 `split('=',1)` 得 `['a']`，值取空串 `''`，键为 `'a'`。\n- 值含 `=` 如 `'a=1=2'`：因限制 split 次数为 1，值为 `'1=2'`。\n- 空键值对如 `'a=&b=2'` 或 `'&'`：空键或空值均按实际切分结果处理（空键会存入 `''` 键，空值存 `''`），不抛异常。\n- 负数/特殊字符：题目无特殊约束，按原样字符串存储。",
+    "代码实现": "```python\ndef parse_qs_simple(qs: str) -> dict:\n    if not qs:\n        return {}\n    result = {}\n    pairs = qs.split('&')\n    for pair in pairs:\n        if '=' in pair:\n            key, val = pair.split('=', 1)\n        else:\n            key, val = pair, ''\n        if key in result:\n            if isinstance(result[key], list):\n                result[key].append(val)\n            else:\n                result[key] = [result[key], val]\n        else:\n            result[key] = val\n    return result\n```",
+    "自测说明": "我依据题目给出的公开测试用例及上述边界条件，在脑内/本地草稿中验证了实现：\n- 输入 `''` 返回 `{}`，与示例一致。\n- 输入 `'a=1&b=2'` 返回 `{'a': '1', 'b': '2'}`，与示例一致。\n- 输入 `'a=1&a=2'` 返回 `{'a': ['1', '2']}`，与示例一致。\n- 补充验证：`'a'` 得 `{'a': ''}`；`'a=1=2'` 得 `{'a': '1=2'}`；`'a=1&a=2&a=3'` 得 `{'a': ['1','2','3']}`；`'&'` 得 `{'': ''}`。\n验证覆盖：空串、单键值、重复键、无等号、值含等号、连续分隔符，未覆盖超长输入或编码字符（题目无要求）。未实际运行测试框架，仅静态推演。"
+  },
+  "code": "def parse_qs_simple(qs: str) -> dict:\n    if not qs:\n        return {}\n    result = {}\n    pairs = qs.split('&')\n    for pair in pairs:\n        if '=' in pair:\n            key, val = pair.split('=', 1)\n        else:\n            key, val = pair, ''\n        if key in result:\n            if isinstance(result[key], list):\n                result[key].append(val)\n            else:\n                result[key] = [result[key], val]\n        else:\n            result[key] = val\n    return result",
+  "public": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 4,
+    "passed": 4,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "解题思路准确描述了题目规则与对应实现策略，且与提供的代码实现及全部通过的测试信号一致。",
+      "evidence": "步骤内容说明按&和=切分、同名键转列表、空串返回{}，代码实现中split('&')、split('=',1)、isinstance判断转列表、if not qs: return {}完全对应；signals显示public和adversarial测试均all_passed=true且无rule_findings。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "复杂度分析中对时间与空间复杂度的推导与代码实现一致，且信号显示测试全部通过无静态问题。",
+      "evidence": "步骤内容称时间复杂度 O(n)（split 线性扫描、字典操作均摊 O(1)），空间 O(n+k) 即 O(n)；代码使用 split('&')、split('=',1) 及字典插入/追加，无嵌套循环（max_loop_depth=1），与描述相符；signals 中 public 与 adversarial 测试均 all_passed=true，rule_findings 为空。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "步骤中描述的边界处理策略与代码实现一致，且公开与对抗测试全部通过，无具体证据表明该步骤不成立。",
+      "evidence": "步骤称空输入返回{}，代码开头if not qs: return {}；重复键处理描述与代码isinstance判断及append逻辑一致；无'='时val=''与代码else分支一致；signals显示public 3/3、adversarial 4/4全通过，rule_findings为空。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "代码实现正确处理了空串返回{}、同名键升list、含=与不含=的pair分割，且公开与对抗测试全部通过，无静态分析告警。",
+      "evidence": "signals中public:3/3 passed, adversarial:4/4 passed, rule_findings为空；代码对空qs返回{}，对'a=1&b=2'返回{'a':'1','b':'2'}，对'a=1&a=2'返回{'a':['1','2']}，对无=的pair设val=''。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "suspicious",
+      "confidence": 0.7,
+      "error_types": [
+        "测试覆盖不足导致的伪正确"
+      ],
+      "reason": "自测说明仅通过静态推演验证有限用例且未实际运行测试框架，虽公开与对抗测试均通过，但自述未覆盖编码字符等且依赖脑内验证，存在覆盖不足与伪正确风险。",
+      "evidence": "步骤内容写明'未实际运行测试框架，仅静态推演'且'未覆盖超长输入或编码字符（题目无要求）'；signals 显示 public 3/3、adversarial 4/4 通过但自测说明本身未执行真实测试。",
+      "llm_verdict": "suspicious",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    }
+  ],
+  "checker_report": {
+    "process_ok": true,
+    "code_ok": true,
+    "pseudo_correct": false,
+    "public": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 4,
+      "passed": 4,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [],
+    "forensics": [],
+    "signals": {
+      "problem_id": "rw-017",
+      "entry_point": "parse_qs_simple",
+      "max_loop_depth": 1,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "n",
+      "expected_complexity": null,
+      "public": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 4,
+        "passed": 4,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": []
+    },
+    "code": "def parse_qs_simple(qs: str) -> dict:\n    if not qs:\n        return {}\n    result = {}\n    pairs = qs.split('&')\n    for pair in pairs:\n        if '=' in pair:\n            key, val = pair.split('=', 1)\n        else:\n            key, val = pair, ''\n        if key in result:\n            if isinstance(result[key], list):\n                result[key].append(val)\n            else:\n                result[key] = [result[key], val]\n        else:\n            result[key] = val\n    return result",
+    "llm_summary": {
+      "summary": "公开与对抗测试全部通过，函数级实现正确，无状态依赖问题。",
+      "process_ok": true,
+      "code_ok": true,
+      "pseudo_correct": false,
+      "root_cause": "无失败用例，根因不适用；题目为函数级，不存在类实例状态残留问题。",
+      "debug_hints": [
+        "无需调试，当前实现已通过全部公开与对抗测试",
+        "若后续扩展功能可补充边界输入如空串、无等号、重复键等测试"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开与对抗测试均通过，规则层未见高置信缺陷。"
+    ],
+    "sections": {
+      "解题思路": "本题要求解析类似 URL 查询字符串（query string）的简单格式，规则为：以 `&` 分隔键值对，以 `=` 分隔键与值；若同一个键出现多次，则将其对应的值合并为列表；若输入为空串则返回空字典。\n选择算法：直接按分隔符进行字符串切分与遍历。使用 `str.split('&')` 得到键值对列表，再对每个子串用 `split('=', 1)` 拆分为键和值（限制只拆一次以保留值中的 `=`）。用字典累积结果：若键已存在且当前为字符串则转为列表，若已是列表则追加；若不存在则直接存入字符串。该法直观、无需复杂数据结构，完全契合题目规模与规则。",
+      "复杂度分析": "设输入字符串长度为 n，键值对个数为 k（k ≤ n）。\n- 时间复杂度：O(n)。`split('&')` 与 `split('=')` 均需线性扫描字符串，字典插入/追加均摊 O(1)，总体与字符数成正比。\n- 空间复杂度：O(n + k)。输出字典存储所有键与值（最坏情况所有值均为列表，总字符数 O(n)），加上切分产生的临时列表 O(k)，故为 O(n)。",
+      "关键边界与处理策略": "- 空输入 `''`：按题意返回 `{}`，在代码开头特判。\n- 单元素如 `'a=1'`：正常解析为 `{'a': '1'}`。\n- 重复键如 `'a=1&a=2'`：第二次遇到时原值为 `'1'`，转为 `['1','2']`；若已有列表则直接 append。\n- 无 `=` 的子串如 `'a'`：按 `split('=',1)` 得 `['a']`，值取空串 `''`，键为 `'a'`。\n- 值含 `=` 如 `'a=1=2'`：因限制 split 次数为 1，值为 `'1=2'`。\n- 空键值对如 `'a=&b=2'` 或 `'&'`：空键或空值均按实际切分结果处理（空键会存入 `''` 键，空值存 `''`），不抛异常。\n- 负数/特殊字符：题目无特殊约束，按原样字符串存储。",
+      "代码实现": "```python\ndef parse_qs_simple(qs: str) -> dict:\n    if not qs:\n        return {}\n    result = {}\n    pairs = qs.split('&')\n    for pair in pairs:\n        if '=' in pair:\n            key, val = pair.split('=', 1)\n        else:\n            key, val = pair, ''\n        if key in result:\n            if isinstance(result[key], list):\n                result[key].append(val)\n            else:\n                result[key] = [result[key], val]\n        else:\n            result[key] = val\n    return result\n```",
+      "自测说明": "我依据题目给出的公开测试用例及上述边界条件，在脑内/本地草稿中验证了实现：\n- 输入 `''` 返回 `{}`，与示例一致。\n- 输入 `'a=1&b=2'` 返回 `{'a': '1', 'b': '2'}`，与示例一致。\n- 输入 `'a=1&a=2'` 返回 `{'a': ['1', '2']}`，与示例一致。\n- 补充验证：`'a'` 得 `{'a': ''}`；`'a=1=2'` 得 `{'a': '1=2'}`；`'a=1&a=2&a=3'` 得 `{'a': ['1','2','3']}`；`'&'` 得 `{'': ''}`。\n验证覆盖：空串、单键值、重复键、无等号、值含等号、连续分隔符，未覆盖超长输入或编码字符（题目无要求）。未实际运行测试框架，仅静态推演。"
+    }
+  },
+  "elapsed_sec": 49.16,
+  "recorded_at": "2026-09-11T23:31:19"
+}

@@ -1,0 +1,223 @@
+{
+  "problem_id": "eng-cls-001",
+  "title": "固定窗口限流器",
+  "difficulty": "engineering",
+  "kind": "class",
+  "class_name": "RateLimiter",
+  "entry_point": "allow",
+  "source_path": "datasets\\code\\engineering\\class\\eng_cls_001.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "note": "窗口未滑动会在 10.1 仍拒绝"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": false,
+    "false_positive_solution": true,
+    "first_error_step": "step_2_complexity",
+    "first_error_section": "复杂度分析",
+    "error_types": [
+      "复杂度分析错误"
+    ]
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求实现一个基于滑动窗口的限流器。核心数据结构选择：使用字典 `self.records` 以 `key` 为键，值为该 key 对应的时间戳列表（双端队列或普通列表均可，此处用列表模拟队列）。每次调用 `allow(key, now)` 时，先清理窗口 `(now - window_sec, now]` 之外的旧时间戳（即 `<= now - window_sec` 的记录），然后判断当前窗口内记录数是否小于 `limit`：若小于则追加 `now` 并返回 `True`，否则返回 `False`。状态通过实例属性 `self.records` 在多次方法调用之间自然保存与迁移，无需额外持久化。\n\n## 2. 复杂度分析\n- `allow` 方法：均摊时间复杂度 O(k)，其中 k 为当前 key 在窗口内的记录数（清理旧数据及判断是否超限需遍历列表）。由于每个时间戳最多被加入和移除各一次，均摊为 O(1) 每次调用（若用 deque 严格 O(1) 头删，列表头删为 O(n) 但 n 受 limit 限制，故整体 O(limit) 即 O(1) 因 limit 固定）。空间开销 O(m * limit)，m 为不同 key 的数量，用于存储各 key 的窗口内时间戳。\n- 构造 `__init__`：时间 O(1)，空间 O(1)（仅初始化空字典和参数）。\n\n## 3. 关键边界与处理策略\n- 重复调用：同一 key 连续调用，窗口内计数累加，超限返回 False，由列表长度控制。\n- 乱序调用：若 `now` 小于之前记录（时间回拨），清理条件 `ts <= now - window_sec` 可能不删旧数据，但新 `now` 仍会加入列表，可能导致计数偏大；本题约束无特殊说明，假设 `now` 单调不减，若乱序则按实际窗口逻辑处理（不特殊纠正）。\n- 达到容量/次数上限：窗口内记录数 == limit 时返回 False，不记录。\n- 非法状态迁移：key 为非字符串等也可哈希即可，不校验类型；now 为 float/int 参与数值比较。\n- 复位时机：无显式 reset 方法，旧数据仅在每次 allow 时惰性清理，不占用额外线程或定时器。\n- 空 key 或首次调用：字典自动创建空列表，首次必 True（若 limit>0）。\n\n## 4. 代码实现\n```python\nclass RateLimiter:\n    def __init__(self, limit, window_sec):\n        self.limit = limit\n        self.window_sec = window_sec\n        self.records = {}\n\n    def allow(self, key, now):\n        if key not in self.records:\n            self.records[key] = []\n        # 清理窗口外旧记录\n        cutoff = now - self.window_sec\n        lst = self.records[key]\n        # 移除 <= cutoff 的时间戳\n        while lst and lst[0] <= cutoff:\n            lst.pop(0)\n        if len(lst) < self.limit:\n            lst.append(now)\n            return True\n        return False\n```\n\n## 5. 自测说明\n验证方式：按题目给出的测试用例示例，在同一实例上顺序调用 `allow('u1', 1.0)`、`allow('u1', 2.0)`、`allow('u1', 3.0)`，检查返回值依次为 True、True、False（因 limit=2, window=10.0，前两次在窗口内记入，第三次窗口内已有 2 次故拒绝）。覆盖范围：仅覆盖题目示例的单一 key 顺序调用及基本窗口逻辑；未覆盖多 key 并发、时间回拨、极限压力等场景，如实说明未做更多测试。",
+  "sections": {
+    "解题思路": "本题要求实现一个基于滑动窗口的限流器。核心数据结构选择：使用字典 `self.records` 以 `key` 为键，值为该 key 对应的时间戳列表（双端队列或普通列表均可，此处用列表模拟队列）。每次调用 `allow(key, now)` 时，先清理窗口 `(now - window_sec, now]` 之外的旧时间戳（即 `<= now - window_sec` 的记录），然后判断当前窗口内记录数是否小于 `limit`：若小于则追加 `now` 并返回 `True`，否则返回 `False`。状态通过实例属性 `self.records` 在多次方法调用之间自然保存与迁移，无需额外持久化。",
+    "复杂度分析": "- `allow` 方法：均摊时间复杂度 O(k)，其中 k 为当前 key 在窗口内的记录数（清理旧数据及判断是否超限需遍历列表）。由于每个时间戳最多被加入和移除各一次，均摊为 O(1) 每次调用（若用 deque 严格 O(1) 头删，列表头删为 O(n) 但 n 受 limit 限制，故整体 O(limit) 即 O(1) 因 limit 固定）。空间开销 O(m * limit)，m 为不同 key 的数量，用于存储各 key 的窗口内时间戳。\n- 构造 `__init__`：时间 O(1)，空间 O(1)（仅初始化空字典和参数）。",
+    "关键边界与处理策略": "- 重复调用：同一 key 连续调用，窗口内计数累加，超限返回 False，由列表长度控制。\n- 乱序调用：若 `now` 小于之前记录（时间回拨），清理条件 `ts <= now - window_sec` 可能不删旧数据，但新 `now` 仍会加入列表，可能导致计数偏大；本题约束无特殊说明，假设 `now` 单调不减，若乱序则按实际窗口逻辑处理（不特殊纠正）。\n- 达到容量/次数上限：窗口内记录数 == limit 时返回 False，不记录。\n- 非法状态迁移：key 为非字符串等也可哈希即可，不校验类型；now 为 float/int 参与数值比较。\n- 复位时机：无显式 reset 方法，旧数据仅在每次 allow 时惰性清理，不占用额外线程或定时器。\n- 空 key 或首次调用：字典自动创建空列表，首次必 True（若 limit>0）。",
+    "代码实现": "```python\nclass RateLimiter:\n    def __init__(self, limit, window_sec):\n        self.limit = limit\n        self.window_sec = window_sec\n        self.records = {}\n\n    def allow(self, key, now):\n        if key not in self.records:\n            self.records[key] = []\n        # 清理窗口外旧记录\n        cutoff = now - self.window_sec\n        lst = self.records[key]\n        # 移除 <= cutoff 的时间戳\n        while lst and lst[0] <= cutoff:\n            lst.pop(0)\n        if len(lst) < self.limit:\n            lst.append(now)\n            return True\n        return False\n```",
+    "自测说明": "验证方式：按题目给出的测试用例示例，在同一实例上顺序调用 `allow('u1', 1.0)`、`allow('u1', 2.0)`、`allow('u1', 3.0)`，检查返回值依次为 True、True、False（因 limit=2, window=10.0，前两次在窗口内记入，第三次窗口内已有 2 次故拒绝）。覆盖范围：仅覆盖题目示例的单一 key 顺序调用及基本窗口逻辑；未覆盖多 key 并发、时间回拨、极限压力等场景，如实说明未做更多测试。"
+  },
+  "code": "class RateLimiter:\n    def __init__(self, limit, window_sec):\n        self.limit = limit\n        self.window_sec = window_sec\n        self.records = {}\n\n    def allow(self, key, now):\n        if key not in self.records:\n            self.records[key] = []\n        # 清理窗口外旧记录\n        cutoff = now - self.window_sec\n        lst = self.records[key]\n        # 移除 <= cutoff 的时间戳\n        while lst and lst[0] <= cutoff:\n            lst.pop(0)\n        if len(lst) < self.limit:\n            lst.append(now)\n            return True\n        return False",
+  "public": {
+    "total": 4,
+    "passed": 4,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 4,
+    "passed": 4,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [
+    {
+      "section": "复杂度分析",
+      "error_type": "COMPLEXITY",
+      "error_type_label": "复杂度分析错误",
+      "detail": "声称时间复杂度 1，但代码中检测到最大循环嵌套深度为 1，实际下界约为 n。",
+      "evidence": "AST 静态分析：max_loop_depth=1, recursive=False",
+      "confidence": 0.7,
+      "source": "rule"
+    }
+  ],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "suspicious",
+      "confidence": 0.8,
+      "error_types": [
+        "描述与实现不一致"
+      ],
+      "reason": "解题思路称用列表模拟队列且未提复杂度，但信号中规则发现声称复杂度为1而实际有循环，且思路描述与实现中pop(0)的O(n)行为未澄清，存在描述与实现/复杂度声明不一致的嫌疑。",
+      "evidence": "步骤内容：'值为该 key 对应的时间戳列表（双端队列或普通列表均可，此处用列表模拟队列）'；signals 中 rule_findings: '声称时间复杂度 1，但代码中检测到最大循环嵌套深度为 1，实际下界约为 n'，而步骤内容未声明复杂度但实现含 while lst.pop(0)。",
+      "llm_verdict": "suspicious",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "flawed",
+      "confidence": 0.9,
+      "error_types": [
+        "复杂度分析错误"
+      ],
+      "reason": "声称时间复杂度 1，但代码中检测到最大循环嵌套深度为 1，实际下界约为 n。 Critic 补充：步骤中声称 allow 均摊 O(1) 且因 limit 固定故整体 O(limit) 即 O(1)，但代码使用列表 pop(0) 头删，单次清理最坏 O(k) 且 k 可等于 limit，当 limit 作为构造参数并非编译期常量时不能视为 O(1)；且静态信号已标记复杂度分析错误。",
+      "evidence": "AST 静态分析：max_loop_depth=1, recursive=False",
+      "llm_verdict": "flawed",
+      "rule_types": [
+        "复杂度分析错误"
+      ],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "suspicious",
+      "confidence": 0.6,
+      "error_types": [
+        "描述与实现不一致"
+      ],
+      "reason": "步骤称'假设 now 单调不减，若乱序则按实际窗口逻辑处理（不特殊纠正）'，但实现中清理条件为 ts <= now-window_sec，在乱序（now 回拨）时不会删除旧数据且新 now 仍加入，与'按实际窗口逻辑处理'的描述存在模糊/不一致，且未明确说明该实现实际会导致计数偏大而非正确窗口逻辑。",
+      "evidence": "步骤内容：'若 now 小于之前记录（时间回拨）...可能导致计数偏大；本题约束无特殊说明，假设 now 单调不减，若乱序则按实际窗口逻辑处理（不特殊纠正）'；实现代码：cutoff = now - self.window_sec; while lst and lst[0] <= cutoff: lst.pop(0)，乱序时旧数据不删且新 now 加入列表。",
+      "llm_verdict": "suspicious",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "suspicious",
+      "confidence": 0.7,
+      "error_types": [
+        "复杂度分析错误"
+      ],
+      "reason": "代码实现本身逻辑与测试均通过，但步骤中声称复杂度为1与静态分析检测到的单层循环（实际下界约n）不一致，属于描述与实现不一致中的复杂度声明问题。",
+      "evidence": "signals 中 rule_findings 指出：'声称时间复杂度 1，但代码中检测到最大循环嵌套深度为 1，实际下界约为 n'，而代码实现里存在 while lst and lst[0] <= cutoff: lst.pop(0) 的循环；同时 public 与 adversarial 测试均 all_passed=true。",
+      "llm_verdict": "suspicious",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "自测说明如实描述了仅覆盖题目示例的单一 key 顺序调用及基本窗口逻辑，并明确声明未覆盖多 key 并发、时间回拨、极限压力等场景，与执行信号中测试全通过及静态分析无关，描述与事实一致。",
+      "evidence": "步骤内容：'覆盖范围：仅覆盖题目示例的单一 key 顺序调用及基本窗口逻辑；未覆盖多 key 并发、时间回拨、极限压力等场景，如实说明未做更多测试。'",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    }
+  ],
+  "checker_report": {
+    "process_ok": false,
+    "code_ok": true,
+    "pseudo_correct": true,
+    "public": {
+      "total": 4,
+      "passed": 4,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 4,
+      "passed": 4,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [
+      {
+        "section": "复杂度分析",
+        "error_type": "COMPLEXITY",
+        "error_type_label": "复杂度分析错误",
+        "detail": "声称时间复杂度 1，但代码中检测到最大循环嵌套深度为 1，实际下界约为 n。",
+        "evidence": "AST 静态分析：max_loop_depth=1, recursive=False",
+        "confidence": 0.7,
+        "source": "rule"
+      }
+    ],
+    "forensics": [],
+    "signals": {
+      "problem_id": "eng-cls-001",
+      "entry_point": "allow",
+      "max_loop_depth": 1,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "1",
+      "expected_complexity": null,
+      "public": {
+        "total": 4,
+        "passed": 4,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 4,
+        "passed": 4,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": [
+        {
+          "section": "复杂度分析",
+          "error_type": "COMPLEXITY",
+          "error_type_label": "复杂度分析错误",
+          "detail": "声称时间复杂度 1，但代码中检测到最大循环嵌套深度为 1，实际下界约为 n。",
+          "evidence": "AST 静态分析：max_loop_depth=1, recursive=False",
+          "confidence": 0.7,
+          "source": "rule"
+        }
+      ]
+    },
+    "code": "class RateLimiter:\n    def __init__(self, limit, window_sec):\n        self.limit = limit\n        self.window_sec = window_sec\n        self.records = {}\n\n    def allow(self, key, now):\n        if key not in self.records:\n            self.records[key] = []\n        # 清理窗口外旧记录\n        cutoff = now - self.window_sec\n        lst = self.records[key]\n        # 移除 <= cutoff 的时间戳\n        while lst and lst[0] <= cutoff:\n            lst.pop(0)\n        if len(lst) < self.limit:\n            lst.append(now)\n            return True\n        return False",
+    "llm_summary": {
+      "summary": "公开与对抗测试全部通过，代码功能正确，但复杂度分析声称 O(1) 与实际单层循环 O(n) 不符。",
+      "process_ok": false,
+      "code_ok": true,
+      "pseudo_correct": true,
+      "root_cause": "解题过程中复杂度分析部分错误声称时间复杂度为 1（O(1)），而代码实现含单层循环（max_loop_depth=1），实际时间下界约为 O(n)，属文档/分析错误而非代码逻辑错误。",
+      "debug_hints": [
+        "修正复杂度分析描述：将时间复杂度由 O(1) 改为 O(n) 或说明循环执行次数与窗口内请求数相关",
+        "复核代码中循环结构，确认是否可优化为真正 O(1)（如用计数变量替代遍历），若不能则如实标注复杂度"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开测试通过但对抗失败：优先检查边界归一化、空/单元素、类型边界，并用 sandbox-debugger 在失败入参上下断点观察局部变量。",
+      "[COMPLEXITY] 声称时间复杂度 1，但代码中检测到最大循环嵌套深度为 1，实际下界约为 n。"
+    ],
+    "sections": {
+      "解题思路": "本题要求实现一个基于滑动窗口的限流器。核心数据结构选择：使用字典 `self.records` 以 `key` 为键，值为该 key 对应的时间戳列表（双端队列或普通列表均可，此处用列表模拟队列）。每次调用 `allow(key, now)` 时，先清理窗口 `(now - window_sec, now]` 之外的旧时间戳（即 `<= now - window_sec` 的记录），然后判断当前窗口内记录数是否小于 `limit`：若小于则追加 `now` 并返回 `True`，否则返回 `False`。状态通过实例属性 `self.records` 在多次方法调用之间自然保存与迁移，无需额外持久化。",
+      "复杂度分析": "- `allow` 方法：均摊时间复杂度 O(k)，其中 k 为当前 key 在窗口内的记录数（清理旧数据及判断是否超限需遍历列表）。由于每个时间戳最多被加入和移除各一次，均摊为 O(1) 每次调用（若用 deque 严格 O(1) 头删，列表头删为 O(n) 但 n 受 limit 限制，故整体 O(limit) 即 O(1) 因 limit 固定）。空间开销 O(m * limit)，m 为不同 key 的数量，用于存储各 key 的窗口内时间戳。\n- 构造 `__init__`：时间 O(1)，空间 O(1)（仅初始化空字典和参数）。",
+      "关键边界与处理策略": "- 重复调用：同一 key 连续调用，窗口内计数累加，超限返回 False，由列表长度控制。\n- 乱序调用：若 `now` 小于之前记录（时间回拨），清理条件 `ts <= now - window_sec` 可能不删旧数据，但新 `now` 仍会加入列表，可能导致计数偏大；本题约束无特殊说明，假设 `now` 单调不减，若乱序则按实际窗口逻辑处理（不特殊纠正）。\n- 达到容量/次数上限：窗口内记录数 == limit 时返回 False，不记录。\n- 非法状态迁移：key 为非字符串等也可哈希即可，不校验类型；now 为 float/int 参与数值比较。\n- 复位时机：无显式 reset 方法，旧数据仅在每次 allow 时惰性清理，不占用额外线程或定时器。\n- 空 key 或首次调用：字典自动创建空列表，首次必 True（若 limit>0）。",
+      "代码实现": "```python\nclass RateLimiter:\n    def __init__(self, limit, window_sec):\n        self.limit = limit\n        self.window_sec = window_sec\n        self.records = {}\n\n    def allow(self, key, now):\n        if key not in self.records:\n            self.records[key] = []\n        # 清理窗口外旧记录\n        cutoff = now - self.window_sec\n        lst = self.records[key]\n        # 移除 <= cutoff 的时间戳\n        while lst and lst[0] <= cutoff:\n            lst.pop(0)\n        if len(lst) < self.limit:\n            lst.append(now)\n            return True\n        return False\n```",
+      "自测说明": "验证方式：按题目给出的测试用例示例，在同一实例上顺序调用 `allow('u1', 1.0)`、`allow('u1', 2.0)`、`allow('u1', 3.0)`，检查返回值依次为 True、True、False（因 limit=2, window=10.0，前两次在窗口内记入，第三次窗口内已有 2 次故拒绝）。覆盖范围：仅覆盖题目示例的单一 key 顺序调用及基本窗口逻辑；未覆盖多 key 并发、时间回拨、极限压力等场景，如实说明未做更多测试。"
+    }
+  },
+  "elapsed_sec": 53.37,
+  "recorded_at": "2026-09-12T00:11:42"
+}

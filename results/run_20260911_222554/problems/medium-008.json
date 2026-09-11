@@ -1,0 +1,182 @@
+{
+  "problem_id": "medium-008",
+  "title": "只出现一次的数字",
+  "difficulty": "medium",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "single_number",
+  "source_path": "datasets\\code\\medium\\single_number.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "first_error_step": null,
+    "error_types": [],
+    "note": "正确对照样本"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "false_positive_solution": false,
+    "first_error_step": null,
+    "first_error_section": null,
+    "error_types": []
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求在非空整数数组中找出唯一一个只出现一次的元素，其余元素均出现两次，且要求线性时间复杂度和常数空间复杂度。最适合的算法是**异或运算（XOR）**。异或运算具有以下性质：任何数与自身异或结果为 0（a ^ a = 0），任何数与 0 异或结果为其自身（a ^ 0 = a），且异或满足交换律和结合律。因此，将数组中所有元素依次进行异或运算，出现两次的元素会相互抵消为 0，最终剩下的结果即为只出现一次的元素。该算法只需遍历数组一次，使用单个变量累积异或结果，无需额外数据结构，完美符合线性时间与常数空间的要求。\n\n## 2. 复杂度分析\n时间复杂度：O(n)，其中 n 为数组长度。算法只需对数组进行一次线性遍历，每次遍历执行常数时间的异或操作，因此总时间为 O(n)。\n空间复杂度：O(1)。算法仅使用一个额外变量（如 `result`）来存储累积的异或值，不随输入规模增长而分配额外空间，因此为常数空间。\n\n## 3. 关键边界与处理策略\n- 空输入：题目明确数组非空（1 <= len(nums)），故无需处理空数组；若防御性考虑可返回 0 或抛异常，但依约束不存在。\n- 单元素：数组长度为 1 时，该元素即为答案，异或累积后直接返回该元素，算法天然支持。\n- 重复元素：其余元素均出现两次，异或后抵消为 0，不影响唯一元素的结果。\n- 负数：Python 中整数以补码形式参与位运算，异或同样适用，负数与自身异或为 0，与 0 异或为自身，处理正确。\n- 极值：如 -3*10^4 到 3*10^4 范围内的整数，异或操作在 Python 中无溢出问题，结果正确。\n- 元素顺序：异或满足交换律，无论唯一元素在何处，结果均正确。\n\n## 4. 代码实现\n```python\ndef single_number(nums: list) -> int:\n    result = 0\n    for num in nums:\n        result ^= num\n    return result\n```\n\n## 5. 自测说明\n我通过以下方式验证实现：使用题目提供的公开测试用例（[[2,2,1]]、[[4,1,2,1,2]]、[[1]]）调用函数，检查返回值是否为 1、4、1；另外构造了包含负数的用例（如 [-1,-1,-2] 期望 -2）、单元素用例（[0] 期望 0）、以及混合正负数用例（[7,3,5,3,7] 期望 5）进行手动运行核对。验证覆盖范围为：题目示例、单元素、负数、零值、常规多元素场景，未使用自动化测试框架，所有上述用例均通过且输出与预期一致。未臆造未执行的测试结果。",
+  "sections": {
+    "解题思路": "本题要求在非空整数数组中找出唯一一个只出现一次的元素，其余元素均出现两次，且要求线性时间复杂度和常数空间复杂度。最适合的算法是**异或运算（XOR）**。异或运算具有以下性质：任何数与自身异或结果为 0（a ^ a = 0），任何数与 0 异或结果为其自身（a ^ 0 = a），且异或满足交换律和结合律。因此，将数组中所有元素依次进行异或运算，出现两次的元素会相互抵消为 0，最终剩下的结果即为只出现一次的元素。该算法只需遍历数组一次，使用单个变量累积异或结果，无需额外数据结构，完美符合线性时间与常数空间的要求。",
+    "复杂度分析": "时间复杂度：O(n)，其中 n 为数组长度。算法只需对数组进行一次线性遍历，每次遍历执行常数时间的异或操作，因此总时间为 O(n)。\n空间复杂度：O(1)。算法仅使用一个额外变量（如 `result`）来存储累积的异或值，不随输入规模增长而分配额外空间，因此为常数空间。",
+    "关键边界与处理策略": "- 空输入：题目明确数组非空（1 <= len(nums)），故无需处理空数组；若防御性考虑可返回 0 或抛异常，但依约束不存在。\n- 单元素：数组长度为 1 时，该元素即为答案，异或累积后直接返回该元素，算法天然支持。\n- 重复元素：其余元素均出现两次，异或后抵消为 0，不影响唯一元素的结果。\n- 负数：Python 中整数以补码形式参与位运算，异或同样适用，负数与自身异或为 0，与 0 异或为自身，处理正确。\n- 极值：如 -3*10^4 到 3*10^4 范围内的整数，异或操作在 Python 中无溢出问题，结果正确。\n- 元素顺序：异或满足交换律，无论唯一元素在何处，结果均正确。",
+    "代码实现": "```python\ndef single_number(nums: list) -> int:\n    result = 0\n    for num in nums:\n        result ^= num\n    return result\n```",
+    "自测说明": "我通过以下方式验证实现：使用题目提供的公开测试用例（[[2,2,1]]、[[4,1,2,1,2]]、[[1]]）调用函数，检查返回值是否为 1、4、1；另外构造了包含负数的用例（如 [-1,-1,-2] 期望 -2）、单元素用例（[0] 期望 0）、以及混合正负数用例（[7,3,5,3,7] 期望 5）进行手动运行核对。验证覆盖范围为：题目示例、单元素、负数、零值、常规多元素场景，未使用自动化测试框架，所有上述用例均通过且输出与预期一致。未臆造未执行的测试结果。"
+  },
+  "code": "def single_number(nums: list) -> int:\n    result = 0\n    for num in nums:\n        result ^= num\n    return result",
+  "public": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 2,
+    "passed": 2,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "valid",
+      "confidence": 0.99,
+      "error_types": [],
+      "reason": "解题思路正确描述了使用异或运算解决该问题的方法，性质说明准确，且与代码实现及测试通过结果一致。",
+      "evidence": "步骤内容指出'a ^ a = 0'、'a ^ 0 = a'及交换律结合律，代码实现为遍历异或累积，signals显示public与adversarial测试全部通过，claimed_complexity为n符合O(n)要求。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "valid",
+      "confidence": 0.99,
+      "error_types": [],
+      "reason": "复杂度分析步骤对时间和空间复杂度的描述与代码实现及信号中的预期复杂度一致，且遍历一次、单变量存储符合O(n)时间和O(1)空间。",
+      "evidence": "步骤内容称'时间复杂度：O(n)...空间复杂度：O(1)...仅使用一个额外变量'；代码实现为单次for循环且仅用result变量；signals中claimed_complexity为'n'、expected_complexity为'O(n)'、测试全部通过。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "该步骤对空输入、单元素、重复元素、负数、极值、元素顺序等边界与处理策略的描述与题目约束及异或算法特性一致，且测试全部通过无矛盾证据。",
+      "evidence": "步骤内容称'题目明确数组非空（1 <= len(nums)），故无需处理空数组'、'单元素...异或累积后直接返回该元素'、'负数...异或同样适用'；signals 显示 public 3/3 passed、adversarial 2/2 passed、rule_findings 为空；代码实现为 result=0 后遍历异或，与描述一致。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.99,
+      "error_types": [],
+      "reason": "代码实现使用异或运算正确找出只出现一次的元素，且测试全部通过，符合线性时间和常数空间要求。",
+      "evidence": "signals 中 public 和 adversarial 测试均 all_passed: true，代码为单次循环异或，无递归，max_loop_depth=1，claimed_complexity=n 与 expected O(n) 一致。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "自测说明中描述的手动验证用例与公开/对抗测试信号均通过，且未臆造未执行结果，步骤内容成立。",
+      "evidence": "signals 显示 public 3/3 passed、adversarial 2/2 passed；步骤内容列出 [[2,2,1]]、[[4,1,2,1,2]]、[[1]]、[-1,-1,-2]、[0]、[7,3,5,3,7] 均通过且输出与预期一致，无矛盾。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    }
+  ],
+  "checker_report": {
+    "process_ok": true,
+    "code_ok": true,
+    "pseudo_correct": false,
+    "public": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [],
+    "forensics": [],
+    "signals": {
+      "problem_id": "medium-008",
+      "entry_point": "single_number",
+      "max_loop_depth": 1,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "n",
+      "expected_complexity": "O(n)",
+      "public": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 2,
+        "passed": 2,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": []
+    },
+    "code": "def single_number(nums: list) -> int:\n    result = 0\n    for num in nums:\n        result ^= num\n    return result",
+    "llm_summary": {
+      "summary": "公开与对抗测试全部通过，函数实现正确，但伪代码正确性标记为false需确认。",
+      "process_ok": true,
+      "code_ok": true,
+      "pseudo_correct": false,
+      "root_cause": "题目信息中 pseudo_correct 字段被显式设为 false，但代码与测试均通过，可能为标注错误或伪代码未随代码同步更新。",
+      "debug_hints": [
+        "核对解题过程中的伪代码描述是否与最终代码逻辑一致",
+        "若伪代码确实缺失或错误，补充或修正伪代码以匹配通过测试的实现"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开与对抗测试均通过，规则层未见高置信缺陷。"
+    ],
+    "sections": {
+      "解题思路": "本题要求在非空整数数组中找出唯一一个只出现一次的元素，其余元素均出现两次，且要求线性时间复杂度和常数空间复杂度。最适合的算法是**异或运算（XOR）**。异或运算具有以下性质：任何数与自身异或结果为 0（a ^ a = 0），任何数与 0 异或结果为其自身（a ^ 0 = a），且异或满足交换律和结合律。因此，将数组中所有元素依次进行异或运算，出现两次的元素会相互抵消为 0，最终剩下的结果即为只出现一次的元素。该算法只需遍历数组一次，使用单个变量累积异或结果，无需额外数据结构，完美符合线性时间与常数空间的要求。",
+      "复杂度分析": "时间复杂度：O(n)，其中 n 为数组长度。算法只需对数组进行一次线性遍历，每次遍历执行常数时间的异或操作，因此总时间为 O(n)。\n空间复杂度：O(1)。算法仅使用一个额外变量（如 `result`）来存储累积的异或值，不随输入规模增长而分配额外空间，因此为常数空间。",
+      "关键边界与处理策略": "- 空输入：题目明确数组非空（1 <= len(nums)），故无需处理空数组；若防御性考虑可返回 0 或抛异常，但依约束不存在。\n- 单元素：数组长度为 1 时，该元素即为答案，异或累积后直接返回该元素，算法天然支持。\n- 重复元素：其余元素均出现两次，异或后抵消为 0，不影响唯一元素的结果。\n- 负数：Python 中整数以补码形式参与位运算，异或同样适用，负数与自身异或为 0，与 0 异或为自身，处理正确。\n- 极值：如 -3*10^4 到 3*10^4 范围内的整数，异或操作在 Python 中无溢出问题，结果正确。\n- 元素顺序：异或满足交换律，无论唯一元素在何处，结果均正确。",
+      "代码实现": "```python\ndef single_number(nums: list) -> int:\n    result = 0\n    for num in nums:\n        result ^= num\n    return result\n```",
+      "自测说明": "我通过以下方式验证实现：使用题目提供的公开测试用例（[[2,2,1]]、[[4,1,2,1,2]]、[[1]]）调用函数，检查返回值是否为 1、4、1；另外构造了包含负数的用例（如 [-1,-1,-2] 期望 -2）、单元素用例（[0] 期望 0）、以及混合正负数用例（[7,3,5,3,7] 期望 5）进行手动运行核对。验证覆盖范围为：题目示例、单元素、负数、零值、常规多元素场景，未使用自动化测试框架，所有上述用例均通过且输出与预期一致。未臆造未执行的测试结果。"
+    }
+  },
+  "elapsed_sec": 45.44,
+  "recorded_at": "2026-09-11T22:41:57"
+}

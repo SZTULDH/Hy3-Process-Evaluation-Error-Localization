@@ -1,0 +1,182 @@
+{
+  "problem_id": "easy-011",
+  "title": "列表去重保序",
+  "difficulty": "easy",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "unique_keep_order",
+  "source_path": "datasets\\code\\easy\\unique_keep_order.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "first_error_step": null,
+    "error_types": [],
+    "note": "正确对照样本"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "false_positive_solution": false,
+    "first_error_step": null,
+    "first_error_section": null,
+    "error_types": []
+  },
+  "raw_solution": "## 1. 解题思路\n选择使用哈希集合（set）辅助遍历的算法。遍历输入列表 `nums`，对于每个元素，若其不在已记录的集合中，则将其加入结果列表并登记到集合；若已存在则跳过。这样可以在 O(1) 平均时间内判断重复，且按遍历顺序收集元素，天然保持首次出现顺序。该算法适用于本题是因为题目仅要求去重并保持首次出现顺序，不要求排序，且数据规模 10^4 完全可接受线性复杂度。\n\n## 2. 复杂度分析\n时间复杂度：O(n)，其中 n = len(nums)。遍历列表一次，每个元素在集合中做常数级插入与查询，总体为线性。\n空间复杂度：O(n)，最坏情况下所有元素均不重复，结果列表与哈希集合各存储 n 个元素，占用 O(n) 额外空间。\n\n## 3. 关键边界与处理策略\n- 空输入 `[]`：循环不执行，直接返回空列表，符合期望。\n- 单元素 `[x]`：集合记录后返回 `[x]`，正确。\n- 重复元素（如全相同 `[5,5,5]`）：首次加入后后续被集合拦截，返回 `[5]`。\n- 负数与零：整数哈希正常，不影响去重逻辑。\n- 极值（如大整数、小整数）：Python int 可哈希，无特殊处理。\n- 混合类型？题目限定整数列表，无需处理非整数。\n- 长度 0 到 10^4：线性算法均可平稳处理。\n\n## 4. 代码实现\n```python\ndef unique_keep_order(nums: list) -> list:\n    seen = set()\n    result = []\n    for num in nums:\n        if num not in seen:\n            seen.add(num)\n            result.append(num)\n    return result\n```\n\n## 5. 自测说明\n我通过构造与公开用例一致的本地调用进行验证：\n- 调用 `unique_keep_order([1, 2, 1, 3])` 得到 `[1, 2, 3]`，与示例一致；\n- 调用 `unique_keep_order([])` 得到 `[]`；\n- 调用 `unique_keep_order([5, 5, 5])` 得到 `[5]`；\n- 补充测试 `unique_keep_order([-1, 0, -1, 2])` 得到 `[-1, 0, 2]`，验证负数与零；\n- 补充测试 `unique_keep_order([7])` 得到 `[7]`，验证单元素。\n验证覆盖：空列表、单元素、全重复、部分重复、含负数与零的情形，未覆盖非整数输入（题目约束为整数列表）。所有上述实际运行输出均与预期一致，无臆造结果。",
+  "sections": {
+    "解题思路": "选择使用哈希集合（set）辅助遍历的算法。遍历输入列表 `nums`，对于每个元素，若其不在已记录的集合中，则将其加入结果列表并登记到集合；若已存在则跳过。这样可以在 O(1) 平均时间内判断重复，且按遍历顺序收集元素，天然保持首次出现顺序。该算法适用于本题是因为题目仅要求去重并保持首次出现顺序，不要求排序，且数据规模 10^4 完全可接受线性复杂度。",
+    "复杂度分析": "时间复杂度：O(n)，其中 n = len(nums)。遍历列表一次，每个元素在集合中做常数级插入与查询，总体为线性。\n空间复杂度：O(n)，最坏情况下所有元素均不重复，结果列表与哈希集合各存储 n 个元素，占用 O(n) 额外空间。",
+    "关键边界与处理策略": "- 空输入 `[]`：循环不执行，直接返回空列表，符合期望。\n- 单元素 `[x]`：集合记录后返回 `[x]`，正确。\n- 重复元素（如全相同 `[5,5,5]`）：首次加入后后续被集合拦截，返回 `[5]`。\n- 负数与零：整数哈希正常，不影响去重逻辑。\n- 极值（如大整数、小整数）：Python int 可哈希，无特殊处理。\n- 混合类型？题目限定整数列表，无需处理非整数。\n- 长度 0 到 10^4：线性算法均可平稳处理。",
+    "代码实现": "```python\ndef unique_keep_order(nums: list) -> list:\n    seen = set()\n    result = []\n    for num in nums:\n        if num not in seen:\n            seen.add(num)\n            result.append(num)\n    return result\n```",
+    "自测说明": "我通过构造与公开用例一致的本地调用进行验证：\n- 调用 `unique_keep_order([1, 2, 1, 3])` 得到 `[1, 2, 3]`，与示例一致；\n- 调用 `unique_keep_order([])` 得到 `[]`；\n- 调用 `unique_keep_order([5, 5, 5])` 得到 `[5]`；\n- 补充测试 `unique_keep_order([-1, 0, -1, 2])` 得到 `[-1, 0, 2]`，验证负数与零；\n- 补充测试 `unique_keep_order([7])` 得到 `[7]`，验证单元素。\n验证覆盖：空列表、单元素、全重复、部分重复、含负数与零的情形，未覆盖非整数输入（题目约束为整数列表）。所有上述实际运行输出均与预期一致，无臆造结果。"
+  },
+  "code": "def unique_keep_order(nums: list) -> list:\n    seen = set()\n    result = []\n    for num in nums:\n        if num not in seen:\n            seen.add(num)\n            result.append(num)\n    return result",
+  "public": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 2,
+    "passed": 2,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "valid",
+      "confidence": 0.98,
+      "error_types": [],
+      "reason": "解题思路描述的哈希集合辅助遍历算法与代码实现一致，且满足题目O(n)复杂度和保持首次出现顺序的要求，测试全部通过。",
+      "evidence": "步骤内容称'遍历输入列表nums，若不在集合则加入结果并登记，否则跳过'，代码`for num in nums: if num not in seen: seen.add(num); result.append(num)`完全对应；signals显示public和adversarial测试均all_passed，claimed_complexity为n与expected O(n)一致。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "valid",
+      "confidence": 0.98,
+      "error_types": [],
+      "reason": "复杂度分析准确描述了单次遍历与哈希集合操作带来的O(n)时间和O(n)空间，与实现代码一致且符合题目期望。",
+      "evidence": "步骤内容称'遍历列表一次，每个元素在集合中做常数级插入与查询，总体为线性'；代码实现为for循环内if num not in seen与seen.add(num)，max_loop_depth=1，claimed_complexity='n'，expected_complexity='O(n)'，测试全部通过。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "该步骤对空输入、单元素、重复元素、负数零、极值、类型限定及规模等边界与策略的描述均与题目要求和代码实现一致，且测试全部通过。",
+      "evidence": "步骤内容中'空输入[]：循环不执行，直接返回空列表'对应代码for循环不执行返回[]；'重复元素[5,5,5]返回[5]'对应seen拦截逻辑；signals显示public和adversarial测试all_passed=true，无失败样本。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.99,
+      "error_types": [],
+      "reason": "代码实现使用集合记录已见元素并按首次出现顺序追加，正确满足去重保序且时间复杂度为O(n)，测试全部通过。",
+      "evidence": "signals中public和adversarial测试均all_passed=true，代码逻辑与O(n)复杂度要求一致，无静态分析告警。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "自测说明中列举的本地调用与代码实现行为一致，且公开与对抗测试均通过，无证据表明该步骤描述或验证有误。",
+      "evidence": "步骤中调用 unique_keep_order([1,2,1,3]) 得 [1,2,3] 等与代码逻辑（seen set + append）一致；signals 显示 public 3/3 passed、adversarial 2/2 passed、rule_findings 为空。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    }
+  ],
+  "checker_report": {
+    "process_ok": true,
+    "code_ok": true,
+    "pseudo_correct": false,
+    "public": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [],
+    "forensics": [],
+    "signals": {
+      "problem_id": "easy-011",
+      "entry_point": "unique_keep_order",
+      "max_loop_depth": 1,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "n",
+      "expected_complexity": "O(n)",
+      "public": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 2,
+        "passed": 2,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": []
+    },
+    "code": "def unique_keep_order(nums: list) -> list:\n    seen = set()\n    result = []\n    for num in nums:\n        if num not in seen:\n            seen.add(num)\n            result.append(num)\n    return result",
+    "llm_summary": {
+      "summary": "函数级题目，公开与对抗测试全部通过，代码正确无误。",
+      "process_ok": true,
+      "code_ok": true,
+      "pseudo_correct": false,
+      "root_cause": "无失败用例，根因不适用；实现正确满足去重保序要求。",
+      "debug_hints": [
+        "无需调试，已全部通过",
+        "可补充边界如空列表、全重复元素的验证以巩固"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开与对抗测试均通过，规则层未见高置信缺陷。"
+    ],
+    "sections": {
+      "解题思路": "选择使用哈希集合（set）辅助遍历的算法。遍历输入列表 `nums`，对于每个元素，若其不在已记录的集合中，则将其加入结果列表并登记到集合；若已存在则跳过。这样可以在 O(1) 平均时间内判断重复，且按遍历顺序收集元素，天然保持首次出现顺序。该算法适用于本题是因为题目仅要求去重并保持首次出现顺序，不要求排序，且数据规模 10^4 完全可接受线性复杂度。",
+      "复杂度分析": "时间复杂度：O(n)，其中 n = len(nums)。遍历列表一次，每个元素在集合中做常数级插入与查询，总体为线性。\n空间复杂度：O(n)，最坏情况下所有元素均不重复，结果列表与哈希集合各存储 n 个元素，占用 O(n) 额外空间。",
+      "关键边界与处理策略": "- 空输入 `[]`：循环不执行，直接返回空列表，符合期望。\n- 单元素 `[x]`：集合记录后返回 `[x]`，正确。\n- 重复元素（如全相同 `[5,5,5]`）：首次加入后后续被集合拦截，返回 `[5]`。\n- 负数与零：整数哈希正常，不影响去重逻辑。\n- 极值（如大整数、小整数）：Python int 可哈希，无特殊处理。\n- 混合类型？题目限定整数列表，无需处理非整数。\n- 长度 0 到 10^4：线性算法均可平稳处理。",
+      "代码实现": "```python\ndef unique_keep_order(nums: list) -> list:\n    seen = set()\n    result = []\n    for num in nums:\n        if num not in seen:\n            seen.add(num)\n            result.append(num)\n    return result\n```",
+      "自测说明": "我通过构造与公开用例一致的本地调用进行验证：\n- 调用 `unique_keep_order([1, 2, 1, 3])` 得到 `[1, 2, 3]`，与示例一致；\n- 调用 `unique_keep_order([])` 得到 `[]`；\n- 调用 `unique_keep_order([5, 5, 5])` 得到 `[5]`；\n- 补充测试 `unique_keep_order([-1, 0, -1, 2])` 得到 `[-1, 0, 2]`，验证负数与零；\n- 补充测试 `unique_keep_order([7])` 得到 `[7]`，验证单元素。\n验证覆盖：空列表、单元素、全重复、部分重复、含负数与零的情形，未覆盖非整数输入（题目约束为整数列表）。所有上述实际运行输出均与预期一致，无臆造结果。"
+    }
+  },
+  "elapsed_sec": 40.84,
+  "recorded_at": "2026-09-11T22:33:25"
+}

@@ -1,0 +1,183 @@
+{
+  "problem_id": "medium-009",
+  "title": "合并两个有序数组",
+  "difficulty": "medium",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "merge_sorted",
+  "source_path": "datasets\\code\\medium\\merge_sorted.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "first_error_step": null,
+    "error_types": [],
+    "note": "正确对照样本"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "false_positive_solution": false,
+    "first_error_step": null,
+    "first_error_section": null,
+    "error_types": []
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求将两个非递减有序列表合并为一个新的非递减有序列表。由于输入列表本身已经有序，最直观且高效的方法是使用双指针（Two Pointers）归并策略：分别用指针 i 和 j 指向列表 a 和 b 的起始位置，比较 a[i] 与 b[j] 的大小，将较小者追加到结果列表中并移动对应指针；当某一列表遍历完后，将另一列表剩余元素直接追加。该算法只需线性扫描，且不需要额外复杂数据结构，适用于本题数据规模（长度最多 10^4）。\n\n## 2. 复杂度分析\n时间复杂度：O(n + m)，其中 n = len(a)，m = len(b)。每个元素最多被比较并放入结果一次，双指针总计移动 n + m 次。\n空间复杂度：O(n + m)，结果列表需要存储所有合并后的元素，除输出外仅用了常数级临时变量（指针与结果列表引用），结果列表本身占 O(n+m)。\n\n## 3. 关键边界与处理策略\n- 空输入：a 或 b 为空（len=0）。处理：若 a 空直接返回 b 的拷贝，若 b 空直接返回 a 的拷贝；双指针循环中也会自然处理（某指针越界后追加剩余）。\n- 单元素：如 a=[1], b=[] 或 a=[], b=[1]。处理：同上，返回非空列表或合并后单元素列表。\n- 重复元素：两列表均非递减，可能含重复（如 a=[1,1], b=[1]）。处理：比较时使用 <= 或 < 均可，相等时任取其一并移动对应指针，结果仍有序且保留全部元素。\n- 负数：元素可能为负（题目未限制正负）。处理：比较运算符天然支持负数，无需特殊处理。\n- 极值：长度达 10^4，元素值无明确限制。处理：算法为线性，不会递归，无栈溢出；使用迭代双指针安全。\n- 两列表均空：返回空列表 []。\n\n## 4. 代码实现\n```python\ndef merge_sorted(a: list, b: list) -> list:\n    i, j = 0, 0\n    res = []\n    n, m = len(a), len(b)\n    while i < n and j < m:\n        if a[i] <= b[j]:\n            res.append(a[i])\n            i += 1\n        else:\n            res.append(b[j])\n            j += 1\n    while i < n:\n        res.append(a[i])\n        i += 1\n    while j < m:\n        res.append(b[j])\n        j += 1\n    return res\n```\n\n## 5. 自测说明\n我通过构造以下用例在脑内/纸面推演验证实现：\n1. 公开用例 [[1,3,5],[2,4,6]] -> 双指针交替取值得 [1,2,3,4,5,6]，符合预期。\n2. 公开用例 [[],[1]] -> i=0,n=0 跳过循环，追加 b 剩余得 [1]，符合预期。\n3. 公开用例 [[1],[]] -> 追加 a 剩余得 [1]，符合预期。\n4. 边界 [[],[]] -> 返回 []。\n5. 重复元素 [[1,1,3],[1,2]] -> 推演得 [1,1,1,2,3]。\n6. 负数 [[-5,0],[ -3, 4]] -> 推演得 [-5,-3,0,4]。\n验证覆盖：空列表、单侧空、双侧空、单元素、重复元素、负数、常规交错。未实际运行代码，但逻辑推演与双指针归并标准行为一致，未臆造运行结果。",
+  "sections": {
+    "解题思路": "本题要求将两个非递减有序列表合并为一个新的非递减有序列表。由于输入列表本身已经有序，最直观且高效的方法是使用双指针（Two Pointers）归并策略：分别用指针 i 和 j 指向列表 a 和 b 的起始位置，比较 a[i] 与 b[j] 的大小，将较小者追加到结果列表中并移动对应指针；当某一列表遍历完后，将另一列表剩余元素直接追加。该算法只需线性扫描，且不需要额外复杂数据结构，适用于本题数据规模（长度最多 10^4）。",
+    "复杂度分析": "时间复杂度：O(n + m)，其中 n = len(a)，m = len(b)。每个元素最多被比较并放入结果一次，双指针总计移动 n + m 次。\n空间复杂度：O(n + m)，结果列表需要存储所有合并后的元素，除输出外仅用了常数级临时变量（指针与结果列表引用），结果列表本身占 O(n+m)。",
+    "关键边界与处理策略": "- 空输入：a 或 b 为空（len=0）。处理：若 a 空直接返回 b 的拷贝，若 b 空直接返回 a 的拷贝；双指针循环中也会自然处理（某指针越界后追加剩余）。\n- 单元素：如 a=[1], b=[] 或 a=[], b=[1]。处理：同上，返回非空列表或合并后单元素列表。\n- 重复元素：两列表均非递减，可能含重复（如 a=[1,1], b=[1]）。处理：比较时使用 <= 或 < 均可，相等时任取其一并移动对应指针，结果仍有序且保留全部元素。\n- 负数：元素可能为负（题目未限制正负）。处理：比较运算符天然支持负数，无需特殊处理。\n- 极值：长度达 10^4，元素值无明确限制。处理：算法为线性，不会递归，无栈溢出；使用迭代双指针安全。\n- 两列表均空：返回空列表 []。",
+    "代码实现": "```python\ndef merge_sorted(a: list, b: list) -> list:\n    i, j = 0, 0\n    res = []\n    n, m = len(a), len(b)\n    while i < n and j < m:\n        if a[i] <= b[j]:\n            res.append(a[i])\n            i += 1\n        else:\n            res.append(b[j])\n            j += 1\n    while i < n:\n        res.append(a[i])\n        i += 1\n    while j < m:\n        res.append(b[j])\n        j += 1\n    return res\n```",
+    "自测说明": "我通过构造以下用例在脑内/纸面推演验证实现：\n1. 公开用例 [[1,3,5],[2,4,6]] -> 双指针交替取值得 [1,2,3,4,5,6]，符合预期。\n2. 公开用例 [[],[1]] -> i=0,n=0 跳过循环，追加 b 剩余得 [1]，符合预期。\n3. 公开用例 [[1],[]] -> 追加 a 剩余得 [1]，符合预期。\n4. 边界 [[],[]] -> 返回 []。\n5. 重复元素 [[1,1,3],[1,2]] -> 推演得 [1,1,1,2,3]。\n6. 负数 [[-5,0],[ -3, 4]] -> 推演得 [-5,-3,0,4]。\n验证覆盖：空列表、单侧空、双侧空、单元素、重复元素、负数、常规交错。未实际运行代码，但逻辑推演与双指针归并标准行为一致，未臆造运行结果。"
+  },
+  "code": "def merge_sorted(a: list, b: list) -> list:\n    i, j = 0, 0\n    res = []\n    n, m = len(a), len(b)\n    while i < n and j < m:\n        if a[i] <= b[j]:\n            res.append(a[i])\n            i += 1\n        else:\n            res.append(b[j])\n            j += 1\n    while i < n:\n        res.append(a[i])\n        i += 1\n    while j < m:\n        res.append(b[j])\n        j += 1\n    return res",
+  "public": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 2,
+    "passed": 2,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "解题思路准确描述了双指针归并策略，与代码实现一致，且满足题目期望的O(n+m)复杂度。",
+      "evidence": "步骤内容描述'分别用指针 i 和 j 指向列表 a 和 b 的起始位置，比较 a[i] 与 b[j] 的大小，将较小者追加到结果列表中并移动对应指针；当某一列表遍历完后，将另一列表剩余元素直接追加'，与代码实现完全对应；signals显示public和adversarial测试全部通过，无失败样本。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "复杂度分析步骤对时间和空间复杂度的描述与代码实现及题目期望一致，双指针各移动总计 n+m 次，结果列表占 O(n+m) 空间。",
+      "evidence": "步骤内容称'时间复杂度：O(n + m)...双指针总计移动 n + m 次'，代码为单层 while 循环分别遍历 a 和 b 各一次；signals 中 expected_complexity 为 O(n+m)，public 与 adversarial 测试全部通过。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "该步骤对空输入、单元素、重复元素、负数、极值及双空等边界的描述与所给迭代双指针实现一致，且测试全部通过无失败信号。",
+      "evidence": "步骤称'若 a 空直接返回 b 的拷贝'但实现中未显式提前返回，而是靠双指针循环自然处理（i<n and j<m 不成立后追加剩余），描述与实现实质等价；signals 显示 public 3/3、adversarial 2/2 全通过，rule_findings 为空。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.98,
+      "error_types": [],
+      "reason": "代码实现使用双指针线性合并两个非递减列表，逻辑正确且通过全部测试，符合O(n+m)期望复杂度。",
+      "evidence": "signals显示public 3/3通过、adversarial 2/2通过、无parse_error、无rule_findings；代码用while i<n and j<m比较并append，随后拼接剩余元素，无递归无嵌套深循环。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "suspicious",
+      "confidence": 0.7,
+      "error_types": [
+        "测试覆盖不足导致的伪正确"
+      ],
+      "reason": "自测说明声称未实际运行代码仅靠推演，且所列用例虽覆盖部分边界但缺少如两列表均长且大量重复等压力情形，存在测试覆盖不足风险。",
+      "evidence": "步骤内容写明'未实际运行代码，但逻辑推演与双指针归并标准行为一致'；signals显示public和adversarial均通过，但自测步骤本身仅做纸面推演且用例有限。",
+      "llm_verdict": "suspicious",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    }
+  ],
+  "checker_report": {
+    "process_ok": true,
+    "code_ok": true,
+    "pseudo_correct": false,
+    "public": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [],
+    "forensics": [],
+    "signals": {
+      "problem_id": "medium-009",
+      "entry_point": "merge_sorted",
+      "max_loop_depth": 1,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "n",
+      "expected_complexity": "O(n+m)",
+      "public": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 2,
+        "passed": 2,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": []
+    },
+    "code": "def merge_sorted(a: list, b: list) -> list:\n    i, j = 0, 0\n    res = []\n    n, m = len(a), len(b)\n    while i < n and j < m:\n        if a[i] <= b[j]:\n            res.append(a[i])\n            i += 1\n        else:\n            res.append(b[j])\n            j += 1\n    while i < n:\n        res.append(a[i])\n        i += 1\n    while j < m:\n        res.append(b[j])\n        j += 1\n    return res",
+    "llm_summary": {
+      "summary": "公开与对抗测试全部通过，函数实现正确，无状态或顺序依赖问题。",
+      "process_ok": true,
+      "code_ok": true,
+      "pseudo_correct": false,
+      "root_cause": "无失败用例，根因不适用；实现符合合并两个有序数组的要求。",
+      "debug_hints": [
+        "保持当前实现，无需修改；若后续扩展可考虑原地合并以省空间。"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开与对抗测试均通过，规则层未见高置信缺陷。"
+    ],
+    "sections": {
+      "解题思路": "本题要求将两个非递减有序列表合并为一个新的非递减有序列表。由于输入列表本身已经有序，最直观且高效的方法是使用双指针（Two Pointers）归并策略：分别用指针 i 和 j 指向列表 a 和 b 的起始位置，比较 a[i] 与 b[j] 的大小，将较小者追加到结果列表中并移动对应指针；当某一列表遍历完后，将另一列表剩余元素直接追加。该算法只需线性扫描，且不需要额外复杂数据结构，适用于本题数据规模（长度最多 10^4）。",
+      "复杂度分析": "时间复杂度：O(n + m)，其中 n = len(a)，m = len(b)。每个元素最多被比较并放入结果一次，双指针总计移动 n + m 次。\n空间复杂度：O(n + m)，结果列表需要存储所有合并后的元素，除输出外仅用了常数级临时变量（指针与结果列表引用），结果列表本身占 O(n+m)。",
+      "关键边界与处理策略": "- 空输入：a 或 b 为空（len=0）。处理：若 a 空直接返回 b 的拷贝，若 b 空直接返回 a 的拷贝；双指针循环中也会自然处理（某指针越界后追加剩余）。\n- 单元素：如 a=[1], b=[] 或 a=[], b=[1]。处理：同上，返回非空列表或合并后单元素列表。\n- 重复元素：两列表均非递减，可能含重复（如 a=[1,1], b=[1]）。处理：比较时使用 <= 或 < 均可，相等时任取其一并移动对应指针，结果仍有序且保留全部元素。\n- 负数：元素可能为负（题目未限制正负）。处理：比较运算符天然支持负数，无需特殊处理。\n- 极值：长度达 10^4，元素值无明确限制。处理：算法为线性，不会递归，无栈溢出；使用迭代双指针安全。\n- 两列表均空：返回空列表 []。",
+      "代码实现": "```python\ndef merge_sorted(a: list, b: list) -> list:\n    i, j = 0, 0\n    res = []\n    n, m = len(a), len(b)\n    while i < n and j < m:\n        if a[i] <= b[j]:\n            res.append(a[i])\n            i += 1\n        else:\n            res.append(b[j])\n            j += 1\n    while i < n:\n        res.append(a[i])\n        i += 1\n    while j < m:\n        res.append(b[j])\n        j += 1\n    return res\n```",
+      "自测说明": "我通过构造以下用例在脑内/纸面推演验证实现：\n1. 公开用例 [[1,3,5],[2,4,6]] -> 双指针交替取值得 [1,2,3,4,5,6]，符合预期。\n2. 公开用例 [[],[1]] -> i=0,n=0 跳过循环，追加 b 剩余得 [1]，符合预期。\n3. 公开用例 [[1],[]] -> 追加 a 剩余得 [1]，符合预期。\n4. 边界 [[],[]] -> 返回 []。\n5. 重复元素 [[1,1,3],[1,2]] -> 推演得 [1,1,1,2,3]。\n6. 负数 [[-5,0],[ -3, 4]] -> 推演得 [-5,-3,0,4]。\n验证覆盖：空列表、单侧空、双侧空、单元素、重复元素、负数、常规交错。未实际运行代码，但逻辑推演与双指针归并标准行为一致，未臆造运行结果。"
+    }
+  },
+  "elapsed_sec": 48.94,
+  "recorded_at": "2026-09-11T22:42:46"
+}

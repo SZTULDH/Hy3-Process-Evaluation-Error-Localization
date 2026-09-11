@@ -1,0 +1,181 @@
+{
+  "problem_id": "easy-001",
+  "title": "统计元音字母",
+  "difficulty": "easy",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "count_vowels",
+  "source_path": "datasets\\code\\easy\\count_vowels.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "first_error_step": null,
+    "error_types": [],
+    "note": "对照组：实现与过程均成立，用于检验评估器在正确样本上的误报率。"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "false_positive_solution": false,
+    "first_error_step": null,
+    "first_error_section": null,
+    "error_types": []
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求统计字符串中元音字母（a、e、i、o、u）的个数，且不区分大小写，非字母字符不计入。由于只需对字符串进行一次线性扫描，判断每个字符是否为目标元音（统一转为小写后比较），因此采用简单的遍历算法即可。使用一个集合（如 `set`）存储小写元音字母，便于 O(1) 时间复杂度的成员检查。该算法直观、高效，完全适用于本题的数据规模（长度最多 10^5）。\n\n## 2. 复杂度分析\n时间复杂度：O(n)，其中 n 为字符串长度。需遍历字符串中的每个字符一次，每次进行常数时间的转小写与集合查询操作。\n空间复杂度：O(1)，仅使用固定大小的元音集合（5 个元素）和少量临时变量，与输入规模无关。\n\n## 3. 关键边界与处理策略\n- 空字符串（len(s)=0）：遍历不执行，直接返回 0，符合预期。\n- 单元素字符串：若该字符为元音（如 'a' 或 'A'）返回 1，否则返回 0。\n- 重复元素：多次出现同一元音会分别计数，不影响正确性。\n- 大小写混合：通过 `lower()` 统一转为小写再判断，确保 'A' 与 'a' 均计入。\n- 非字母字符（如数字、标点、空格）：转小写后不在元音集合中，跳过不计。\n- 极值长度（10^5）：线性遍历可轻松处理，无递归或嵌套循环导致的栈/性能问题。\n- 可打印 ASCII 中的其他字母（如 'y'）：非指定元音，不计入。\n\n## 4. 代码实现\n```python\ndef count_vowels(s: str) -> int:\n    vowels = {'a', 'e', 'i', 'o', 'u'}\n    count = 0\n    for ch in s:\n        if ch.lower() in vowels:\n            count += 1\n    return count\n```\n\n## 5. 自测说明\n我通过手动构造与题目公开示例一致的用例进行验证：\n- 输入 `'hello'`：字符 h/e/l/l/o 中 e、o 为元音，输出 2，与期望一致。\n- 输入 `'AEIOU'`：全为大写元音，转小写后均在集合中，输出 5，与期望一致。\n- 输入 `'xyz'`：无元音，输出 0，与期望一致。\n此外，我验证了空串 `''` 返回 0、单字符 `'a'` 返回 1、含数字标点 `'a1!'` 返回 1 等边界情况，均符合逻辑。验证覆盖公开示例及基本边界，未使用自动化测试框架，未臆造额外测试结果。",
+  "sections": {
+    "解题思路": "本题要求统计字符串中元音字母（a、e、i、o、u）的个数，且不区分大小写，非字母字符不计入。由于只需对字符串进行一次线性扫描，判断每个字符是否为目标元音（统一转为小写后比较），因此采用简单的遍历算法即可。使用一个集合（如 `set`）存储小写元音字母，便于 O(1) 时间复杂度的成员检查。该算法直观、高效，完全适用于本题的数据规模（长度最多 10^5）。",
+    "复杂度分析": "时间复杂度：O(n)，其中 n 为字符串长度。需遍历字符串中的每个字符一次，每次进行常数时间的转小写与集合查询操作。\n空间复杂度：O(1)，仅使用固定大小的元音集合（5 个元素）和少量临时变量，与输入规模无关。",
+    "关键边界与处理策略": "- 空字符串（len(s)=0）：遍历不执行，直接返回 0，符合预期。\n- 单元素字符串：若该字符为元音（如 'a' 或 'A'）返回 1，否则返回 0。\n- 重复元素：多次出现同一元音会分别计数，不影响正确性。\n- 大小写混合：通过 `lower()` 统一转为小写再判断，确保 'A' 与 'a' 均计入。\n- 非字母字符（如数字、标点、空格）：转小写后不在元音集合中，跳过不计。\n- 极值长度（10^5）：线性遍历可轻松处理，无递归或嵌套循环导致的栈/性能问题。\n- 可打印 ASCII 中的其他字母（如 'y'）：非指定元音，不计入。",
+    "代码实现": "```python\ndef count_vowels(s: str) -> int:\n    vowels = {'a', 'e', 'i', 'o', 'u'}\n    count = 0\n    for ch in s:\n        if ch.lower() in vowels:\n            count += 1\n    return count\n```",
+    "自测说明": "我通过手动构造与题目公开示例一致的用例进行验证：\n- 输入 `'hello'`：字符 h/e/l/l/o 中 e、o 为元音，输出 2，与期望一致。\n- 输入 `'AEIOU'`：全为大写元音，转小写后均在集合中，输出 5，与期望一致。\n- 输入 `'xyz'`：无元音，输出 0，与期望一致。\n此外，我验证了空串 `''` 返回 0、单字符 `'a'` 返回 1、含数字标点 `'a1!'` 返回 1 等边界情况，均符合逻辑。验证覆盖公开示例及基本边界，未使用自动化测试框架，未臆造额外测试结果。"
+  },
+  "code": "def count_vowels(s: str) -> int:\n    vowels = {'a', 'e', 'i', 'o', 'u'}\n    count = 0\n    for ch in s:\n        if ch.lower() in vowels:\n            count += 1\n    return count",
+  "public": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 4,
+    "passed": 4,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "解题思路描述与代码实现一致，采用线性扫描和集合成员检查，复杂度为O(n)，符合题目要求且测试全部通过。",
+      "evidence": "步骤内容称'对字符串进行一次线性扫描，判断每个字符是否为目标元音（统一转为小写后比较）'、'使用集合存储小写元音字母'，代码实现为for ch in s: if ch.lower() in vowels，signals显示public和adversarial测试均all_passed，claimed_complexity为n与expected_complexity O(n)一致。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "复杂度分析步骤对时间和空间复杂度的描述与代码实现及信号中的声明一致且正确。",
+      "evidence": "步骤内容称时间复杂度 O(n)（遍历每个字符一次，常数时间操作），空间复杂度 O(1)（固定大小元音集合）；代码实现为单层 for 循环遍历字符串，使用固定集合 {'a','e','i','o','u'} 和临时变量；signals 中 claimed_complexity 为 'n'，expected_complexity 为 'O(n)'，max_loop_depth 为 1，无递归，测试全部通过。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "该步骤对空串、单元素、重复、大小写、非字母、极值长度及非元音字母等边界与策略的描述均与代码实现和信号中的全通过测试结果一致，无具体缺陷依据。",
+      "evidence": "步骤称空字符串返回0、大小写用lower()统一、非字母跳过、极值长度线性处理；代码用ch.lower() in vowels遍历计数；signals显示public 3/3、adversarial 4/4全通过，max_loop_depth=1无递归，claimed_complexity=n匹配expected O(n)。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.98,
+      "error_types": [],
+      "reason": "代码实现正确统计了字符串中元音字母（不区分大小写）的个数，非字母字符因不在元音集合中自然被忽略，且单层循环满足O(n)复杂度，所有测试均通过。",
+      "evidence": "signals中public和adversarial测试全部passed（total 3+4, failed 0），代码使用for ch in s单层遍历，ch.lower() in vowels判断，非字母如'1'或'!'的lower不在vowels中故不计入。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "自测说明中手动构造的用例与公开示例及边界情况一致，且信号显示公开与对抗测试全部通过，描述与实现及执行结果相符。",
+      "evidence": "步骤内容列出 'hello'->2、'AEIOU'->5、'xyz'->0 及空串、单字符、含数字标点等边界；signals 中 public.all_passed=true、adversarial.all_passed=true、failure_samples 为空；代码实现使用 ch.lower() in vowels 遍历一次，与说明一致。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    }
+  ],
+  "checker_report": {
+    "process_ok": true,
+    "code_ok": true,
+    "pseudo_correct": false,
+    "public": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 4,
+      "passed": 4,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [],
+    "forensics": [],
+    "signals": {
+      "problem_id": "easy-001",
+      "entry_point": "count_vowels",
+      "max_loop_depth": 1,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "n",
+      "expected_complexity": "O(n)",
+      "public": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 4,
+        "passed": 4,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": []
+    },
+    "code": "def count_vowels(s: str) -> int:\n    vowels = {'a', 'e', 'i', 'o', 'u'}\n    count = 0\n    for ch in s:\n        if ch.lower() in vowels:\n            count += 1\n    return count",
+    "llm_summary": {
+      "summary": "函数类题目，公开与对抗测试全部通过，代码正确。",
+      "process_ok": true,
+      "code_ok": true,
+      "pseudo_correct": false,
+      "root_cause": "无失败用例，代码逻辑正确，无需修复。",
+      "debug_hints": [
+        "无需调试，保持当前实现即可"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开与对抗测试均通过，规则层未见高置信缺陷。"
+    ],
+    "sections": {
+      "解题思路": "本题要求统计字符串中元音字母（a、e、i、o、u）的个数，且不区分大小写，非字母字符不计入。由于只需对字符串进行一次线性扫描，判断每个字符是否为目标元音（统一转为小写后比较），因此采用简单的遍历算法即可。使用一个集合（如 `set`）存储小写元音字母，便于 O(1) 时间复杂度的成员检查。该算法直观、高效，完全适用于本题的数据规模（长度最多 10^5）。",
+      "复杂度分析": "时间复杂度：O(n)，其中 n 为字符串长度。需遍历字符串中的每个字符一次，每次进行常数时间的转小写与集合查询操作。\n空间复杂度：O(1)，仅使用固定大小的元音集合（5 个元素）和少量临时变量，与输入规模无关。",
+      "关键边界与处理策略": "- 空字符串（len(s)=0）：遍历不执行，直接返回 0，符合预期。\n- 单元素字符串：若该字符为元音（如 'a' 或 'A'）返回 1，否则返回 0。\n- 重复元素：多次出现同一元音会分别计数，不影响正确性。\n- 大小写混合：通过 `lower()` 统一转为小写再判断，确保 'A' 与 'a' 均计入。\n- 非字母字符（如数字、标点、空格）：转小写后不在元音集合中，跳过不计。\n- 极值长度（10^5）：线性遍历可轻松处理，无递归或嵌套循环导致的栈/性能问题。\n- 可打印 ASCII 中的其他字母（如 'y'）：非指定元音，不计入。",
+      "代码实现": "```python\ndef count_vowels(s: str) -> int:\n    vowels = {'a', 'e', 'i', 'o', 'u'}\n    count = 0\n    for ch in s:\n        if ch.lower() in vowels:\n            count += 1\n    return count\n```",
+      "自测说明": "我通过手动构造与题目公开示例一致的用例进行验证：\n- 输入 `'hello'`：字符 h/e/l/l/o 中 e、o 为元音，输出 2，与期望一致。\n- 输入 `'AEIOU'`：全为大写元音，转小写后均在集合中，输出 5，与期望一致。\n- 输入 `'xyz'`：无元音，输出 0，与期望一致。\n此外，我验证了空串 `''` 返回 0、单字符 `'a'` 返回 1、含数字标点 `'a1!'` 返回 1 等边界情况，均符合逻辑。验证覆盖公开示例及基本边界，未使用自动化测试框架，未臆造额外测试结果。"
+    }
+  },
+  "elapsed_sec": 48.84,
+  "recorded_at": "2026-09-11T22:26:43"
+}

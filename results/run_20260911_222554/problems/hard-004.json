@@ -1,0 +1,225 @@
+{
+  "problem_id": "hard-004",
+  "title": "三数之和",
+  "difficulty": "hard",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "three_sum",
+  "source_path": "datasets\\code\\hard\\three_sum.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": false,
+    "first_error_step": "step_1_approach",
+    "error_types": [
+      "算法选择错误",
+      "复杂度分析错误"
+    ],
+    "note": "小样例结果正确但是 O(n^3)"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": false,
+    "false_positive_solution": true,
+    "first_error_step": "step_2_complexity",
+    "first_error_section": "复杂度分析",
+    "error_types": [
+      "复杂度分析错误"
+    ]
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求找出数组中所有和为 0 且不重复的三元组。采用排序 + 双指针算法：先对数组排序，便于跳过重复元素并使用双指针线性查找；固定一个元素 `nums[i]`，在 `i+1` 到末尾区间用左右指针 `l`、`r` 根据三数之和与 0 的大小关系移动，找到和为 0 时记录并跳过重复值。排序使重复元素相邻，可高效去重；双指针将内层查找降为 O(n)，整体优于暴力 O(n^3)。\n\n## 2. 复杂度分析\n时间复杂度：排序 O(n log n)，外层循环 O(n)，内层双指针均摊 O(n)，总时间复杂度 O(n^2)。空间复杂度：若忽略结果存储，原地排序为 O(1)（Python 排序为 O(log n) 栈空间），结果列表最多 O(n^2) 个三元组，通常计为 O(n^2) 输出空间或 O(1) 额外空间（不含输出）。\n\n## 3. 关键边界与处理策略\n- 空输入或长度不足 3：题目约束 len>=3，但代码可先判空返回 []。\n- 单元素/两元素：约束已排除，不处理。\n- 重复元素：排序后，固定 i 时若 `nums[i]==nums[i-1]` 跳过；找到解后 `l`、`r` 也跳过重复。\n- 负数与正数混合：排序后自然处理，双指针根据和大小收缩。\n- 全零：如 [0,0,0] 得 [[0,0,0]]；[0,0,0,0] 去重后仍只有一个。\n- 极值：int 范围，Python 无溢出问题。\n- 无解：如 [0,1,1] 返回 []。\n\n## 4. 代码实现\n```python\ndef three_sum(nums: list) -> list:\n    nums.sort()\n    n = len(nums)\n    res = []\n    for i in range(n - 2):\n        if i > 0 and nums[i] == nums[i - 1]:\n            continue\n        l, r = i + 1, n - 1\n        while l < r:\n            s = nums[i] + nums[l] + nums[r]\n            if s == 0:\n                res.append([nums[i], nums[l], nums[r]])\n                while l < r and nums[l] == nums[l + 1]:\n                    l += 1\n                while l < r and nums[r] == nums[r - 1]:\n                    r -= 1\n                l += 1\n                r -= 1\n            elif s < 0:\n                l += 1\n            else:\n                r -= 1\n    return res\n```\n\n## 5. 自测说明\n使用题目公开用例验证：输入 `[-1,0,1,2,-1,-4]` 得 `[[-1,-1,2],[-1,0,1]]`；`[0,1,1]` 得 `[]`；`[0,0,0]` 得 `[[0,0,0]]`。另自测 `[0,0,0,0]` 得 `[[0,0,0]]`，`[-2,0,1,1,2]` 得 `[[-2,0,2],[-2,1,1]]`，覆盖重复、全零、无解、正负混合。验证覆盖公开及构造边界，未做随机大规模压力测试。",
+  "sections": {
+    "解题思路": "本题要求找出数组中所有和为 0 且不重复的三元组。采用排序 + 双指针算法：先对数组排序，便于跳过重复元素并使用双指针线性查找；固定一个元素 `nums[i]`，在 `i+1` 到末尾区间用左右指针 `l`、`r` 根据三数之和与 0 的大小关系移动，找到和为 0 时记录并跳过重复值。排序使重复元素相邻，可高效去重；双指针将内层查找降为 O(n)，整体优于暴力 O(n^3)。",
+    "复杂度分析": "时间复杂度：排序 O(n log n)，外层循环 O(n)，内层双指针均摊 O(n)，总时间复杂度 O(n^2)。空间复杂度：若忽略结果存储，原地排序为 O(1)（Python 排序为 O(log n) 栈空间），结果列表最多 O(n^2) 个三元组，通常计为 O(n^2) 输出空间或 O(1) 额外空间（不含输出）。",
+    "关键边界与处理策略": "- 空输入或长度不足 3：题目约束 len>=3，但代码可先判空返回 []。\n- 单元素/两元素：约束已排除，不处理。\n- 重复元素：排序后，固定 i 时若 `nums[i]==nums[i-1]` 跳过；找到解后 `l`、`r` 也跳过重复。\n- 负数与正数混合：排序后自然处理，双指针根据和大小收缩。\n- 全零：如 [0,0,0] 得 [[0,0,0]]；[0,0,0,0] 去重后仍只有一个。\n- 极值：int 范围，Python 无溢出问题。\n- 无解：如 [0,1,1] 返回 []。",
+    "代码实现": "```python\ndef three_sum(nums: list) -> list:\n    nums.sort()\n    n = len(nums)\n    res = []\n    for i in range(n - 2):\n        if i > 0 and nums[i] == nums[i - 1]:\n            continue\n        l, r = i + 1, n - 1\n        while l < r:\n            s = nums[i] + nums[l] + nums[r]\n            if s == 0:\n                res.append([nums[i], nums[l], nums[r]])\n                while l < r and nums[l] == nums[l + 1]:\n                    l += 1\n                while l < r and nums[r] == nums[r - 1]:\n                    r -= 1\n                l += 1\n                r -= 1\n            elif s < 0:\n                l += 1\n            else:\n                r -= 1\n    return res\n```",
+    "自测说明": "使用题目公开用例验证：输入 `[-1,0,1,2,-1,-4]` 得 `[[-1,-1,2],[-1,0,1]]`；`[0,1,1]` 得 `[]`；`[0,0,0]` 得 `[[0,0,0]]`。另自测 `[0,0,0,0]` 得 `[[0,0,0]]`，`[-2,0,1,1,2]` 得 `[[-2,0,2],[-2,1,1]]`，覆盖重复、全零、无解、正负混合。验证覆盖公开及构造边界，未做随机大规模压力测试。"
+  },
+  "code": "def three_sum(nums: list) -> list:\n    nums.sort()\n    n = len(nums)\n    res = []\n    for i in range(n - 2):\n        if i > 0 and nums[i] == nums[i - 1]:\n            continue\n        l, r = i + 1, n - 1\n        while l < r:\n            s = nums[i] + nums[l] + nums[r]\n            if s == 0:\n                res.append([nums[i], nums[l], nums[r]])\n                while l < r and nums[l] == nums[l + 1]:\n                    l += 1\n                while l < r and nums[r] == nums[r - 1]:\n                    r -= 1\n                l += 1\n                r -= 1\n            elif s < 0:\n                l += 1\n            else:\n                r -= 1\n    return res",
+  "public": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 2,
+    "passed": 2,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [
+    {
+      "section": "复杂度分析",
+      "error_type": "COMPLEXITY",
+      "error_type_label": "复杂度分析错误",
+      "detail": "声称时间复杂度 nlogn，但代码中检测到最大循环嵌套深度为 3，实际下界约为 n3。",
+      "evidence": "AST 静态分析：max_loop_depth=3, recursive=False",
+      "confidence": 0.7,
+      "source": "rule"
+    }
+  ],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "解题思路描述的排序+双指针算法与代码实现一致，且测试全部通过，该步骤本身对算法选择和去重逻辑的描述正确。",
+      "evidence": "步骤内容称'先对数组排序…固定一个元素 nums[i]，在 i+1 到末尾区间用左右指针…整体优于暴力 O(n^3)'，代码实现中 for i + while l<r 正是此逻辑；signals 中 public 和 adversarial 测试 all_passed=true。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "flawed",
+      "confidence": 0.95,
+      "error_types": [
+        "复杂度分析错误"
+      ],
+      "reason": "声称时间复杂度 nlogn，但代码中检测到最大循环嵌套深度为 3，实际下界约为 n3。 Critic 补充：步骤中声称总时间复杂度 O(n^2) 正确，但信号显示 claimed_complexity 为 'nlogn' 且规则引擎据此报复杂度分析错误，说明实际提交的复杂度声明与步骤内容不一致或步骤未被正确关联，按硬证据判定该步骤声明不成立。",
+      "evidence": "AST 静态分析：max_loop_depth=3, recursive=False",
+      "llm_verdict": "flawed",
+      "rule_types": [
+        "复杂度分析错误"
+      ],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "该步骤对边界情况（空输入、重复元素、全零、无解等）的描述与代码实现一致，且公开与对抗测试均全部通过，无具体依据判定其不成立。",
+      "evidence": "步骤内容称'排序后固定 i 时若 nums[i]==nums[i-1] 跳过；找到解后 l、r 也跳过重复'，代码中对应 `if i > 0 and nums[i] == nums[i-1]: continue` 及 `while l < r and nums[l] == nums[l+1]: l += 1` 等；signals 显示 public 3/3 passed、adversarial 2/2 passed，无失败样本。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "代码实现本身正确实现了排序+双指针的O(n^2)三数之和算法，测试全部通过，无实现逻辑缺陷。",
+      "evidence": "public测试3/3通过，adversarial测试2/2通过；代码使用sort后固定i、双指针l/r向中间扫描，嵌套为for+while两层有效循环（内层while非三重嵌套），符合O(n^2)；signals中rule_findings针对的是'复杂度分析'步骤声称nlogn的错误，而非代码实现步骤本身。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "suspicious",
+      "confidence": 0.6,
+      "error_types": [
+        "测试覆盖不足导致的伪正确"
+      ],
+      "reason": "自测说明仅使用少量固定用例且明确未做随机大规模压力测试，虽公开与对抗用例全过，但覆盖不足可能隐藏问题，且步骤自身承认未充分测试。",
+      "evidence": "步骤内容：'另自测 [0,0,0,0] 得 [[0,0,0]]，[-2,0,1,1,2] 得 [[-2,0,2],[-2,1,1]]，覆盖重复、全零、无解、正负混合。验证覆盖公开及构造边界，未做随机大规模压力测试。'",
+      "llm_verdict": "suspicious",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    }
+  ],
+  "checker_report": {
+    "process_ok": false,
+    "code_ok": true,
+    "pseudo_correct": true,
+    "public": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [
+      {
+        "section": "复杂度分析",
+        "error_type": "COMPLEXITY",
+        "error_type_label": "复杂度分析错误",
+        "detail": "声称时间复杂度 nlogn，但代码中检测到最大循环嵌套深度为 3，实际下界约为 n3。",
+        "evidence": "AST 静态分析：max_loop_depth=3, recursive=False",
+        "confidence": 0.7,
+        "source": "rule"
+      }
+    ],
+    "forensics": [],
+    "signals": {
+      "problem_id": "hard-004",
+      "entry_point": "three_sum",
+      "max_loop_depth": 3,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "nlogn",
+      "expected_complexity": "O(n^2)",
+      "public": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 2,
+        "passed": 2,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": [
+        {
+          "section": "复杂度分析",
+          "error_type": "COMPLEXITY",
+          "error_type_label": "复杂度分析错误",
+          "detail": "声称时间复杂度 nlogn，但代码中检测到最大循环嵌套深度为 3，实际下界约为 n3。",
+          "evidence": "AST 静态分析：max_loop_depth=3, recursive=False",
+          "confidence": 0.7,
+          "source": "rule"
+        }
+      ]
+    },
+    "code": "def three_sum(nums: list) -> list:\n    nums.sort()\n    n = len(nums)\n    res = []\n    for i in range(n - 2):\n        if i > 0 and nums[i] == nums[i - 1]:\n            continue\n        l, r = i + 1, n - 1\n        while l < r:\n            s = nums[i] + nums[l] + nums[r]\n            if s == 0:\n                res.append([nums[i], nums[l], nums[r]])\n                while l < r and nums[l] == nums[l + 1]:\n                    l += 1\n                while l < r and nums[r] == nums[r - 1]:\n                    r -= 1\n                l += 1\n                r -= 1\n            elif s < 0:\n                l += 1\n            else:\n                r -= 1\n    return res",
+    "llm_summary": {
+      "summary": "代码功能正确通过全部公开与对抗测试，但复杂度分析标注错误（声称nlogn实为n^3）。",
+      "process_ok": false,
+      "code_ok": true,
+      "pseudo_correct": true,
+      "root_cause": "解题过程中复杂度分析部分误判算法时间复杂度，将三重循环（或排序+双指针误写为三重嵌套）的O(n^3)写成O(nlogn)，而实际代码AST显示最大循环嵌套深度为3。",
+      "debug_hints": [
+        "检查代码中three_sum实现：若使用排序+双指针应为O(n^2)，若确为三重循环则修正复杂度说明为O(n^3)",
+        "更新解题过程文档中的复杂度分析章节，使其与AST静态分析得到的max_loop_depth=3一致",
+        "确认是否本应写O(n^2)（排序+双指针）却误写成nlogn，并核对代码实际结构"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开测试通过但对抗失败：优先检查边界归一化、空/单元素、类型边界，并用 sandbox-debugger 在失败入参上下断点观察局部变量。",
+      "[COMPLEXITY] 声称时间复杂度 nlogn，但代码中检测到最大循环嵌套深度为 3，实际下界约为 n3。"
+    ],
+    "sections": {
+      "解题思路": "本题要求找出数组中所有和为 0 且不重复的三元组。采用排序 + 双指针算法：先对数组排序，便于跳过重复元素并使用双指针线性查找；固定一个元素 `nums[i]`，在 `i+1` 到末尾区间用左右指针 `l`、`r` 根据三数之和与 0 的大小关系移动，找到和为 0 时记录并跳过重复值。排序使重复元素相邻，可高效去重；双指针将内层查找降为 O(n)，整体优于暴力 O(n^3)。",
+      "复杂度分析": "时间复杂度：排序 O(n log n)，外层循环 O(n)，内层双指针均摊 O(n)，总时间复杂度 O(n^2)。空间复杂度：若忽略结果存储，原地排序为 O(1)（Python 排序为 O(log n) 栈空间），结果列表最多 O(n^2) 个三元组，通常计为 O(n^2) 输出空间或 O(1) 额外空间（不含输出）。",
+      "关键边界与处理策略": "- 空输入或长度不足 3：题目约束 len>=3，但代码可先判空返回 []。\n- 单元素/两元素：约束已排除，不处理。\n- 重复元素：排序后，固定 i 时若 `nums[i]==nums[i-1]` 跳过；找到解后 `l`、`r` 也跳过重复。\n- 负数与正数混合：排序后自然处理，双指针根据和大小收缩。\n- 全零：如 [0,0,0] 得 [[0,0,0]]；[0,0,0,0] 去重后仍只有一个。\n- 极值：int 范围，Python 无溢出问题。\n- 无解：如 [0,1,1] 返回 []。",
+      "代码实现": "```python\ndef three_sum(nums: list) -> list:\n    nums.sort()\n    n = len(nums)\n    res = []\n    for i in range(n - 2):\n        if i > 0 and nums[i] == nums[i - 1]:\n            continue\n        l, r = i + 1, n - 1\n        while l < r:\n            s = nums[i] + nums[l] + nums[r]\n            if s == 0:\n                res.append([nums[i], nums[l], nums[r]])\n                while l < r and nums[l] == nums[l + 1]:\n                    l += 1\n                while l < r and nums[r] == nums[r - 1]:\n                    r -= 1\n                l += 1\n                r -= 1\n            elif s < 0:\n                l += 1\n            else:\n                r -= 1\n    return res\n```",
+      "自测说明": "使用题目公开用例验证：输入 `[-1,0,1,2,-1,-4]` 得 `[[-1,-1,2],[-1,0,1]]`；`[0,1,1]` 得 `[]`；`[0,0,0]` 得 `[[0,0,0]]`。另自测 `[0,0,0,0]` 得 `[[0,0,0]]`，`[-2,0,1,1,2]` 得 `[[-2,0,2],[-2,1,1]]`，覆盖重复、全零、无解、正负混合。验证覆盖公开及构造边界，未做随机大规模压力测试。"
+    }
+  },
+  "elapsed_sec": 51.87,
+  "recorded_at": "2026-09-11T22:52:07"
+}

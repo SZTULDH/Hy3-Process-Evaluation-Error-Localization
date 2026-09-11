@@ -1,0 +1,181 @@
+{
+  "problem_id": "easy-012",
+  "title": "斐波那契第 n 项",
+  "difficulty": "easy",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "fib",
+  "source_path": "datasets\\code\\easy\\fib.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "first_error_step": null,
+    "error_types": [],
+    "note": "正确对照样本"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "false_positive_solution": false,
+    "first_error_step": null,
+    "first_error_section": null,
+    "error_types": []
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求计算斐波那契数列的第 n 项，定义为 F(0)=0, F(1)=1, F(n)=F(n-1)+F(n-2)，且 n 的范围为 0 到 30。由于 n 较小，可以选择迭代（动态规划）或递归加记忆化。这里选择迭代法：使用两个变量滚动记录前两项的值，从底向上计算到第 n 项。该算法无需递归调用栈，逻辑简单，且天然避免重复计算，适用于本题的小范围整数输入。\n\n## 2. 复杂度分析\n时间复杂度：O(n)。推理依据：使用单次循环从 2 迭代到 n，循环次数为 n-1 次，每次循环内为常数时间的加法与赋值操作，因此总时间随 n 线性增长。\n空间复杂度：O(1)。推理依据：仅使用了固定数量的整型变量（如 a、b 及循环变量）保存中间状态，未使用数组或递归栈，空间占用不随 n 变化。\n\n## 3. 关键边界与处理策略\n- 空输入：题目约束 n 为 int 且 0<=n<=30，函数签名固定为单参数，不存在空输入情形；若调用方传 None 属类型错误，不在本题处理范围。\n- 单元素/最小边界 n=0：直接返回 0，符合 F(0)=0 定义。\n- 边界 n=1：直接返回 1，符合 F(1)=1 定义。\n- 重复元素：本题输入为单个整数 n，不涉及序列或重复元素概念。\n- 负数：约束已限定 n>=0，若传入负数属非法输入，本题不做额外校验（按题意假设合法）。\n- 极值 n=30：迭代法在 n=30 时循环 29 次，结果在 int 范围内（F(30)=832040），无溢出问题，正常计算返回。\n\n## 4. 代码实现\n```python\ndef fib(n: int) -> int:\n    if n == 0:\n        return 0\n    if n == 1:\n        return 1\n    a, b = 0, 1\n    for _ in range(2, n + 1):\n        a, b = b, a + b\n    return b\n```\n\n## 5. 自测说明\n我通过手动代入公开测试用例验证实现：对 n=0 返回 0，n=1 返回 1，n=5 时循环计算得 b=5，与期望输出一致。此外，我依据递推定义核对了 n=2 得 1、n=3 得 2、n=30 得 832040（已知标准值），确认迭代逻辑正确。验证覆盖范围为题目给出的公开示例及边界 n=0、n=1 和上限 n=30，未使用自动化随机测试，未臆造其他测试结果。",
+  "sections": {
+    "解题思路": "本题要求计算斐波那契数列的第 n 项，定义为 F(0)=0, F(1)=1, F(n)=F(n-1)+F(n-2)，且 n 的范围为 0 到 30。由于 n 较小，可以选择迭代（动态规划）或递归加记忆化。这里选择迭代法：使用两个变量滚动记录前两项的值，从底向上计算到第 n 项。该算法无需递归调用栈，逻辑简单，且天然避免重复计算，适用于本题的小范围整数输入。",
+    "复杂度分析": "时间复杂度：O(n)。推理依据：使用单次循环从 2 迭代到 n，循环次数为 n-1 次，每次循环内为常数时间的加法与赋值操作，因此总时间随 n 线性增长。\n空间复杂度：O(1)。推理依据：仅使用了固定数量的整型变量（如 a、b 及循环变量）保存中间状态，未使用数组或递归栈，空间占用不随 n 变化。",
+    "关键边界与处理策略": "- 空输入：题目约束 n 为 int 且 0<=n<=30，函数签名固定为单参数，不存在空输入情形；若调用方传 None 属类型错误，不在本题处理范围。\n- 单元素/最小边界 n=0：直接返回 0，符合 F(0)=0 定义。\n- 边界 n=1：直接返回 1，符合 F(1)=1 定义。\n- 重复元素：本题输入为单个整数 n，不涉及序列或重复元素概念。\n- 负数：约束已限定 n>=0，若传入负数属非法输入，本题不做额外校验（按题意假设合法）。\n- 极值 n=30：迭代法在 n=30 时循环 29 次，结果在 int 范围内（F(30)=832040），无溢出问题，正常计算返回。",
+    "代码实现": "```python\ndef fib(n: int) -> int:\n    if n == 0:\n        return 0\n    if n == 1:\n        return 1\n    a, b = 0, 1\n    for _ in range(2, n + 1):\n        a, b = b, a + b\n    return b\n```",
+    "自测说明": "我通过手动代入公开测试用例验证实现：对 n=0 返回 0，n=1 返回 1，n=5 时循环计算得 b=5，与期望输出一致。此外，我依据递推定义核对了 n=2 得 1、n=3 得 2、n=30 得 832040（已知标准值），确认迭代逻辑正确。验证覆盖范围为题目给出的公开示例及边界 n=0、n=1 和上限 n=30，未使用自动化随机测试，未臆造其他测试结果。"
+  },
+  "code": "def fib(n: int) -> int:\n    if n == 0:\n        return 0\n    if n == 1:\n        return 1\n    a, b = 0, 1\n    for _ in range(2, n + 1):\n        a, b = b, a + b\n    return b",
+  "public": {
+    "total": 4,
+    "passed": 4,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 2,
+    "passed": 2,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "解题思路描述的迭代法与代码实现一致，测试全部通过，复杂度符合O(n)要求，无具体缺陷依据。",
+      "evidence": "步骤内容称'使用两个变量滚动记录前两项的值，从底向上计算到第 n 项'，代码实现为 a,b=0,1 并循环 range(2,n+1) 更新 a,b=b,a+b 返回 b，signals 显示 public 4/4 passed、adversarial 2/2 passed、claimed_complexity=n 与 expected O(n) 一致。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "valid",
+      "confidence": 0.98,
+      "error_types": [],
+      "reason": "复杂度分析步骤中时间O(n)与空间O(1)的推理与代码实现及信号中的循环深度、无递归等静态分析结果一致。",
+      "evidence": "步骤内容称'单次循环从2迭代到n，循环次数为n-1次'对应代码'for _ in range(2, n + 1)'；信号显示max_loop_depth=1, recursive=false, claimed_complexity='n', expected_complexity='O(n)'，且测试全部通过。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "该步骤对边界与处理策略的描述与题目约束、代码实现及测试信号一致，无错误。",
+      "evidence": "步骤指出 n=0 返回 0、n=1 返回 1、n=30 迭代 29 次结果 832040 无溢出，代码对应实现为 if n==0: return 0; if n==1: return 1; 循环 range(2, n+1) 返回 b；signals 显示 public 4/4、adversarial 2/2 全部通过，rule_findings 为空。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.99,
+      "error_types": [],
+      "reason": "代码实现使用迭代方式正确计算斐波那契数列，边界处理完整，循环次数为 n-1 次满足 O(n) 复杂度，且所有公开与对抗测试均通过。",
+      "evidence": "signals 显示 public 4/4 passed、adversarial 2/2 passed、claimed_complexity 'n' 与 expected 'O(n)' 一致；代码对 n=0 和 n=1 直接返回，循环 range(2, n+1) 正确迭代并返回 b。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "自测说明中手动验证的 n=0、1、2、3、5、30 结果与斐波那契定义及代码实现一致，且 signals 显示公开与对抗测试全部通过，描述与实现无矛盾。",
+      "evidence": "步骤内容称 n=0 返回 0、n=1 返回 1、n=5 得 5、n=30 得 832040；代码中 fib(0)=0, fib(1)=1, 循环从 2 到 n 更新 a,b 最终返回 b，n=5 时 b=5，n=30 时 b=832040；signals 中 public 4/4 passed, adversarial 2/2 passed, all_passed true。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    }
+  ],
+  "checker_report": {
+    "process_ok": true,
+    "code_ok": true,
+    "pseudo_correct": false,
+    "public": {
+      "total": 4,
+      "passed": 4,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [],
+    "forensics": [],
+    "signals": {
+      "problem_id": "easy-012",
+      "entry_point": "fib",
+      "max_loop_depth": 1,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "n",
+      "expected_complexity": "O(n)",
+      "public": {
+        "total": 4,
+        "passed": 4,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 2,
+        "passed": 2,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": []
+    },
+    "code": "def fib(n: int) -> int:\n    if n == 0:\n        return 0\n    if n == 1:\n        return 1\n    a, b = 0, 1\n    for _ in range(2, n + 1):\n        a, b = b, a + b\n    return b",
+    "llm_summary": {
+      "summary": "函数 fib 在公开与对抗测试上均全部通过，代码正确无误。",
+      "process_ok": true,
+      "code_ok": true,
+      "pseudo_correct": false,
+      "root_cause": "无失败用例，不存在根因。",
+      "debug_hints": [
+        "无需调试，保持当前实现即可。"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开与对抗测试均通过，规则层未见高置信缺陷。"
+    ],
+    "sections": {
+      "解题思路": "本题要求计算斐波那契数列的第 n 项，定义为 F(0)=0, F(1)=1, F(n)=F(n-1)+F(n-2)，且 n 的范围为 0 到 30。由于 n 较小，可以选择迭代（动态规划）或递归加记忆化。这里选择迭代法：使用两个变量滚动记录前两项的值，从底向上计算到第 n 项。该算法无需递归调用栈，逻辑简单，且天然避免重复计算，适用于本题的小范围整数输入。",
+      "复杂度分析": "时间复杂度：O(n)。推理依据：使用单次循环从 2 迭代到 n，循环次数为 n-1 次，每次循环内为常数时间的加法与赋值操作，因此总时间随 n 线性增长。\n空间复杂度：O(1)。推理依据：仅使用了固定数量的整型变量（如 a、b 及循环变量）保存中间状态，未使用数组或递归栈，空间占用不随 n 变化。",
+      "关键边界与处理策略": "- 空输入：题目约束 n 为 int 且 0<=n<=30，函数签名固定为单参数，不存在空输入情形；若调用方传 None 属类型错误，不在本题处理范围。\n- 单元素/最小边界 n=0：直接返回 0，符合 F(0)=0 定义。\n- 边界 n=1：直接返回 1，符合 F(1)=1 定义。\n- 重复元素：本题输入为单个整数 n，不涉及序列或重复元素概念。\n- 负数：约束已限定 n>=0，若传入负数属非法输入，本题不做额外校验（按题意假设合法）。\n- 极值 n=30：迭代法在 n=30 时循环 29 次，结果在 int 范围内（F(30)=832040），无溢出问题，正常计算返回。",
+      "代码实现": "```python\ndef fib(n: int) -> int:\n    if n == 0:\n        return 0\n    if n == 1:\n        return 1\n    a, b = 0, 1\n    for _ in range(2, n + 1):\n        a, b = b, a + b\n    return b\n```",
+      "自测说明": "我通过手动代入公开测试用例验证实现：对 n=0 返回 0，n=1 返回 1，n=5 时循环计算得 b=5，与期望输出一致。此外，我依据递推定义核对了 n=2 得 1、n=3 得 2、n=30 得 832040（已知标准值），确认迭代逻辑正确。验证覆盖范围为题目给出的公开示例及边界 n=0、n=1 和上限 n=30，未使用自动化随机测试，未臆造其他测试结果。"
+    }
+  },
+  "elapsed_sec": 41.76,
+  "recorded_at": "2026-09-11T22:34:07"
+}

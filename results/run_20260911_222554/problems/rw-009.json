@@ -1,0 +1,179 @@
+{
+  "problem_id": "rw-009",
+  "title": "扁平化嵌套 JSON 字典",
+  "difficulty": "engineering",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "flatten_dict",
+  "source_path": "datasets\\code\\engineering\\function\\rw_009.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "note": "空嵌套不应产生多余键"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "false_positive_solution": false,
+    "first_error_step": null,
+    "first_error_section": null,
+    "error_types": []
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求将嵌套字典扁平化，使用指定分隔符连接各级键，且列表作为值不展开。采用深度优先搜索（DFS）递归遍历字典：若值为字典则继续递归并拼接键名，否则将当前拼接键与值存入结果字典。该算法天然契合嵌套结构的展开需求，递归实现简洁清晰，且能自然处理任意深度的嵌套。\n\n## 2. 复杂度分析\n时间复杂度：O(N)，其中 N 为嵌套字典中所有键值对的数量（含嵌套内部）。每个键值对仅被访问一次并写入结果，递归调用开销与节点数成正比。\n空间复杂度：O(N + D)，结果字典存储 N 个条目占 O(N)；递归调用栈深度最大为嵌套深度 D，占 O(D)。若考虑输出本身必占 O(N)，则渐进空间为 O(N)（D ≤ N）。\n\n## 3. 关键边界与处理策略\n- 空输入 `{}`：直接返回 `{}`，递归基例处理。\n- 单元素字典如 `{'a':1}`：直接写入 `{'a':1}`。\n- 重复键：扁平化后键由路径唯一确定，不会冲突；若原不同路径产生相同拼接键（如 `{'a':{'b':1}, 'a.b':2}`）则后者覆盖前者，依题意无特殊约束，按写入顺序后者生效。\n- 负数/非字典值：如 `{'a':-1}`、`{'a':[1,2]}`、`{'a':None}`，均作为叶子值直接存入，不展开。\n- 极值/深层嵌套：递归深度过大可能触发 Python 递归限制，但题目无约束，假设输入深度合理；若需可改迭代，此处用递归。\n- 分隔符 `sep` 自定义：拼接时使用传入的 `sep`，默认 `\".\"`。\n\n## 4. 代码实现\n```python\ndef flatten_dict(d: dict, sep: str = \".\") -> dict:\n    result = {}\n    def _flatten(current: dict, prefix: str):\n        for k, v in current.items():\n            key = f\"{prefix}{sep}{k}\" if prefix else str(k)\n            if isinstance(v, dict):\n                _flatten(v, key)\n            else:\n                result[key] = v\n    _flatten(d, \"\")\n    return result\n```\n\n## 5. 自测说明\n我通过构造以下用例在脑内/本地解释器中验证：\n1. `flatten_dict({'a':1,'b':{'c':2}})` → `{'a':1,'b.c':2}`，符合公开示例。\n2. `flatten_dict({})` → `{}`，空字典处理正确。\n3. `flatten_dict({'x':[1,2]})` → `{'x':[1,2]}`，列表未展开。\n4. `flatten_dict({'a':{'b':{'c':3}}, 'd':4})` → `{'a.b.c':3,'d':4}`，多层嵌套正确。\n5. `flatten_dict({'a':-1,'b':None})` → `{'a':-1,'b':None}`，负数与 None 作为值保留。\n6. `flatten_dict({'a':1}, sep='_')` → `{'a':1}`（单元素无拼接），另测 `{'a':{'b':2}}` with `sep='_'` → `{'a_b':2}`，分隔符生效。\n验证覆盖：空输入、单元素、嵌套、列表值、负数、None、自定义分隔符。未覆盖：超深嵌套（>1000）导致的递归错误，因题目无约束未处理。",
+  "sections": {
+    "解题思路": "本题要求将嵌套字典扁平化，使用指定分隔符连接各级键，且列表作为值不展开。采用深度优先搜索（DFS）递归遍历字典：若值为字典则继续递归并拼接键名，否则将当前拼接键与值存入结果字典。该算法天然契合嵌套结构的展开需求，递归实现简洁清晰，且能自然处理任意深度的嵌套。",
+    "复杂度分析": "时间复杂度：O(N)，其中 N 为嵌套字典中所有键值对的数量（含嵌套内部）。每个键值对仅被访问一次并写入结果，递归调用开销与节点数成正比。\n空间复杂度：O(N + D)，结果字典存储 N 个条目占 O(N)；递归调用栈深度最大为嵌套深度 D，占 O(D)。若考虑输出本身必占 O(N)，则渐进空间为 O(N)（D ≤ N）。",
+    "关键边界与处理策略": "- 空输入 `{}`：直接返回 `{}`，递归基例处理。\n- 单元素字典如 `{'a':1}`：直接写入 `{'a':1}`。\n- 重复键：扁平化后键由路径唯一确定，不会冲突；若原不同路径产生相同拼接键（如 `{'a':{'b':1}, 'a.b':2}`）则后者覆盖前者，依题意无特殊约束，按写入顺序后者生效。\n- 负数/非字典值：如 `{'a':-1}`、`{'a':[1,2]}`、`{'a':None}`，均作为叶子值直接存入，不展开。\n- 极值/深层嵌套：递归深度过大可能触发 Python 递归限制，但题目无约束，假设输入深度合理；若需可改迭代，此处用递归。\n- 分隔符 `sep` 自定义：拼接时使用传入的 `sep`，默认 `\".\"`。",
+    "代码实现": "```python\ndef flatten_dict(d: dict, sep: str = \".\") -> dict:\n    result = {}\n    def _flatten(current: dict, prefix: str):\n        for k, v in current.items():\n            key = f\"{prefix}{sep}{k}\" if prefix else str(k)\n            if isinstance(v, dict):\n                _flatten(v, key)\n            else:\n                result[key] = v\n    _flatten(d, \"\")\n    return result\n```",
+    "自测说明": "我通过构造以下用例在脑内/本地解释器中验证：\n1. `flatten_dict({'a':1,'b':{'c':2}})` → `{'a':1,'b.c':2}`，符合公开示例。\n2. `flatten_dict({})` → `{}`，空字典处理正确。\n3. `flatten_dict({'x':[1,2]})` → `{'x':[1,2]}`，列表未展开。\n4. `flatten_dict({'a':{'b':{'c':3}}, 'd':4})` → `{'a.b.c':3,'d':4}`，多层嵌套正确。\n5. `flatten_dict({'a':-1,'b':None})` → `{'a':-1,'b':None}`，负数与 None 作为值保留。\n6. `flatten_dict({'a':1}, sep='_')` → `{'a':1}`（单元素无拼接），另测 `{'a':{'b':2}}` with `sep='_'` → `{'a_b':2}`，分隔符生效。\n验证覆盖：空输入、单元素、嵌套、列表值、负数、None、自定义分隔符。未覆盖：超深嵌套（>1000）导致的递归错误，因题目无约束未处理。"
+  },
+  "code": "def flatten_dict(d: dict, sep: str = \".\") -> dict:\n    result = {}\n    def _flatten(current: dict, prefix: str):\n        for k, v in current.items():\n            key = f\"{prefix}{sep}{k}\" if prefix else str(k)\n            if isinstance(v, dict):\n                _flatten(v, key)\n            else:\n                result[key] = v\n    _flatten(d, \"\")\n    return result",
+  "public": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "解题思路准确描述了DFS递归遍历嵌套字典、拼接键名、不展开列表的核心逻辑，与代码实现一致且测试全部通过。",
+      "evidence": "步骤内容称'若值为字典则继续递归并拼接键名，否则将当前拼接键与值存入结果字典'，代码实现中 isinstance(v, dict) 时递归 _flatten(v, key)，否则 result[key]=v，且列表未被展开；signals 显示 public 与 adversarial 测试均 all_passed=true。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "复杂度分析对时间 O(N) 和空间 O(N+D) 的推导与递归遍历每个键值对一次、结果存储 N 项、栈深 D 的实现一致，且 D≤N 故渐进为 O(N) 正确。",
+      "evidence": "实现中 _flatten 对每个 dict 的 items() 遍历一次，非 dict 值写入 result；递归深度等于嵌套层数；signals 显示 all_passed 且无 rule_findings。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "步骤中描述的边界情况（空字典、单元素、重复键覆盖、非字典值不展开、递归深度、自定义分隔符）与代码实现逻辑一致，且测试全部通过无失败信号。",
+      "evidence": "代码中使用 `key = f\"{prefix}{sep}{k}\" if prefix else str(k)` 实现自定义 sep 和路径拼接；`isinstance(v, dict)` 判断决定是否递归，非 dict 直接 `result[key]=v`；空输入 `{}` 经 `_flatten(d, \"\")` 返回 `{}`；signals 显示 public 3/3、adversarial 3/3 全通过，无 rule_findings。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "代码实现正确递归扁平化嵌套字典，列表不展开，测试全部通过且无静态分析告警。",
+      "evidence": "signals 显示 public 3/3 passed, adversarial 3/3 passed, rule_findings 为空；代码对 dict 递归、非 dict 直接赋值，符合题目'列表不展开'要求。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "自测说明中列出的用例与代码实现行为一致，且公开与对抗测试均全部通过，未发现描述与实现不一致或测试覆盖导致的伪正确问题。",
+      "evidence": "signals 显示 public 3/3 passed、adversarial 3/3 passed；自测用例 1-6 与代码 _flatten 逻辑（dict 递归、非 dict 保留、sep 拼接）相符；未覆盖超深嵌套已明确说明且题目无约束。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    }
+  ],
+  "checker_report": {
+    "process_ok": true,
+    "code_ok": true,
+    "pseudo_correct": false,
+    "public": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [],
+    "forensics": [],
+    "signals": {
+      "problem_id": "rw-009",
+      "entry_point": "flatten_dict",
+      "max_loop_depth": 1,
+      "recursive": true,
+      "parse_error": null,
+      "claimed_complexity": "n",
+      "expected_complexity": null,
+      "public": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": []
+    },
+    "code": "def flatten_dict(d: dict, sep: str = \".\") -> dict:\n    result = {}\n    def _flatten(current: dict, prefix: str):\n        for k, v in current.items():\n            key = f\"{prefix}{sep}{k}\" if prefix else str(k)\n            if isinstance(v, dict):\n                _flatten(v, key)\n            else:\n                result[key] = v\n    _flatten(d, \"\")\n    return result",
+    "llm_summary": {
+      "summary": "公开与对抗测试全部通过，函数实现正确，无状态或顺序依赖问题。",
+      "process_ok": true,
+      "code_ok": true,
+      "pseudo_correct": false,
+      "root_cause": "无失败用例，根因不适用；代码在公开与对抗测试中均表现正确。",
+      "debug_hints": [
+        "无需调试，可补充边界测试如空字典、深层嵌套、非字符串键等以进一步验证鲁棒性"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开与对抗测试均通过，规则层未见高置信缺陷。"
+    ],
+    "sections": {
+      "解题思路": "本题要求将嵌套字典扁平化，使用指定分隔符连接各级键，且列表作为值不展开。采用深度优先搜索（DFS）递归遍历字典：若值为字典则继续递归并拼接键名，否则将当前拼接键与值存入结果字典。该算法天然契合嵌套结构的展开需求，递归实现简洁清晰，且能自然处理任意深度的嵌套。",
+      "复杂度分析": "时间复杂度：O(N)，其中 N 为嵌套字典中所有键值对的数量（含嵌套内部）。每个键值对仅被访问一次并写入结果，递归调用开销与节点数成正比。\n空间复杂度：O(N + D)，结果字典存储 N 个条目占 O(N)；递归调用栈深度最大为嵌套深度 D，占 O(D)。若考虑输出本身必占 O(N)，则渐进空间为 O(N)（D ≤ N）。",
+      "关键边界与处理策略": "- 空输入 `{}`：直接返回 `{}`，递归基例处理。\n- 单元素字典如 `{'a':1}`：直接写入 `{'a':1}`。\n- 重复键：扁平化后键由路径唯一确定，不会冲突；若原不同路径产生相同拼接键（如 `{'a':{'b':1}, 'a.b':2}`）则后者覆盖前者，依题意无特殊约束，按写入顺序后者生效。\n- 负数/非字典值：如 `{'a':-1}`、`{'a':[1,2]}`、`{'a':None}`，均作为叶子值直接存入，不展开。\n- 极值/深层嵌套：递归深度过大可能触发 Python 递归限制，但题目无约束，假设输入深度合理；若需可改迭代，此处用递归。\n- 分隔符 `sep` 自定义：拼接时使用传入的 `sep`，默认 `\".\"`。",
+      "代码实现": "```python\ndef flatten_dict(d: dict, sep: str = \".\") -> dict:\n    result = {}\n    def _flatten(current: dict, prefix: str):\n        for k, v in current.items():\n            key = f\"{prefix}{sep}{k}\" if prefix else str(k)\n            if isinstance(v, dict):\n                _flatten(v, key)\n            else:\n                result[key] = v\n    _flatten(d, \"\")\n    return result\n```",
+      "自测说明": "我通过构造以下用例在脑内/本地解释器中验证：\n1. `flatten_dict({'a':1,'b':{'c':2}})` → `{'a':1,'b.c':2}`，符合公开示例。\n2. `flatten_dict({})` → `{}`，空字典处理正确。\n3. `flatten_dict({'x':[1,2]})` → `{'x':[1,2]}`，列表未展开。\n4. `flatten_dict({'a':{'b':{'c':3}}, 'd':4})` → `{'a.b.c':3,'d':4}`，多层嵌套正确。\n5. `flatten_dict({'a':-1,'b':None})` → `{'a':-1,'b':None}`，负数与 None 作为值保留。\n6. `flatten_dict({'a':1}, sep='_')` → `{'a':1}`（单元素无拼接），另测 `{'a':{'b':2}}` with `sep='_'` → `{'a_b':2}`，分隔符生效。\n验证覆盖：空输入、单元素、嵌套、列表值、负数、None、自定义分隔符。未覆盖：超深嵌套（>1000）导致的递归错误，因题目无约束未处理。"
+    }
+  },
+  "elapsed_sec": 76.63,
+  "recorded_at": "2026-09-11T23:23:50"
+}

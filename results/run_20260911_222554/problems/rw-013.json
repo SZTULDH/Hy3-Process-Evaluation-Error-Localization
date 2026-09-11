@@ -1,0 +1,464 @@
+{
+  "problem_id": "rw-013",
+  "title": "稳定去重",
+  "difficulty": "engineering",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "unique_keep_order",
+  "source_path": "datasets\\code\\engineering\\function\\rw_013.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "note": "0 与 False 易混淆"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": false,
+    "process_valid": false,
+    "false_positive_solution": true,
+    "first_error_step": "step_1_approach",
+    "first_error_section": "解题思路",
+    "error_types": [
+      "边界处理缺失",
+      "测试覆盖不足导致的伪正确",
+      "描述与实现不一致",
+      "实现逻辑缺陷"
+    ]
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求对列表进行去重，并保持元素首次出现的顺序。选择使用“哈希集合（set）+ 顺序遍历”的算法：遍历原列表，利用集合记录已经出现过的元素，若当前元素不在集合中则将其加入结果列表和集合，否则跳过。这样既保证了 O(1) 的平均查找效率，又天然维持了首次出现的先后顺序。数据结构选用 Python 内置的 `set` 和 `list`，适用于元素可哈希的通用场景（题目无特殊约束，默认元素可哈希）。\n\n## 2. 复杂度分析\n时间复杂度：O(n)，其中 n 为输入列表长度。遍历列表一次，每次集合的插入与查询平均为 O(1)，因此总体为线性时间。\n空间复杂度：O(n)，最坏情况下所有元素均不重复，需要大小为 n 的集合存储已见元素，以及大小为 n 的结果列表，故为 O(n)。\n\n## 3. 关键边界与处理策略\n- 空输入 `[]`：直接返回空列表，遍历不执行，结果自然为空。\n- 单元素列表：如 `[1]`，集合记录后直接返回 `[1]`，逻辑一致。\n- 重复元素：如 `[1,1,1]`，仅首次出现的 `1` 被保留，后续跳过。\n- 混合类型/字符串：如 `['a','a','b']`，按相同逻辑处理，保持 `'a'` 先于 `'b'`。\n- 不可哈希元素（如列表内嵌列表）：题目无特殊约束且示例均为可哈希类型，若传入不可哈希元素会抛出 TypeError，此处不做额外处理，符合常规去重函数约定。\n- 极值/负数：与整数处理一致，集合比较基于哈希值，不影响顺序逻辑。\n\n## 4. 代码实现\n```python\ndef unique_keep_order(items: list) -> list:\n    seen = set()\n    result = []\n    for item in items:\n        if item not in seen:\n            seen.add(item)\n            result.append(item)\n    return result\n```\n\n## 5. 自测说明\n我通过手动构造与题目公开示例一致的用例进行验证：\n- 调用 `unique_keep_order([1, 2, 1, 3])` 得到 `[1, 2, 3]`，与期望一致；\n- 调用 `unique_keep_order(['a', 'a', 'b'])` 得到 `['a', 'b']`，与期望一致；\n- 调用 `unique_keep_order([])` 得到 `[]`，与期望一致。\n验证覆盖范围为题目给出的三个公开示例及等价逻辑路径（空、重复、多类型），未额外臆造其他测试结果。",
+  "sections": {
+    "解题思路": "本题要求对列表进行去重，并保持元素首次出现的顺序。选择使用“哈希集合（set）+ 顺序遍历”的算法：遍历原列表，利用集合记录已经出现过的元素，若当前元素不在集合中则将其加入结果列表和集合，否则跳过。这样既保证了 O(1) 的平均查找效率，又天然维持了首次出现的先后顺序。数据结构选用 Python 内置的 `set` 和 `list`，适用于元素可哈希的通用场景（题目无特殊约束，默认元素可哈希）。",
+    "复杂度分析": "时间复杂度：O(n)，其中 n 为输入列表长度。遍历列表一次，每次集合的插入与查询平均为 O(1)，因此总体为线性时间。\n空间复杂度：O(n)，最坏情况下所有元素均不重复，需要大小为 n 的集合存储已见元素，以及大小为 n 的结果列表，故为 O(n)。",
+    "关键边界与处理策略": "- 空输入 `[]`：直接返回空列表，遍历不执行，结果自然为空。\n- 单元素列表：如 `[1]`，集合记录后直接返回 `[1]`，逻辑一致。\n- 重复元素：如 `[1,1,1]`，仅首次出现的 `1` 被保留，后续跳过。\n- 混合类型/字符串：如 `['a','a','b']`，按相同逻辑处理，保持 `'a'` 先于 `'b'`。\n- 不可哈希元素（如列表内嵌列表）：题目无特殊约束且示例均为可哈希类型，若传入不可哈希元素会抛出 TypeError，此处不做额外处理，符合常规去重函数约定。\n- 极值/负数：与整数处理一致，集合比较基于哈希值，不影响顺序逻辑。",
+    "代码实现": "```python\ndef unique_keep_order(items: list) -> list:\n    seen = set()\n    result = []\n    for item in items:\n        if item not in seen:\n            seen.add(item)\n            result.append(item)\n    return result\n```",
+    "自测说明": "我通过手动构造与题目公开示例一致的用例进行验证：\n- 调用 `unique_keep_order([1, 2, 1, 3])` 得到 `[1, 2, 3]`，与期望一致；\n- 调用 `unique_keep_order(['a', 'a', 'b'])` 得到 `['a', 'b']`，与期望一致；\n- 调用 `unique_keep_order([])` 得到 `[]`，与期望一致。\n验证覆盖范围为题目给出的三个公开示例及等价逻辑路径（空、重复、多类型），未额外臆造其他测试结果。"
+  },
+  "code": "def unique_keep_order(items: list) -> list:\n    seen = set()\n    result = []\n    for item in items:\n        if item not in seen:\n            seen.add(item)\n            result.append(item)\n    return result",
+  "public": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 3,
+    "passed": 2,
+    "failed": 1,
+    "all_passed": false,
+    "failure_samples": [
+      {
+        "index": 2,
+        "args": [
+          [
+            0,
+            false
+          ]
+        ],
+        "expected": [
+          0,
+          false
+        ],
+        "status": "wrong_answer",
+        "actual": [
+          0
+        ],
+        "error": "",
+        "duration_ms": 0.025
+      }
+    ]
+  },
+  "rule_findings": [
+    {
+      "section": "代码实现",
+      "error_type": "FALSE_POSITIVE",
+      "error_type_label": "测试覆盖不足导致的伪正确",
+      "detail": "公开测试全部通过（3/3），但对抗测试 1/3 失败——典型的“结果看似正确、实现逻辑有缺陷”的伪正确样本。",
+      "evidence": "[{'index': 2, 'args': [[0, False]], 'expected': [0, False], 'status': 'wrong_answer', 'actual': [0], 'error': '', 'duration_ms': 0.025}]",
+      "confidence": 0.95,
+      "source": "rule"
+    }
+  ],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "flawed",
+      "confidence": 0.95,
+      "error_types": [
+        "边界处理缺失",
+        "描述与实现不一致"
+      ],
+      "reason": "解题思路声称适用于元素可哈希的通用场景且默认元素可哈希，但对抗测试中输入含不可哈希的 False（与 0 在 set 中哈希冲突且 bool 为 int 子类导致去重错误），说明思路未考虑 Python 中 0 与 False 的相等性及可哈希但语义去重异常边界，且描述与实现实际行为不一致。",
+      "evidence": "对抗测试 failure_samples: args=[[0, false]], expected=[0, false], actual=[0]；思路内容称'适用于元素可哈希的通用场景（题目无特殊约束，默认元素可哈希）'，但实现用 set 将 False 与 0 视为同一元素而错误去重。",
+      "llm_verdict": "flawed",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "复杂度分析针对给定实现正确描述了时间与空间复杂度，与实现逻辑一致，且不受对抗测试中元素类型导致的逻辑缺陷影响。",
+      "evidence": "步骤内容称时间复杂度 O(n)（遍历一次，集合平均 O(1)），空间复杂度 O(n)（最坏全不重复需 n 大小集合与结果列表）；实现代码确为单循环+set+list，分析成立。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "flawed",
+      "confidence": 0.95,
+      "error_types": [
+        "边界处理缺失",
+        "描述与实现不一致"
+      ],
+      "reason": "步骤声称对混合类型/字符串按相同逻辑处理且保持顺序，但对抗测试显示 [0, False] 被错误去重为 [0]，说明步骤未考虑 Python 中 0 与 False 哈希相等导致集合误判的边界情况，且描述与实现实际行为不一致。",
+      "evidence": "对抗测试 failure_samples: args=[[0, false]], expected=[0, false], actual=[0]；步骤内容称“混合类型/字符串：如 ['a','a','b']，按相同逻辑处理，保持 'a' 先于 'b'”，未提及 0 与 False 等跨类型哈希冲突问题。",
+      "llm_verdict": "flawed",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "flawed",
+      "confidence": 0.95,
+      "error_types": [
+        "测试覆盖不足导致的伪正确",
+        "实现逻辑缺陷"
+      ],
+      "reason": "公开测试全部通过（3/3），但对抗测试 1/3 失败——典型的“结果看似正确、实现逻辑有缺陷”的伪正确样本。 Critic 补充：对抗测试中输入 [0, False] 时实际输出 [0] 而期望 [0, False]，因 0 和 False 在 Python 中哈希相等导致被误去重，实现未处理不可哈希或布尔与数字混淆场景下的正确去重语义。",
+      "evidence": "[{'index': 2, 'args': [[0, False]], 'expected': [0, False], 'status': 'wrong_answer', 'actual': [0], 'error': '', 'duration_ms': 0.025}]",
+      "llm_verdict": "flawed",
+      "rule_types": [
+        "测试覆盖不足导致的伪正确"
+      ],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "flawed",
+      "confidence": 0.95,
+      "error_types": [
+        "测试覆盖不足导致的伪正确",
+        "描述与实现不一致"
+      ],
+      "reason": "自测说明声称验证覆盖等价逻辑路径且未臆造其他结果，但对抗测试显示含不可哈希类型（如 False 与 0 混用场景）时实现出错，说明自测未覆盖真实边界且描述与实现实际行为不一致。",
+      "evidence": "signals 中 adversarial failure_samples: {'index': 2, 'args': [[0, false]], 'expected': [0, false], 'actual': [0]}；自测说明称'验证覆盖范围为题目给出的三个公开示例及等价逻辑路径（空、重复、多类型），未额外臆造其他测试结果'，但实现用 set 导致 0 与 False 冲突且未测出。",
+      "llm_verdict": "flawed",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    }
+  ],
+  "checker_report": {
+    "process_ok": false,
+    "code_ok": false,
+    "pseudo_correct": true,
+    "public": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 3,
+      "passed": 2,
+      "failed": 1,
+      "all_passed": false,
+      "failure_samples": [
+        {
+          "index": 2,
+          "args": [
+            [
+              0,
+              false
+            ]
+          ],
+          "expected": [
+            0,
+            false
+          ],
+          "status": "wrong_answer",
+          "actual": [
+            0
+          ],
+          "error": "",
+          "duration_ms": 0.025
+        }
+      ]
+    },
+    "findings": [
+      {
+        "section": "代码实现",
+        "error_type": "FALSE_POSITIVE",
+        "error_type_label": "测试覆盖不足导致的伪正确",
+        "detail": "公开测试全部通过（3/3），但对抗测试 1/3 失败——典型的“结果看似正确、实现逻辑有缺陷”的伪正确样本。",
+        "evidence": "[{'index': 2, 'args': [[0, False]], 'expected': [0, False], 'status': 'wrong_answer', 'actual': [0], 'error': '', 'duration_ms': 0.025}]",
+        "confidence": 0.95,
+        "source": "rule"
+      }
+    ],
+    "forensics": [
+      {
+        "case_index": 2,
+        "kind": "function",
+        "method": null,
+        "args": [
+          [
+            0,
+            false
+          ]
+        ],
+        "expected": [
+          0,
+          false
+        ],
+        "actual": [
+          0
+        ],
+        "status": "wrong_answer",
+        "forensic": {
+          "ok": true,
+          "status": "returned",
+          "result": "[0]",
+          "error": "",
+          "traceback": "",
+          "steps": 10,
+          "used_seconds": 0.002,
+          "trace_tail": {
+            "total_steps": 10,
+            "truncated": false,
+            "steps": [
+              {
+                "n": 1,
+                "line": 2,
+                "func": "unique_keep_order",
+                "depth": 1,
+                "locals": {
+                  "items": "[0, False]"
+                },
+                "ts_ms": 50370308.145,
+                "stdout": ""
+              },
+              {
+                "n": 2,
+                "line": 3,
+                "func": "unique_keep_order",
+                "depth": 1,
+                "locals": {
+                  "items": "[0, False]",
+                  "seen": "set()"
+                },
+                "ts_ms": 50370308.189,
+                "stdout": ""
+              },
+              {
+                "n": 3,
+                "line": 4,
+                "func": "unique_keep_order",
+                "depth": 1,
+                "locals": {
+                  "items": "[0, False]",
+                  "seen": "set()",
+                  "result": "[]"
+                },
+                "ts_ms": 50370308.209,
+                "stdout": ""
+              },
+              {
+                "n": 4,
+                "line": 5,
+                "func": "unique_keep_order",
+                "depth": 1,
+                "locals": {
+                  "items": "[0, False]",
+                  "seen": "set()",
+                  "result": "[]",
+                  "item": "0"
+                },
+                "ts_ms": 50370308.224,
+                "stdout": ""
+              },
+              {
+                "n": 5,
+                "line": 6,
+                "func": "unique_keep_order",
+                "depth": 1,
+                "locals": {
+                  "items": "[0, False]",
+                  "seen": "set()",
+                  "result": "[]",
+                  "item": "0"
+                },
+                "ts_ms": 50370308.237,
+                "stdout": ""
+              },
+              {
+                "n": 6,
+                "line": 7,
+                "func": "unique_keep_order",
+                "depth": 1,
+                "locals": {
+                  "items": "[0, False]",
+                  "seen": "{0}",
+                  "result": "[]",
+                  "item": "0"
+                },
+                "ts_ms": 50370308.253,
+                "stdout": ""
+              },
+              {
+                "n": 7,
+                "line": 4,
+                "func": "unique_keep_order",
+                "depth": 1,
+                "locals": {
+                  "items": "[0, False]",
+                  "seen": "{0}",
+                  "result": "[0]",
+                  "item": "0"
+                },
+                "ts_ms": 50370308.271,
+                "stdout": ""
+              },
+              {
+                "n": 8,
+                "line": 5,
+                "func": "unique_keep_order",
+                "depth": 1,
+                "locals": {
+                  "items": "[0, False]",
+                  "seen": "{0}",
+                  "result": "[0]",
+                  "item": "False"
+                },
+                "ts_ms": 50370308.283,
+                "stdout": ""
+              },
+              {
+                "n": 9,
+                "line": 4,
+                "func": "unique_keep_order",
+                "depth": 1,
+                "locals": {
+                  "items": "[0, False]",
+                  "seen": "{0}",
+                  "result": "[0]",
+                  "item": "False"
+                },
+                "ts_ms": 50370308.812,
+                "stdout": ""
+              },
+              {
+                "n": 10,
+                "line": 8,
+                "func": "unique_keep_order",
+                "depth": 1,
+                "locals": {
+                  "items": "[0, False]",
+                  "seen": "{0}",
+                  "result": "[0]",
+                  "item": "False"
+                },
+                "ts_ms": 50370308.833,
+                "stdout": ""
+              }
+            ]
+          }
+        },
+        "summary": "status=returned\nresult='[0]'\ntrace_tail:\n  L4 unique_keep_order locals={'items': '[0, False]', 'seen': 'set()', 'result': '[]'}\n  L5 unique_keep_order locals={'items': '[0, False]', 'seen': 'set()', 'result': '[]', 'item': '0'}\n  L6 unique_keep_order locals={'items': '[0, False]', 'seen': 'set()', 'result': '[]', 'item': '0'}\n  L7 unique_keep_order locals={'items': '[0, False]', 'seen': '{0}', 'result': '[]', 'item': '0'}\n  L4 unique_keep_order locals={'items': '[0, False]', 'seen': '{0}', 'result': '[0]', 'item': '0'}\n  L5 unique_keep_order locals={'items': '[0, False]', 'seen': '{0}', 'result': '[0]', 'item': 'False'}\n  L4 unique_keep_order locals={'items': '[0, False]', 'seen': '{0}', 'result': '[0]', 'item': 'False'}\n  L8 unique_keep_order locals={'items': '[0, False]', 'seen': '{0}', 'result': '[0]', 'item': 'False'}"
+      }
+    ],
+    "signals": {
+      "problem_id": "rw-013",
+      "entry_point": "unique_keep_order",
+      "max_loop_depth": 1,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "n",
+      "expected_complexity": null,
+      "public": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 3,
+        "passed": 2,
+        "failed": 1,
+        "all_passed": false,
+        "failure_samples": [
+          {
+            "index": 2,
+            "args": [
+              [
+                0,
+                false
+              ]
+            ],
+            "expected": [
+              0,
+              false
+            ],
+            "status": "wrong_answer",
+            "actual": [
+              0
+            ],
+            "error": "",
+            "duration_ms": 0.025
+          }
+        ]
+      },
+      "rule_findings": [
+        {
+          "section": "代码实现",
+          "error_type": "FALSE_POSITIVE",
+          "error_type_label": "测试覆盖不足导致的伪正确",
+          "detail": "公开测试全部通过（3/3），但对抗测试 1/3 失败——典型的“结果看似正确、实现逻辑有缺陷”的伪正确样本。",
+          "evidence": "[{'index': 2, 'args': [[0, False]], 'expected': [0, False], 'status': 'wrong_answer', 'actual': [0], 'error': '', 'duration_ms': 0.025}]",
+          "confidence": 0.95,
+          "source": "rule"
+        }
+      ]
+    },
+    "code": "def unique_keep_order(items: list) -> list:\n    seen = set()\n    result = []\n    for item in items:\n        if item not in seen:\n            seen.add(item)\n            result.append(item)\n    return result",
+    "llm_summary": {
+      "summary": "公开测试全过但对抗测试因 0 与 False 在 Python 中哈希相等被误判为重复而漏掉 False，属伪正确。",
+      "process_ok": true,
+      "code_ok": false,
+      "pseudo_correct": true,
+      "root_cause": "使用 set 记录已见元素，而 Python 中 0 == False 且 hash(0) == hash(False)，导致 False 被当作已存在的 0 而跳过，未加入结果。",
+      "debug_hints": [
+        "不要用 set 直接存元素做去重，应改用 list 或记录 (type, value) 组合来区分 0 和 False、1 和 True 等跨类型等值情况",
+        "在遍历时判断 `if item not in result` 而非 `if item not in seen`，或 seen 中存 `(type(item), item)` 元组",
+        "补充对抗用例：包含 0/False、1/True、0.0/0 等易混淆值的列表"
+      ],
+      "failed_case_analysis": [
+        "对抗用例 index=2：输入 [0, False]，期望 [0, False]，实际 [0]。原因：seen 集合先加入 0，随后 item=False 时 `False in seen` 为 True（因 0==False），故 False 被跳过，结果缺少 False。"
+      ]
+    },
+    "debug_hints": [
+      "公开测试通过但对抗失败：优先检查边界归一化、空/单元素、类型边界，并用 sandbox-debugger 在失败入参上下断点观察局部变量。",
+      "失败用例 args=[[0, False]] 的执行轨迹已取证：status=returned\nresult='[0]'\ntrace_tail:\n  L4 unique_keep_order locals={'items': '[0, False]', 'seen': 'set()', 'result': '[]'}\n  L5 unique_keep_order locals={'",
+      "[FALSE_POSITIVE] 公开测试全部通过（3/3），但对抗测试 1/3 失败——典型的“结果看似正确、实现逻辑有缺陷”的伪正确样本。"
+    ],
+    "sections": {
+      "解题思路": "本题要求对列表进行去重，并保持元素首次出现的顺序。选择使用“哈希集合（set）+ 顺序遍历”的算法：遍历原列表，利用集合记录已经出现过的元素，若当前元素不在集合中则将其加入结果列表和集合，否则跳过。这样既保证了 O(1) 的平均查找效率，又天然维持了首次出现的先后顺序。数据结构选用 Python 内置的 `set` 和 `list`，适用于元素可哈希的通用场景（题目无特殊约束，默认元素可哈希）。",
+      "复杂度分析": "时间复杂度：O(n)，其中 n 为输入列表长度。遍历列表一次，每次集合的插入与查询平均为 O(1)，因此总体为线性时间。\n空间复杂度：O(n)，最坏情况下所有元素均不重复，需要大小为 n 的集合存储已见元素，以及大小为 n 的结果列表，故为 O(n)。",
+      "关键边界与处理策略": "- 空输入 `[]`：直接返回空列表，遍历不执行，结果自然为空。\n- 单元素列表：如 `[1]`，集合记录后直接返回 `[1]`，逻辑一致。\n- 重复元素：如 `[1,1,1]`，仅首次出现的 `1` 被保留，后续跳过。\n- 混合类型/字符串：如 `['a','a','b']`，按相同逻辑处理，保持 `'a'` 先于 `'b'`。\n- 不可哈希元素（如列表内嵌列表）：题目无特殊约束且示例均为可哈希类型，若传入不可哈希元素会抛出 TypeError，此处不做额外处理，符合常规去重函数约定。\n- 极值/负数：与整数处理一致，集合比较基于哈希值，不影响顺序逻辑。",
+      "代码实现": "```python\ndef unique_keep_order(items: list) -> list:\n    seen = set()\n    result = []\n    for item in items:\n        if item not in seen:\n            seen.add(item)\n            result.append(item)\n    return result\n```",
+      "自测说明": "我通过手动构造与题目公开示例一致的用例进行验证：\n- 调用 `unique_keep_order([1, 2, 1, 3])` 得到 `[1, 2, 3]`，与期望一致；\n- 调用 `unique_keep_order(['a', 'a', 'b'])` 得到 `['a', 'b']`，与期望一致；\n- 调用 `unique_keep_order([])` 得到 `[]`，与期望一致。\n验证覆盖范围为题目给出的三个公开示例及等价逻辑路径（空、重复、多类型），未额外臆造其他测试结果。"
+    }
+  },
+  "elapsed_sec": 61.48,
+  "recorded_at": "2026-09-11T23:27:20"
+}

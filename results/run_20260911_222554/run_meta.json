@@ -1,0 +1,12 @@
+{
+  "started_at": "2026-09-12T00:10:48",
+  "model": "hy4-preview",
+  "base_url": "https://tokenhub.tencentmaas.com/v1",
+  "thinking": "off",
+  "llm_timeout": 600.0,
+  "critic_parallelism": 5,
+  "total_problems": 73,
+  "already_done": 69,
+  "to_run": 4,
+  "out_dir": "results\\run_20260911_222554"
+}

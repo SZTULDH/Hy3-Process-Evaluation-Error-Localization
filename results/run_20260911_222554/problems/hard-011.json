@@ -1,0 +1,435 @@
+{
+  "problem_id": "hard-011",
+  "title": "第 K 个最大元素",
+  "difficulty": "hard",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "find_kth_largest",
+  "source_path": "datasets\\code\\hard\\find_kth_largest.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "first_error_step": null,
+    "error_types": [],
+    "note": "正确对照样本"
+  },
+  "verdict": {
+    "result_correct": false,
+    "truly_correct": false,
+    "process_valid": false,
+    "false_positive_solution": false,
+    "first_error_step": "step_1_approach",
+    "first_error_section": "解题思路",
+    "error_types": [
+      "复杂度分析错误",
+      "边界处理缺失",
+      "测试覆盖不足导致的伪正确",
+      "描述与实现不一致",
+      "实现逻辑缺陷",
+      "题意误读"
+    ]
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求在未排序数组中找出第 k 个最大元素。直接排序的时间复杂度为 O(n log n)，虽然可行但非最优。更高效的做法是使用**快速选择算法（QuickSelect）**，它基于快速排序的分区思想，每次划分后只在包含目标元素的那一侧递归，平均时间复杂度为 O(n)。也可以使用**大小为 k 的最小堆**，遍历数组维护堆顶为第 k 大元素，时间复杂度 O(n log k)，适合 k 远小于 n 的场景。考虑到约束中 k 可能接近 n（如 k=n），且 n 达 10^5，快速选择在平均情况下更均衡；但堆方法实现简单且最坏可控。此处选择**快速选择（随机化 pivot）**作为主算法，因其在平均 O(n) 内解决且无需额外空间（原地分区），适用于本题数据规模。\n\n## 2. 复杂度分析\n- 时间复杂度：平均 O(n)，最坏 O(n^2)。推理：每次分区将数组划分为两部分，平均情况下每次舍弃约一半元素，总比较次数为 n + n/2 + n/4 + ... = O(n)；最坏情况每次 pivot 为极值，退化为 O(n^2)。随机化 pivot 使最坏情况概率极低。\n- 空间复杂度：O(1)（原地分区，递归栈平均 O(log n)，最坏 O(n)，但通常视作 O(1) 辅助空间；若计递归栈则平均 O(log n)）。此处按算法导引惯例写 O(1) 额外空间（不含递归栈）或平均 O(log n) 栈空间，明确写为 O(log n) 平均栈空间、O(1) 数据空间。\n\n## 3. 关键边界与处理策略\n- 空输入：题目约束 len(nums)>=1，不会出现，但代码可防御性返回 None 或抛异常；按约束不处理。\n- 单元素：k=1 且 len=1，直接返回该元素，分区逻辑自然覆盖。\n- 重复元素：如 [3,2,3,1,2,4,5,5,6] 中多个 5，分区时相等元素归到任一侧均可，随机 pivot 保证正确性，第 k 大按排序后位置取，重复不影响“第 k 个”定义（如示例 4 返回 4）。\n- 负数：数组可含负数，比较逻辑基于数值大小，无需特殊处理。\n- 极值：k=1（最大）或 k=len(nums)（最小），分区后目标索引为 0 或 n-1，算法直接命中。\n- k 合法性：约束保证 1<=k<=len(nums)，无需校验。\n\n## 4. 代码实现\n```python\nimport random\n\ndef find_kth_largest(nums: list, k: int) -> int:\n    def quick_select(left: int, right: int, target_idx: int) -> int:\n        if left == right:\n            return nums[left]\n        pivot_idx = random.randint(left, right)\n        pivot_idx = partition(left, right, pivot_idx)\n        if pivot_idx == target_idx:\n            return nums[pivot_idx]\n        elif pivot_idx < target_idx:\n            return quick_select(pivot_idx + 1, right, target_idx)\n        else:\n            return quick_select(left, pivot_idx - 1, target_idx)\n    \n    def partition(left: int, right: int, pivot_idx: int) -> int:\n        pivot_val = nums[pivot_idx]\n        nums[pivot_idx], nums[right] = nums[right], nums[pivot_idx]\n        store_idx = left\n        for i in range(left, right):\n            if nums[i] > pivot_val:\n                nums[store_idx], nums[i] = nums[i], nums[store_idx]\n                store_idx += 1\n        nums[right], nums[store_idx] = nums[store_idx], nums[right]\n        return store_idx\n    \n    n = len(nums)\n    # 第 k 大对应升序排序后的索引 n - k\n    return quick_select(0, n - 1, n - k)\n```\n\n## 5. 自测说明\n我使用题目给出的两个公开测试用例在脑内/本地草稿验证了逻辑：\n- 用例1：nums=[3,2,1,5,6,4], k=2，n=6，目标索引=4（0-based 升序第4位即5），分区后返回5，与期望一致。\n- 用例2：nums=[3,2,3,1,2,4,5,5,6], k=4，n=9，目标索引=5（升序第5位为4），返回4，与期望一致。\n验证覆盖：覆盖了重复元素、多元素、k 在中部的情况；未覆盖超大规模（10^5）压力测试及最坏 pivot 序列，但随机化已缓解。未实际运行代码，仅按算法推演确认正确性。",
+  "sections": {
+    "解题思路": "本题要求在未排序数组中找出第 k 个最大元素。直接排序的时间复杂度为 O(n log n)，虽然可行但非最优。更高效的做法是使用**快速选择算法（QuickSelect）**，它基于快速排序的分区思想，每次划分后只在包含目标元素的那一侧递归，平均时间复杂度为 O(n)。也可以使用**大小为 k 的最小堆**，遍历数组维护堆顶为第 k 大元素，时间复杂度 O(n log k)，适合 k 远小于 n 的场景。考虑到约束中 k 可能接近 n（如 k=n），且 n 达 10^5，快速选择在平均情况下更均衡；但堆方法实现简单且最坏可控。此处选择**快速选择（随机化 pivot）**作为主算法，因其在平均 O(n) 内解决且无需额外空间（原地分区），适用于本题数据规模。",
+    "复杂度分析": "- 时间复杂度：平均 O(n)，最坏 O(n^2)。推理：每次分区将数组划分为两部分，平均情况下每次舍弃约一半元素，总比较次数为 n + n/2 + n/4 + ... = O(n)；最坏情况每次 pivot 为极值，退化为 O(n^2)。随机化 pivot 使最坏情况概率极低。\n- 空间复杂度：O(1)（原地分区，递归栈平均 O(log n)，最坏 O(n)，但通常视作 O(1) 辅助空间；若计递归栈则平均 O(log n)）。此处按算法导引惯例写 O(1) 额外空间（不含递归栈）或平均 O(log n) 栈空间，明确写为 O(log n) 平均栈空间、O(1) 数据空间。",
+    "关键边界与处理策略": "- 空输入：题目约束 len(nums)>=1，不会出现，但代码可防御性返回 None 或抛异常；按约束不处理。\n- 单元素：k=1 且 len=1，直接返回该元素，分区逻辑自然覆盖。\n- 重复元素：如 [3,2,3,1,2,4,5,5,6] 中多个 5，分区时相等元素归到任一侧均可，随机 pivot 保证正确性，第 k 大按排序后位置取，重复不影响“第 k 个”定义（如示例 4 返回 4）。\n- 负数：数组可含负数，比较逻辑基于数值大小，无需特殊处理。\n- 极值：k=1（最大）或 k=len(nums)（最小），分区后目标索引为 0 或 n-1，算法直接命中。\n- k 合法性：约束保证 1<=k<=len(nums)，无需校验。",
+    "代码实现": "```python\nimport random\n\ndef find_kth_largest(nums: list, k: int) -> int:\n    def quick_select(left: int, right: int, target_idx: int) -> int:\n        if left == right:\n            return nums[left]\n        pivot_idx = random.randint(left, right)\n        pivot_idx = partition(left, right, pivot_idx)\n        if pivot_idx == target_idx:\n            return nums[pivot_idx]\n        elif pivot_idx < target_idx:\n            return quick_select(pivot_idx + 1, right, target_idx)\n        else:\n            return quick_select(left, pivot_idx - 1, target_idx)\n    \n    def partition(left: int, right: int, pivot_idx: int) -> int:\n        pivot_val = nums[pivot_idx]\n        nums[pivot_idx], nums[right] = nums[right], nums[pivot_idx]\n        store_idx = left\n        for i in range(left, right):\n            if nums[i] > pivot_val:\n                nums[store_idx], nums[i] = nums[i], nums[store_idx]\n                store_idx += 1\n        nums[right], nums[store_idx] = nums[store_idx], nums[right]\n        return store_idx\n    \n    n = len(nums)\n    # 第 k 大对应升序排序后的索引 n - k\n    return quick_select(0, n - 1, n - k)\n```",
+    "自测说明": "我使用题目给出的两个公开测试用例在脑内/本地草稿验证了逻辑：\n- 用例1：nums=[3,2,1,5,6,4], k=2，n=6，目标索引=4（0-based 升序第4位即5），分区后返回5，与期望一致。\n- 用例2：nums=[3,2,3,1,2,4,5,5,6], k=4，n=9，目标索引=5（升序第5位为4），返回4，与期望一致。\n验证覆盖：覆盖了重复元素、多元素、k 在中部的情况；未覆盖超大规模（10^5）压力测试及最坏 pivot 序列，但随机化已缓解。未实际运行代码，仅按算法推演确认正确性。"
+  },
+  "code": "import random\n\ndef find_kth_largest(nums: list, k: int) -> int:\n    def quick_select(left: int, right: int, target_idx: int) -> int:\n        if left == right:\n            return nums[left]\n        pivot_idx = random.randint(left, right)\n        pivot_idx = partition(left, right, pivot_idx)\n        if pivot_idx == target_idx:\n            return nums[pivot_idx]\n        elif pivot_idx < target_idx:\n            return quick_select(pivot_idx + 1, right, target_idx)\n        else:\n            return quick_select(left, pivot_idx - 1, target_idx)\n    \n    def partition(left: int, right: int, pivot_idx: int) -> int:\n        pivot_val = nums[pivot_idx]\n        nums[pivot_idx], nums[right] = nums[right], nums[pivot_idx]\n        store_idx = left\n        for i in range(left, right):\n            if nums[i] > pivot_val:\n                nums[store_idx], nums[i] = nums[i], nums[store_idx]\n                store_idx += 1\n        nums[right], nums[store_idx] = nums[store_idx], nums[right]\n        return store_idx\n    \n    n = len(nums)\n    # 第 k 大对应升序排序后的索引 n - k\n    return quick_select(0, n - 1, n - k)",
+  "public": {
+    "total": 2,
+    "passed": 0,
+    "failed": 2,
+    "all_passed": false,
+    "failure_samples": [
+      {
+        "index": 0,
+        "args": [
+          [
+            3,
+            2,
+            1,
+            5,
+            6,
+            4
+          ],
+          2
+        ],
+        "expected": 5,
+        "status": "wrong_answer",
+        "actual": 2,
+        "error": "",
+        "duration_ms": 0.068
+      },
+      {
+        "index": 1,
+        "args": [
+          [
+            3,
+            2,
+            3,
+            1,
+            2,
+            4,
+            5,
+            5,
+            6
+          ],
+          4
+        ],
+        "expected": 4,
+        "status": "wrong_answer",
+        "actual": 3,
+        "error": "",
+        "duration_ms": 0.048
+      }
+    ]
+  },
+  "adversarial": {
+    "total": 2,
+    "passed": 1,
+    "failed": 1,
+    "all_passed": false,
+    "failure_samples": [
+      {
+        "index": 1,
+        "args": [
+          [
+            2,
+            1
+          ],
+          2
+        ],
+        "expected": 1,
+        "status": "wrong_answer",
+        "actual": 2,
+        "error": "",
+        "duration_ms": 0.05
+      }
+    ]
+  },
+  "rule_findings": [
+    {
+      "section": "代码实现",
+      "error_type": "LOGIC",
+      "error_type_label": "实现逻辑缺陷",
+      "detail": "公开测试 2/2 失败，实现结果与预期不符。",
+      "evidence": "[{'index': 0, 'args': [[3, 2, 1, 5, 6, 4], 2], 'expected': 5, 'status': 'wrong_answer', 'actual': 2, 'error': '', 'duration_ms': 0.068}, {'index': 1, 'args': [[3, 2, 3, 1, 2, 4, 5, 5, 6], 4], 'expected': 4, 'status': 'wrong_answer', 'actual': 3, 'error': '', 'duration_ms': 0.048}]",
+      "confidence": 0.9,
+      "source": "rule"
+    }
+  ],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "flawed",
+      "confidence": 0.95,
+      "error_types": [
+        "描述与实现不一致",
+        "题意误读"
+      ],
+      "reason": "解题思路声称选择快速选择并给出正确索引映射 n-k，但实际实现中 partition 使用大于 pivot 才交换导致升序排列错误（把大的放左边但后续比较逻辑使第 k 大映射错），且公开测试全部失败证明思路描述与实现结果不一致、对第 k 大索引处理有误。",
+      "evidence": "signals 中 public 测试 2/2 失败：args [[3,2,1,5,6,4],2] expected 5 actual 2；[[3,2,3,1,2,4,5,5,6],4] expected 4 actual 3；adversarial [[2,1],2] expected 1 actual 2；rule_findings 指出实现逻辑缺陷且 claimed_complexity 为 n 而 expected 为 O(n log k)。",
+      "llm_verdict": "flawed",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "flawed",
+      "confidence": 0.95,
+      "error_types": [
+        "复杂度分析错误",
+        "描述与实现不一致"
+      ],
+      "reason": "题目期望复杂度为 O(n log k)，而该步骤分析的是快速选择（平均 O(n)）的复杂度，与题目指定复杂度要求不符，且未说明为何实现（quick_select）不满足 O(n log k) 期望。",
+      "evidence": "步骤内容写'时间复杂度：平均 O(n)，最坏 O(n^2)'；signals 中 expected_complexity 为 'O(n log k)'，claimed_complexity 为 'n'，实现代码为 quick_select 而非堆/大小为 k 的结构。",
+      "llm_verdict": "flawed",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "flawed",
+      "confidence": 0.95,
+      "error_types": [
+        "边界处理缺失",
+        "描述与实现不一致"
+      ],
+      "reason": "步骤声称分区逻辑自然覆盖单元素且重复元素不影响第k大定义，但执行信号显示公开测试全部失败（如[3,2,1,5,6,4] k=2 期望5实际2），说明实现中分区或目标索引映射有误，而步骤未识别该边界/逻辑风险。",
+      "evidence": "signals中public: total 2, passed 0, failed 2, failure_samples: [[3,2,1,5,6,4],2] expected 5 actual 2; [[3,2,3,1,2,4,5,5,6],4] expected 4 actual 3；步骤内容称'分区逻辑自然覆盖'、'重复不影响第k个定义（如示例4返回4）'与测试结果矛盾。",
+      "llm_verdict": "flawed",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "flawed",
+      "confidence": 0.95,
+      "error_types": [
+        "实现逻辑缺陷"
+      ],
+      "reason": "公开测试 2/2 失败，实现结果与预期不符。 Critic 补充：公开测试全部失败且对抗测试也失败，实际返回值与预期不符，说明 quick_select 或 partition 的索引/比较逻辑存在缺陷。",
+      "evidence": "[{'index': 0, 'args': [[3, 2, 1, 5, 6, 4], 2], 'expected': 5, 'status': 'wrong_answer', 'actual': 2, 'error': '', 'duration_ms': 0.068}, {'index': 1, 'args': [[3, 2, 3, 1, 2, 4, 5, 5, 6], 4], 'expected': 4, 'status': 'wrong_answer', 'actual': 3, 'error': '', 'duration_ms': 0.048}]",
+      "llm_verdict": "flawed",
+      "rule_types": [
+        "实现逻辑缺陷"
+      ],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "flawed",
+      "confidence": 1.0,
+      "error_types": [
+        "测试覆盖不足导致的伪正确",
+        "描述与实现不一致"
+      ],
+      "reason": "自测说明声称两个公开用例返回与期望一致，但执行信号显示实际返回错误（用例1期望5实际2，用例2期望4实际3），说明其推演与真实实现结果不符且未实际运行验证。",
+      "evidence": "signals中public失败样本：{'index': 0, 'args': [[3,2,1,5,6,4],2], 'expected': 5, 'actual': 2}；{'index': 1, 'args': [[3,2,3,1,2,4,5,5,6],4], 'expected': 4, 'actual': 3}；而自测说明写'返回5，与期望一致'、'返回4，与期望一致'。",
+      "llm_verdict": "flawed",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    }
+  ],
+  "checker_report": {
+    "process_ok": false,
+    "code_ok": false,
+    "pseudo_correct": false,
+    "public": {
+      "total": 2,
+      "passed": 0,
+      "failed": 2,
+      "all_passed": false,
+      "failure_samples": [
+        {
+          "index": 0,
+          "args": [
+            [
+              3,
+              2,
+              1,
+              5,
+              6,
+              4
+            ],
+            2
+          ],
+          "expected": 5,
+          "status": "wrong_answer",
+          "actual": 2,
+          "error": "",
+          "duration_ms": 0.068
+        },
+        {
+          "index": 1,
+          "args": [
+            [
+              3,
+              2,
+              3,
+              1,
+              2,
+              4,
+              5,
+              5,
+              6
+            ],
+            4
+          ],
+          "expected": 4,
+          "status": "wrong_answer",
+          "actual": 3,
+          "error": "",
+          "duration_ms": 0.048
+        }
+      ]
+    },
+    "adversarial": {
+      "total": 2,
+      "passed": 1,
+      "failed": 1,
+      "all_passed": false,
+      "failure_samples": [
+        {
+          "index": 1,
+          "args": [
+            [
+              2,
+              1
+            ],
+            2
+          ],
+          "expected": 1,
+          "status": "wrong_answer",
+          "actual": 2,
+          "error": "",
+          "duration_ms": 0.05
+        }
+      ]
+    },
+    "findings": [
+      {
+        "section": "代码实现",
+        "error_type": "LOGIC",
+        "error_type_label": "实现逻辑缺陷",
+        "detail": "公开测试 2/2 失败，实现结果与预期不符。",
+        "evidence": "[{'index': 0, 'args': [[3, 2, 1, 5, 6, 4], 2], 'expected': 5, 'status': 'wrong_answer', 'actual': 2, 'error': '', 'duration_ms': 0.068}, {'index': 1, 'args': [[3, 2, 3, 1, 2, 4, 5, 5, 6], 4], 'expected': 4, 'status': 'wrong_answer', 'actual': 3, 'error': '', 'duration_ms': 0.048}]",
+        "confidence": 0.9,
+        "source": "rule"
+      }
+    ],
+    "forensics": [
+      {
+        "case_index": 1,
+        "kind": "function",
+        "method": null,
+        "args": [
+          [
+            2,
+            1
+          ],
+          2
+        ],
+        "expected": 1,
+        "actual": 2,
+        "status": "wrong_answer",
+        "forensic": {
+          "ok": false,
+          "error": "UnicodeEncodeError: 'utf-8' codec can't encode character '\\udcac' in position 1065: surrogates not allowed"
+        },
+        "summary": "[forensics unavailable] UnicodeEncodeError: 'utf-8' codec can't encode character '\\udcac' in position 1065: surrogates not allowed"
+      }
+    ],
+    "signals": {
+      "problem_id": "hard-011",
+      "entry_point": "find_kth_largest",
+      "max_loop_depth": 1,
+      "recursive": true,
+      "parse_error": null,
+      "claimed_complexity": "n",
+      "expected_complexity": "O(n log k)",
+      "public": {
+        "total": 2,
+        "passed": 0,
+        "failed": 2,
+        "all_passed": false,
+        "failure_samples": [
+          {
+            "index": 0,
+            "args": [
+              [
+                3,
+                2,
+                1,
+                5,
+                6,
+                4
+              ],
+              2
+            ],
+            "expected": 5,
+            "status": "wrong_answer",
+            "actual": 2,
+            "error": "",
+            "duration_ms": 0.068
+          },
+          {
+            "index": 1,
+            "args": [
+              [
+                3,
+                2,
+                3,
+                1,
+                2,
+                4,
+                5,
+                5,
+                6
+              ],
+              4
+            ],
+            "expected": 4,
+            "status": "wrong_answer",
+            "actual": 3,
+            "error": "",
+            "duration_ms": 0.048
+          }
+        ]
+      },
+      "adversarial": {
+        "total": 2,
+        "passed": 1,
+        "failed": 1,
+        "all_passed": false,
+        "failure_samples": [
+          {
+            "index": 1,
+            "args": [
+              [
+                2,
+                1
+              ],
+              2
+            ],
+            "expected": 1,
+            "status": "wrong_answer",
+            "actual": 2,
+            "error": "",
+            "duration_ms": 0.05
+          }
+        ]
+      },
+      "rule_findings": [
+        {
+          "section": "代码实现",
+          "error_type": "LOGIC",
+          "error_type_label": "实现逻辑缺陷",
+          "detail": "公开测试 2/2 失败，实现结果与预期不符。",
+          "evidence": "[{'index': 0, 'args': [[3, 2, 1, 5, 6, 4], 2], 'expected': 5, 'status': 'wrong_answer', 'actual': 2, 'error': '', 'duration_ms': 0.068}, {'index': 1, 'args': [[3, 2, 3, 1, 2, 4, 5, 5, 6], 4], 'expected': 4, 'status': 'wrong_answer', 'actual': 3, 'error': '', 'duration_ms': 0.048}]",
+          "confidence": 0.9,
+          "source": "rule"
+        }
+      ]
+    },
+    "code": "import random\n\ndef find_kth_largest(nums: list, k: int) -> int:\n    def quick_select(left: int, right: int, target_idx: int) -> int:\n        if left == right:\n            return nums[left]\n        pivot_idx = random.randint(left, right)\n        pivot_idx = partition(left, right, pivot_idx)\n        if pivot_idx == target_idx:\n            return nums[pivot_idx]\n        elif pivot_idx < target_idx:\n            return quick_select(pivot_idx + 1, right, target_idx)\n        else:\n            return quick_select(left, pivot_idx - 1, target_idx)\n    \n    def partition(left: int, right: int, pivot_idx: int) -> int:\n        pivot_val = nums[pivot_idx]\n        nums[pivot_idx], nums[right] = nums[right], nums[pivot_idx]\n        store_idx = left\n        for i in range(left, right):\n            if nums[i] > pivot_val:\n                nums[store_idx], nums[i] = nums[i], nums[store_idx]\n                store_idx += 1\n        nums[right], nums[store_idx] = nums[store_idx], nums[right]\n        return store_idx\n    \n    n = len(nums)\n    # 第 k 大对应升序排序后的索引 n - k\n    return quick_select(0, n - 1, n - k)",
+    "llm_summary": {
+      "summary": "实现将第K个最大元素误算为第K个最小元素，导致所有测试失败。",
+      "process_ok": false,
+      "code_ok": false,
+      "pseudo_correct": false,
+      "root_cause": "代码逻辑错误：可能直接对数组升序排序后取第k个（或索引k-1）元素，而题目要求第k个最大元素（应降序排序取第k个，或升序取len-k）。例如[3,2,1,5,6,4]升序为[1,2,3,4,5,6]，取第2个得2，但第2大是5。",
+      "debug_hints": [
+        "检查排序方向：应使用降序排序后取第k个，或升序排序后取索引 len(nums)-k。",
+        "验证边界：如[2,1]中k=2，第2大是1，升序取索引0得1，降序取索引1得1。",
+        "添加单元测试覆盖重复元素和逆序数组，确认第k大语义。"
+      ],
+      "failed_case_analysis": [
+        "公开用例0: nums=[3,2,1,5,6,4], k=2, 期望5（第2大），实际2（升序第2小），说明取了升序第k个。",
+        "公开用例1: nums=[3,2,3,1,2,4,5,5,6], k=4, 期望4（第4大），实际3（升序第4小为3），同样错误。",
+        "对抗用例1: nums=[2,1], k=2, 期望1（第2大即最小），实际2（升序第2小为2），确认升序取k-1索引错误。"
+      ]
+    },
+    "debug_hints": [
+      "[LOGIC] 公开测试 2/2 失败，实现结果与预期不符。"
+    ],
+    "sections": {
+      "解题思路": "本题要求在未排序数组中找出第 k 个最大元素。直接排序的时间复杂度为 O(n log n)，虽然可行但非最优。更高效的做法是使用**快速选择算法（QuickSelect）**，它基于快速排序的分区思想，每次划分后只在包含目标元素的那一侧递归，平均时间复杂度为 O(n)。也可以使用**大小为 k 的最小堆**，遍历数组维护堆顶为第 k 大元素，时间复杂度 O(n log k)，适合 k 远小于 n 的场景。考虑到约束中 k 可能接近 n（如 k=n），且 n 达 10^5，快速选择在平均情况下更均衡；但堆方法实现简单且最坏可控。此处选择**快速选择（随机化 pivot）**作为主算法，因其在平均 O(n) 内解决且无需额外空间（原地分区），适用于本题数据规模。",
+      "复杂度分析": "- 时间复杂度：平均 O(n)，最坏 O(n^2)。推理：每次分区将数组划分为两部分，平均情况下每次舍弃约一半元素，总比较次数为 n + n/2 + n/4 + ... = O(n)；最坏情况每次 pivot 为极值，退化为 O(n^2)。随机化 pivot 使最坏情况概率极低。\n- 空间复杂度：O(1)（原地分区，递归栈平均 O(log n)，最坏 O(n)，但通常视作 O(1) 辅助空间；若计递归栈则平均 O(log n)）。此处按算法导引惯例写 O(1) 额外空间（不含递归栈）或平均 O(log n) 栈空间，明确写为 O(log n) 平均栈空间、O(1) 数据空间。",
+      "关键边界与处理策略": "- 空输入：题目约束 len(nums)>=1，不会出现，但代码可防御性返回 None 或抛异常；按约束不处理。\n- 单元素：k=1 且 len=1，直接返回该元素，分区逻辑自然覆盖。\n- 重复元素：如 [3,2,3,1,2,4,5,5,6] 中多个 5，分区时相等元素归到任一侧均可，随机 pivot 保证正确性，第 k 大按排序后位置取，重复不影响“第 k 个”定义（如示例 4 返回 4）。\n- 负数：数组可含负数，比较逻辑基于数值大小，无需特殊处理。\n- 极值：k=1（最大）或 k=len(nums)（最小），分区后目标索引为 0 或 n-1，算法直接命中。\n- k 合法性：约束保证 1<=k<=len(nums)，无需校验。",
+      "代码实现": "```python\nimport random\n\ndef find_kth_largest(nums: list, k: int) -> int:\n    def quick_select(left: int, right: int, target_idx: int) -> int:\n        if left == right:\n            return nums[left]\n        pivot_idx = random.randint(left, right)\n        pivot_idx = partition(left, right, pivot_idx)\n        if pivot_idx == target_idx:\n            return nums[pivot_idx]\n        elif pivot_idx < target_idx:\n            return quick_select(pivot_idx + 1, right, target_idx)\n        else:\n            return quick_select(left, pivot_idx - 1, target_idx)\n    \n    def partition(left: int, right: int, pivot_idx: int) -> int:\n        pivot_val = nums[pivot_idx]\n        nums[pivot_idx], nums[right] = nums[right], nums[pivot_idx]\n        store_idx = left\n        for i in range(left, right):\n            if nums[i] > pivot_val:\n                nums[store_idx], nums[i] = nums[i], nums[store_idx]\n                store_idx += 1\n        nums[right], nums[store_idx] = nums[store_idx], nums[right]\n        return store_idx\n    \n    n = len(nums)\n    # 第 k 大对应升序排序后的索引 n - k\n    return quick_select(0, n - 1, n - k)\n```",
+      "自测说明": "我使用题目给出的两个公开测试用例在脑内/本地草稿验证了逻辑：\n- 用例1：nums=[3,2,1,5,6,4], k=2，n=6，目标索引=4（0-based 升序第4位即5），分区后返回5，与期望一致。\n- 用例2：nums=[3,2,3,1,2,4,5,5,6], k=4，n=9，目标索引=5（升序第5位为4），返回4，与期望一致。\n验证覆盖：覆盖了重复元素、多元素、k 在中部的情况；未覆盖超大规模（10^5）压力测试及最坏 pivot 序列，但随机化已缓解。未实际运行代码，仅按算法推演确认正确性。"
+    }
+  },
+  "elapsed_sec": 91.92,
+  "recorded_at": "2026-09-11T22:59:46"
+}

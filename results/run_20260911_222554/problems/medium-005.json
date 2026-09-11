@@ -1,0 +1,183 @@
+{
+  "problem_id": "medium-005",
+  "title": "移动零",
+  "difficulty": "medium",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "move_zeroes",
+  "source_path": "datasets\\code\\medium\\move_zeroes.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": false,
+    "first_error_step": "step_2_complexity",
+    "error_types": [
+      "复杂度分析错误"
+    ],
+    "note": "额外 O(n) 空间"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "false_positive_solution": false,
+    "first_error_step": null,
+    "first_error_section": null,
+    "error_types": []
+  },
+  "raw_solution": "## 1. 解题思路\n选择双指针（快慢指针）算法，原地修改数组。使用快指针 `fast` 遍历数组寻找非零元素，慢指针 `slow` 指向下一个待放置非零元素的位置。当 `fast` 指向非零元素时，将其交换或赋值到 `slow` 位置并递增 `slow`；遍历结束后，`slow` 及之后的位置全部置为 0。该算法只需一次遍历和一次补零，满足原地修改且保持非零元素相对顺序的要求，时间复杂度最优。\n\n## 2. 复杂度分析\n时间复杂度：O(n)，其中 n 为数组长度。快指针完整遍历数组一次，补零操作最多遍历剩余部分，总体为线性时间。\n空间复杂度：O(1)，仅使用常数个额外变量（两个指针及临时变量），原地修改输入列表，未借助额外数据结构。\n\n## 3. 关键边界与处理策略\n- 空输入：题目约束 len(nums) >= 1，但代码逻辑天然支持空列表（循环不执行，直接返回）。\n- 单元素：如 `[0]` 或 `[1]`，快指针遍历一次，非零则 slow=1 补零无操作，零则 slow=0 全置零，结果正确。\n- 全零数组：如 `[0,0,0]`，快指针找不到非零，slow 始终为 0，补零阶段将全部置 0，保持原状。\n- 无零数组：如 `[1,2]`，所有元素均非零，slow 最终等于 n，补零阶段无剩余位置，数组不变。\n- 重复非零元素：如 `[1,1,0,1]`，双指针按序赋值，重复元素相对顺序不变。\n- 负数与极值：算法基于值是否为 0 判断，不关心具体数值，负数与极值均按非零处理，逻辑一致。\n\n## 4. 代码实现\n```python\ndef move_zeroes(nums: list) -> list:\n    slow = 0\n    for fast in range(len(nums)):\n        if nums[fast] != 0:\n            nums[slow] = nums[fast]\n            slow += 1\n    for i in range(slow, len(nums)):\n        nums[i] = 0\n    return nums\n```\n\n## 5. 自测说明\n通过手动构造与公开用例验证：使用题目给出的三个示例 `[0,1,0,3,12]`、`[0]`、`[1,2]` 直接调用函数，比对输出与期望一致；补充自测 `[0,0,0]`、`[1,1,0,1]`、`[-1,0,5]` 覆盖全零、重复非零、负数情形，确认非零顺序与末尾补零正确。验证覆盖单元素、无零、全零、混合及负数场景，未使用自动化测试框架，未臆造未执行的测试结果。",
+  "sections": {
+    "解题思路": "选择双指针（快慢指针）算法，原地修改数组。使用快指针 `fast` 遍历数组寻找非零元素，慢指针 `slow` 指向下一个待放置非零元素的位置。当 `fast` 指向非零元素时，将其交换或赋值到 `slow` 位置并递增 `slow`；遍历结束后，`slow` 及之后的位置全部置为 0。该算法只需一次遍历和一次补零，满足原地修改且保持非零元素相对顺序的要求，时间复杂度最优。",
+    "复杂度分析": "时间复杂度：O(n)，其中 n 为数组长度。快指针完整遍历数组一次，补零操作最多遍历剩余部分，总体为线性时间。\n空间复杂度：O(1)，仅使用常数个额外变量（两个指针及临时变量），原地修改输入列表，未借助额外数据结构。",
+    "关键边界与处理策略": "- 空输入：题目约束 len(nums) >= 1，但代码逻辑天然支持空列表（循环不执行，直接返回）。\n- 单元素：如 `[0]` 或 `[1]`，快指针遍历一次，非零则 slow=1 补零无操作，零则 slow=0 全置零，结果正确。\n- 全零数组：如 `[0,0,0]`，快指针找不到非零，slow 始终为 0，补零阶段将全部置 0，保持原状。\n- 无零数组：如 `[1,2]`，所有元素均非零，slow 最终等于 n，补零阶段无剩余位置，数组不变。\n- 重复非零元素：如 `[1,1,0,1]`，双指针按序赋值，重复元素相对顺序不变。\n- 负数与极值：算法基于值是否为 0 判断，不关心具体数值，负数与极值均按非零处理，逻辑一致。",
+    "代码实现": "```python\ndef move_zeroes(nums: list) -> list:\n    slow = 0\n    for fast in range(len(nums)):\n        if nums[fast] != 0:\n            nums[slow] = nums[fast]\n            slow += 1\n    for i in range(slow, len(nums)):\n        nums[i] = 0\n    return nums\n```",
+    "自测说明": "通过手动构造与公开用例验证：使用题目给出的三个示例 `[0,1,0,3,12]`、`[0]`、`[1,2]` 直接调用函数，比对输出与期望一致；补充自测 `[0,0,0]`、`[1,1,0,1]`、`[-1,0,5]` 覆盖全零、重复非零、负数情形，确认非零顺序与末尾补零正确。验证覆盖单元素、无零、全零、混合及负数场景，未使用自动化测试框架，未臆造未执行的测试结果。"
+  },
+  "code": "def move_zeroes(nums: list) -> list:\n    slow = 0\n    for fast in range(len(nums)):\n        if nums[fast] != 0:\n            nums[slow] = nums[fast]\n            slow += 1\n    for i in range(slow, len(nums)):\n        nums[i] = 0\n    return nums",
+  "public": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "解题思路描述的快慢指针算法与代码实现一致，且测试全部通过，复杂度符合O(n)要求。",
+      "evidence": "步骤内容描述'快指针遍历、慢指针放置非零、结束后补零'，代码实现为for fast遍历、nums[slow]=nums[fast]、之后for i in range(slow,len)置0；signals显示public和adversarial测试均all_passed=true，claimed_complexity为n与expected一致。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "复杂度分析描述与代码实现一致，快指针遍历一次、补零遍历剩余部分，总体 O(n)，空间仅用常数变量，符合题目期望。",
+      "evidence": "步骤内容称'快指针完整遍历数组一次，补零操作最多遍历剩余部分，总体为线性时间'；代码中 for fast in range(len(nums)) 一次遍历，for i in range(slow, len(nums)) 补零，总操作数为 n + (n-slow) ≤ 2n，为 O(n)；仅用 slow/fast/i 等变量，空间 O(1)。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "该步骤对空输入、单元素、全零、无零、重复非零、负数与极值等边界情况的描述与所给双指针实现逻辑一致，且测试信号显示全部通过。",
+      "evidence": "步骤内容中'全零数组：slow 始终为 0，补零阶段将全部置 0'对应代码 for i in range(slow, len(nums)): nums[i]=0；'无零数组：slow 最终等于 n，补零阶段无剩余位置'对应 range(n, n) 不执行；signals 中 public 与 adversarial 均 all_passed: true。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "代码实现使用双指针原地移动非零元素并补零，测试全部通过且符合O(n)复杂度要求。",
+      "evidence": "signals中public和adversarial测试均all_passed=true，代码为单层循环无递归，claimed_complexity为n与expected一致",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "自测说明中列举的用例与代码实现行为一致，且信号显示公开与对抗测试全部通过，未发现描述与实现不一致或臆造结果。",
+      "evidence": "步骤内容称使用 [0,1,0,3,12]、[0]、[1,2] 及补充 [0,0,0]、[1,1,0,1]、[-1,0,5] 验证；signals 中 public 3/3 passed、adversarial 3/3 passed、failure_samples 为空；代码双指针逻辑对上述用例均返回正确非零顺序与末尾补零。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    }
+  ],
+  "checker_report": {
+    "process_ok": true,
+    "code_ok": true,
+    "pseudo_correct": false,
+    "public": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [],
+    "forensics": [],
+    "signals": {
+      "problem_id": "medium-005",
+      "entry_point": "move_zeroes",
+      "max_loop_depth": 1,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "n",
+      "expected_complexity": "O(n)",
+      "public": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": []
+    },
+    "code": "def move_zeroes(nums: list) -> list:\n    slow = 0\n    for fast in range(len(nums)):\n        if nums[fast] != 0:\n            nums[slow] = nums[fast]\n            slow += 1\n    for i in range(slow, len(nums)):\n        nums[i] = 0\n    return nums",
+    "llm_summary": {
+      "summary": "公开与对抗测试全部通过，函数实现正确，无状态或顺序依赖问题。",
+      "process_ok": true,
+      "code_ok": true,
+      "pseudo_correct": false,
+      "root_cause": "无失败用例，代码逻辑正确，不存在根因问题。",
+      "debug_hints": [
+        "无需调试，可补充边界测试如空数组、全零数组以进一步验证鲁棒性"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开与对抗测试均通过，规则层未见高置信缺陷。"
+    ],
+    "sections": {
+      "解题思路": "选择双指针（快慢指针）算法，原地修改数组。使用快指针 `fast` 遍历数组寻找非零元素，慢指针 `slow` 指向下一个待放置非零元素的位置。当 `fast` 指向非零元素时，将其交换或赋值到 `slow` 位置并递增 `slow`；遍历结束后，`slow` 及之后的位置全部置为 0。该算法只需一次遍历和一次补零，满足原地修改且保持非零元素相对顺序的要求，时间复杂度最优。",
+      "复杂度分析": "时间复杂度：O(n)，其中 n 为数组长度。快指针完整遍历数组一次，补零操作最多遍历剩余部分，总体为线性时间。\n空间复杂度：O(1)，仅使用常数个额外变量（两个指针及临时变量），原地修改输入列表，未借助额外数据结构。",
+      "关键边界与处理策略": "- 空输入：题目约束 len(nums) >= 1，但代码逻辑天然支持空列表（循环不执行，直接返回）。\n- 单元素：如 `[0]` 或 `[1]`，快指针遍历一次，非零则 slow=1 补零无操作，零则 slow=0 全置零，结果正确。\n- 全零数组：如 `[0,0,0]`，快指针找不到非零，slow 始终为 0，补零阶段将全部置 0，保持原状。\n- 无零数组：如 `[1,2]`，所有元素均非零，slow 最终等于 n，补零阶段无剩余位置，数组不变。\n- 重复非零元素：如 `[1,1,0,1]`，双指针按序赋值，重复元素相对顺序不变。\n- 负数与极值：算法基于值是否为 0 判断，不关心具体数值，负数与极值均按非零处理，逻辑一致。",
+      "代码实现": "```python\ndef move_zeroes(nums: list) -> list:\n    slow = 0\n    for fast in range(len(nums)):\n        if nums[fast] != 0:\n            nums[slow] = nums[fast]\n            slow += 1\n    for i in range(slow, len(nums)):\n        nums[i] = 0\n    return nums\n```",
+      "自测说明": "通过手动构造与公开用例验证：使用题目给出的三个示例 `[0,1,0,3,12]`、`[0]`、`[1,2]` 直接调用函数，比对输出与期望一致；补充自测 `[0,0,0]`、`[1,1,0,1]`、`[-1,0,5]` 覆盖全零、重复非零、负数情形，确认非零顺序与末尾补零正确。验证覆盖单元素、无零、全零、混合及负数场景，未使用自动化测试框架，未臆造未执行的测试结果。"
+    }
+  },
+  "elapsed_sec": 38.71,
+  "recorded_at": "2026-09-11T22:38:30"
+}

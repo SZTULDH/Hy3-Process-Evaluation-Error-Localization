@@ -1,0 +1,224 @@
+{
+  "problem_id": "adversarial-005",
+  "title": "回文数（转字符串）",
+  "difficulty": "adversarial",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "is_palindrome_num",
+  "source_path": "datasets\\code\\adversarial\\is_palindrome_num.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": false,
+    "first_error_step": "step_1_approach",
+    "error_types": [
+      "算法选择错误",
+      "复杂度分析错误"
+    ],
+    "note": "违反不用字符串约束"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": false,
+    "false_positive_solution": true,
+    "first_error_step": "step_2_complexity",
+    "first_error_section": "复杂度分析",
+    "error_types": [
+      "复杂度分析错误"
+    ]
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求判断整数是否为回文数且禁止使用字符串转换。回文数的数学特征是正读反读相同，即数字前半部分与后半部分反转后相等。采用“反转后半部分数字”的算法：对于负数直接返回 False（负号导致不可能回文）；对于末尾为 0 且非 0 的数直接返回 False（最高位不为 0，反转后不匹配）；其余情况通过取模和整除操作将数字的后半部分反转，当反转数大于等于剩余前半部分时停止，此时若两者相等（偶数位）或前半部分等于反转数整除 10（奇数位去掉中间位）则为回文。该算法仅用常数变量，无需额外数据结构，符合不使用字符串的限制。\n\n## 2. 复杂度分析\n时间复杂度：O(log₁₀ n)，其中 n 为输入整数的绝对值。每次循环通过 x % 10 取末位、x //= 10 去掉末位，数字位数减半，循环次数约为位数的一半，即 log₁₀ n 量级。\n空间复杂度：O(1)，仅使用固定数量的整型变量（如 reversed_half、原 x 等），不随输入规模增长。\n\n## 3. 关键边界与处理策略\n- 空输入：题目约束为整数输入，无空输入情形，函数签名保证 x 为 int，不需处理。\n- 单元素（0~9）：均为回文，算法中 x < 10 且非负时反转后半部分为 0，剩余前半部分为 x，相等返回 True。\n- 重复元素（如 11、1221）：正常按反转后半逻辑处理，11 反转后半为 1 剩余 1 相等；1221 反转后半 12 剩余 12 相等。\n- 负数（如 -121）：最高位负号不可能对称，直接返回 False。\n- 末尾为 0 且非 0（如 10、100）：最高位非 0，反转后首位为 0 不匹配，直接返回 False。\n- 极值（如 2^31-1=2147483647）：非回文，算法正常反转后半部分（748 变 847 不等）返回 False；-2^31 为负数直接 False。\n- 奇数位含中间位（如 12321）：反转后半得 123，剩余 12，判断 12 == 123//10 成立。\n\n## 4. 代码实现\n```python\ndef is_palindrome_num(x: int) -> bool:\n    if x < 0:\n        return False\n    if x % 10 == 0 and x != 0:\n        return False\n    reversed_half = 0\n    while x > reversed_half:\n        reversed_half = reversed_half * 10 + x % 10\n        x //= 10\n    return x == reversed_half or x == reversed_half // 10\n```\n\n## 5. 自测说明\n验证方式：在 Python 环境中直接调用 is_palindrome_num 函数，传入公开示例及边界值，比对返回布尔值与预期。\n覆盖输入：-121（负）、10（尾零）、121（奇回文）、1221（偶回文）、0（单元素）、7（单元素）、100（尾零非回文）、2147483647（正极值）、-2147483648（负极值）、12321（奇回文）。\n验证结果：上述输入输出均与预期一致（False/False/True/True/True/True/False/False/False/True），未发现错误；未覆盖随机大数及全部 32 位整数穷举，仅覆盖所述典型与边界情形。",
+  "sections": {
+    "解题思路": "本题要求判断整数是否为回文数且禁止使用字符串转换。回文数的数学特征是正读反读相同，即数字前半部分与后半部分反转后相等。采用“反转后半部分数字”的算法：对于负数直接返回 False（负号导致不可能回文）；对于末尾为 0 且非 0 的数直接返回 False（最高位不为 0，反转后不匹配）；其余情况通过取模和整除操作将数字的后半部分反转，当反转数大于等于剩余前半部分时停止，此时若两者相等（偶数位）或前半部分等于反转数整除 10（奇数位去掉中间位）则为回文。该算法仅用常数变量，无需额外数据结构，符合不使用字符串的限制。",
+    "复杂度分析": "时间复杂度：O(log₁₀ n)，其中 n 为输入整数的绝对值。每次循环通过 x % 10 取末位、x //= 10 去掉末位，数字位数减半，循环次数约为位数的一半，即 log₁₀ n 量级。\n空间复杂度：O(1)，仅使用固定数量的整型变量（如 reversed_half、原 x 等），不随输入规模增长。",
+    "关键边界与处理策略": "- 空输入：题目约束为整数输入，无空输入情形，函数签名保证 x 为 int，不需处理。\n- 单元素（0~9）：均为回文，算法中 x < 10 且非负时反转后半部分为 0，剩余前半部分为 x，相等返回 True。\n- 重复元素（如 11、1221）：正常按反转后半逻辑处理，11 反转后半为 1 剩余 1 相等；1221 反转后半 12 剩余 12 相等。\n- 负数（如 -121）：最高位负号不可能对称，直接返回 False。\n- 末尾为 0 且非 0（如 10、100）：最高位非 0，反转后首位为 0 不匹配，直接返回 False。\n- 极值（如 2^31-1=2147483647）：非回文，算法正常反转后半部分（748 变 847 不等）返回 False；-2^31 为负数直接 False。\n- 奇数位含中间位（如 12321）：反转后半得 123，剩余 12，判断 12 == 123//10 成立。",
+    "代码实现": "```python\ndef is_palindrome_num(x: int) -> bool:\n    if x < 0:\n        return False\n    if x % 10 == 0 and x != 0:\n        return False\n    reversed_half = 0\n    while x > reversed_half:\n        reversed_half = reversed_half * 10 + x % 10\n        x //= 10\n    return x == reversed_half or x == reversed_half // 10\n```",
+    "自测说明": "验证方式：在 Python 环境中直接调用 is_palindrome_num 函数，传入公开示例及边界值，比对返回布尔值与预期。\n覆盖输入：-121（负）、10（尾零）、121（奇回文）、1221（偶回文）、0（单元素）、7（单元素）、100（尾零非回文）、2147483647（正极值）、-2147483648（负极值）、12321（奇回文）。\n验证结果：上述输入输出均与预期一致（False/False/True/True/True/True/False/False/False/True），未发现错误；未覆盖随机大数及全部 32 位整数穷举，仅覆盖所述典型与边界情形。"
+  },
+  "code": "def is_palindrome_num(x: int) -> bool:\n    if x < 0:\n        return False\n    if x % 10 == 0 and x != 0:\n        return False\n    reversed_half = 0\n    while x > reversed_half:\n        reversed_half = reversed_half * 10 + x % 10\n        x //= 10\n    return x == reversed_half or x == reversed_half // 10",
+  "public": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 2,
+    "passed": 2,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [
+    {
+      "section": "复杂度分析",
+      "error_type": "COMPLEXITY",
+      "error_type_label": "复杂度分析错误",
+      "detail": "声称时间复杂度 logn，但代码中检测到最大循环嵌套深度为 1，实际下界约为 n。",
+      "evidence": "AST 静态分析：max_loop_depth=1, recursive=False",
+      "confidence": 0.7,
+      "source": "rule"
+    }
+  ],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "解题思路描述的反转后半部分算法与代码实现一致，且测试全部通过，静态分析中的复杂度误判是针对复杂度分析步骤而非本思路步骤。",
+      "evidence": "步骤内容描述：'通过取模和整除操作将数字的后半部分反转，当反转数大于等于剩余前半部分时停止...'；代码实现：while x > reversed_half: reversed_half = reversed_half*10 + x%10; x//=10；signals中public和adversarial测试均all_passed=true",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "flawed",
+      "confidence": 0.95,
+      "error_types": [
+        "复杂度分析错误"
+      ],
+      "reason": "声称时间复杂度 logn，但代码中检测到最大循环嵌套深度为 1，实际下界约为 n。 Critic 补充：步骤中称循环次数约为位数的一半即 log₁₀ n 量级，但实际代码 while x > reversed_half 每次迭代 x 去掉一位、reversed_half 增加一位，循环次数约为位数的一半，确实是 O(log₁₀ n)，但步骤写'数字位数减半'表述错误且 rule_findings 指出声称 logn 但静态分析误判下界为 n，而步骤自身'数字位数减半'描述与实现不一致（实现是 x 和 reversed_half 各变化一位、总位数减半进程，非单次位数减半）。",
+      "evidence": "AST 静态分析：max_loop_depth=1, recursive=False",
+      "llm_verdict": "flawed",
+      "rule_types": [
+        "复杂度分析错误"
+      ],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "该步骤对空输入、单元素、重复元素、负数、末尾为0、极值、奇数位等边界情形的描述与所给代码实现逻辑一致，且公开与对抗测试全部通过，无具体依据表明此步骤不成立。",
+      "evidence": "步骤内容中'x < 10 且非负时反转后半部分为 0，剩余前半部分为 x，相等返回 True'对应代码 while x > reversed_half 不执行、return x == reversed_half；'12321 反转后半得 123，剩余 12，判断 12 == 123//10'对应 return x == reversed_half // 10；signals 中 public 3/3 passed、adversarial 2/2 passed，无失败样本。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "代码实现正确反转后半部分数字并与前半部分比较，处理了负数和末尾零边界，测试全部通过，且实际循环次数为数字位数的一半即 O(log|x|)，静态规则误将单层循环判为 O(n) 不成立。",
+      "evidence": "public 测试 3/3 通过，adversarial 测试 2/2 通过；代码 while x > reversed_half 每次 x//=10，迭代次数约 log10(x)/2，符合 O(log|x|)；rule_findings 中 max_loop_depth=1 仅表示无嵌套，不代表线性复杂度。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "suspicious",
+      "confidence": 0.6,
+      "error_types": [
+        "测试覆盖不足导致的伪正确"
+      ],
+      "reason": "自测说明仅覆盖典型与边界情形且未穷举或随机测试，虽当前信号显示测试全通过，但覆盖不足可能隐藏未发现错误。",
+      "evidence": "步骤内容写明'未覆盖随机大数及全部 32 位整数穷举，仅覆盖所述典型与边界情形'；signals 中 public 与 adversarial 均 all_passed 但样本量小（public total=3, adversarial total=2）。",
+      "llm_verdict": "suspicious",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    }
+  ],
+  "checker_report": {
+    "process_ok": false,
+    "code_ok": true,
+    "pseudo_correct": true,
+    "public": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [
+      {
+        "section": "复杂度分析",
+        "error_type": "COMPLEXITY",
+        "error_type_label": "复杂度分析错误",
+        "detail": "声称时间复杂度 logn，但代码中检测到最大循环嵌套深度为 1，实际下界约为 n。",
+        "evidence": "AST 静态分析：max_loop_depth=1, recursive=False",
+        "confidence": 0.7,
+        "source": "rule"
+      }
+    ],
+    "forensics": [],
+    "signals": {
+      "problem_id": "adversarial-005",
+      "entry_point": "is_palindrome_num",
+      "max_loop_depth": 1,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "logn",
+      "expected_complexity": "O(log |x|)",
+      "public": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 2,
+        "passed": 2,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": [
+        {
+          "section": "复杂度分析",
+          "error_type": "COMPLEXITY",
+          "error_type_label": "复杂度分析错误",
+          "detail": "声称时间复杂度 logn，但代码中检测到最大循环嵌套深度为 1，实际下界约为 n。",
+          "evidence": "AST 静态分析：max_loop_depth=1, recursive=False",
+          "confidence": 0.7,
+          "source": "rule"
+        }
+      ]
+    },
+    "code": "def is_palindrome_num(x: int) -> bool:\n    if x < 0:\n        return False\n    if x % 10 == 0 and x != 0:\n        return False\n    reversed_half = 0\n    while x > reversed_half:\n        reversed_half = reversed_half * 10 + x % 10\n        x //= 10\n    return x == reversed_half or x == reversed_half // 10",
+    "llm_summary": {
+      "summary": "代码功能正确通过全部测试，但复杂度分析中将转字符串后单循环判断误称为 logn 实际为 O(n)（n为位数），属文档错误不影响运行。",
+      "process_ok": false,
+      "code_ok": true,
+      "pseudo_correct": true,
+      "root_cause": "解题过程复杂度分析错误：将字符串转换后单趟遍历比较（O(d)，d为数字位数即约log10(n)常被误写logn但AST检测循环深度1且无递归，实际按字符数是O(n)其中n为字符串长度/位数）误标为 logn 时间复杂度，而代码本身无嵌套循环、无递归，功能正确。",
+      "debug_hints": [
+        "修正复杂度分析：转字符串后比较字符需遍历全部字符，时间复杂度为 O(d) 其中 d 为数字位数（或 O(n) 以字符串长度计），空间复杂度 O(d) 用于存字符串",
+        "无需修改代码逻辑，仅更新文档/注释中的复杂度说明即可"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开测试通过但对抗失败：优先检查边界归一化、空/单元素、类型边界，并用 sandbox-debugger 在失败入参上下断点观察局部变量。",
+      "[COMPLEXITY] 声称时间复杂度 logn，但代码中检测到最大循环嵌套深度为 1，实际下界约为 n。"
+    ],
+    "sections": {
+      "解题思路": "本题要求判断整数是否为回文数且禁止使用字符串转换。回文数的数学特征是正读反读相同，即数字前半部分与后半部分反转后相等。采用“反转后半部分数字”的算法：对于负数直接返回 False（负号导致不可能回文）；对于末尾为 0 且非 0 的数直接返回 False（最高位不为 0，反转后不匹配）；其余情况通过取模和整除操作将数字的后半部分反转，当反转数大于等于剩余前半部分时停止，此时若两者相等（偶数位）或前半部分等于反转数整除 10（奇数位去掉中间位）则为回文。该算法仅用常数变量，无需额外数据结构，符合不使用字符串的限制。",
+      "复杂度分析": "时间复杂度：O(log₁₀ n)，其中 n 为输入整数的绝对值。每次循环通过 x % 10 取末位、x //= 10 去掉末位，数字位数减半，循环次数约为位数的一半，即 log₁₀ n 量级。\n空间复杂度：O(1)，仅使用固定数量的整型变量（如 reversed_half、原 x 等），不随输入规模增长。",
+      "关键边界与处理策略": "- 空输入：题目约束为整数输入，无空输入情形，函数签名保证 x 为 int，不需处理。\n- 单元素（0~9）：均为回文，算法中 x < 10 且非负时反转后半部分为 0，剩余前半部分为 x，相等返回 True。\n- 重复元素（如 11、1221）：正常按反转后半逻辑处理，11 反转后半为 1 剩余 1 相等；1221 反转后半 12 剩余 12 相等。\n- 负数（如 -121）：最高位负号不可能对称，直接返回 False。\n- 末尾为 0 且非 0（如 10、100）：最高位非 0，反转后首位为 0 不匹配，直接返回 False。\n- 极值（如 2^31-1=2147483647）：非回文，算法正常反转后半部分（748 变 847 不等）返回 False；-2^31 为负数直接 False。\n- 奇数位含中间位（如 12321）：反转后半得 123，剩余 12，判断 12 == 123//10 成立。",
+      "代码实现": "```python\ndef is_palindrome_num(x: int) -> bool:\n    if x < 0:\n        return False\n    if x % 10 == 0 and x != 0:\n        return False\n    reversed_half = 0\n    while x > reversed_half:\n        reversed_half = reversed_half * 10 + x % 10\n        x //= 10\n    return x == reversed_half or x == reversed_half // 10\n```",
+      "自测说明": "验证方式：在 Python 环境中直接调用 is_palindrome_num 函数，传入公开示例及边界值，比对返回布尔值与预期。\n覆盖输入：-121（负）、10（尾零）、121（奇回文）、1221（偶回文）、0（单元素）、7（单元素）、100（尾零非回文）、2147483647（正极值）、-2147483648（负极值）、12321（奇回文）。\n验证结果：上述输入输出均与预期一致（False/False/True/True/True/True/False/False/False/True），未发现错误；未覆盖随机大数及全部 32 位整数穷举，仅覆盖所述典型与边界情形。"
+    }
+  },
+  "elapsed_sec": 57.65,
+  "recorded_at": "2026-09-11T23:04:32"
+}

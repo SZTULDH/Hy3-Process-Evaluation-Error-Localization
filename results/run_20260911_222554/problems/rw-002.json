@@ -1,0 +1,214 @@
+{
+  "problem_id": "rw-002",
+  "title": "指数退避等待序列",
+  "difficulty": "engineering",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "backoff_delays",
+  "source_path": "datasets\\code\\engineering\\function\\rw_002.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "note": "漏掉 cap 会在对抗测试暴露。"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "false_positive_solution": false,
+    "first_error_step": null,
+    "first_error_section": null,
+    "error_types": []
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求生成指数退避重试的等待时间列表，第 i 次等待时间为 `min(cap, base * factor**i)`，共生成 `max_retries` 个元素（i 从 0 到 max_retries-1）。由于计算规则明确且无复杂依赖，直接采用简单的循环迭代即可：遍历 i 从 0 到 max_retries-1，按公式计算每次的等待时间并加入列表。使用列表作为结果存储结构，无需额外高级数据结构。该算法直观、高效，完全契合题目给定的确定性计算逻辑。\n\n## 2. 复杂度分析\n时间复杂度：O(max_retries)，因为需要循环 max_retries 次，每次循环内为常数时间的乘法、幂运算和取最小值操作。\n空间复杂度：O(max_retries)，用于存储返回的长度为 max_retries 的等待时间列表，除此之外仅用了常数级别的临时变量。\n\n## 3. 关键边界与处理策略\n- max_retries = 0：循环不执行，返回空列表 `[]`，符合示例。\n- max_retries = 1：只计算 i=0，返回单元素列表，如示例 `[0.5]`。\n- base 为 0 或负数：公式仍适用，min(cap, 0*factor**i)=0 或负数，按数学计算返回即可，题目未限制 base 正负。\n- factor 为 0：i=0 时为 base，i>=1 时为 0，按公式计算。\n- factor 为负数：幂运算可能产生正负交替，仍按 Python 的 `**` 运算规则计算并取 min。\n- cap 小于 base：第一次即被 cap 截断，后续也被 cap 截断，列表全为 cap。\n- 极大 max_retries 或极大 factor 导致溢出：Python 浮点数为双精度，极大值会变为 inf，min(cap, inf)=cap，不会报错，按语言特性处理。\n- 空输入：函数参数均有默认值，若调用时不传 max_retries 则使用默认，但题目给定签名中 max_retries 无默认，必须由调用者传入；若传入非整数（如 None）不在约束内，假设调用合法。\n\n## 4. 代码实现\n```python\ndef backoff_delays(max_retries: int, base: float = 1.0, factor: float = 2.0, cap: float = 60.0) -> list:\n    delays = []\n    for i in range(max_retries):\n        delay = min(cap, base * (factor ** i))\n        delays.append(delay)\n    return delays\n```\n\n## 5. 自测说明\n我通过手动代入公开测试用例验证实现：\n- `backoff_delays(3, 1.0, 2.0, 60.0)`：i=0→min(60,1)=1.0；i=1→min(60,2)=2.0；i=2→min(60,4)=4.0，得 `[1.0, 2.0, 4.0]`，与期望一致。\n- `backoff_delays(1, 0.5, 2.0, 10.0)`：i=0→min(10,0.5)=0.5，得 `[0.5]`，与期望一致。\n- `backoff_delays(0, 1.0, 2.0, 60.0)`：range(0) 不循环，得 `[]`，与期望一致。\n验证覆盖范围为题目给出的三个公开示例及对应的边界（0次、1次、多次），未测试负数 base/factor、极大值等未公开场景，如实说明未臆造额外测试结果。",
+  "sections": {
+    "解题思路": "本题要求生成指数退避重试的等待时间列表，第 i 次等待时间为 `min(cap, base * factor**i)`，共生成 `max_retries` 个元素（i 从 0 到 max_retries-1）。由于计算规则明确且无复杂依赖，直接采用简单的循环迭代即可：遍历 i 从 0 到 max_retries-1，按公式计算每次的等待时间并加入列表。使用列表作为结果存储结构，无需额外高级数据结构。该算法直观、高效，完全契合题目给定的确定性计算逻辑。",
+    "复杂度分析": "时间复杂度：O(max_retries)，因为需要循环 max_retries 次，每次循环内为常数时间的乘法、幂运算和取最小值操作。\n空间复杂度：O(max_retries)，用于存储返回的长度为 max_retries 的等待时间列表，除此之外仅用了常数级别的临时变量。",
+    "关键边界与处理策略": "- max_retries = 0：循环不执行，返回空列表 `[]`，符合示例。\n- max_retries = 1：只计算 i=0，返回单元素列表，如示例 `[0.5]`。\n- base 为 0 或负数：公式仍适用，min(cap, 0*factor**i)=0 或负数，按数学计算返回即可，题目未限制 base 正负。\n- factor 为 0：i=0 时为 base，i>=1 时为 0，按公式计算。\n- factor 为负数：幂运算可能产生正负交替，仍按 Python 的 `**` 运算规则计算并取 min。\n- cap 小于 base：第一次即被 cap 截断，后续也被 cap 截断，列表全为 cap。\n- 极大 max_retries 或极大 factor 导致溢出：Python 浮点数为双精度，极大值会变为 inf，min(cap, inf)=cap，不会报错，按语言特性处理。\n- 空输入：函数参数均有默认值，若调用时不传 max_retries 则使用默认，但题目给定签名中 max_retries 无默认，必须由调用者传入；若传入非整数（如 None）不在约束内，假设调用合法。",
+    "代码实现": "```python\ndef backoff_delays(max_retries: int, base: float = 1.0, factor: float = 2.0, cap: float = 60.0) -> list:\n    delays = []\n    for i in range(max_retries):\n        delay = min(cap, base * (factor ** i))\n        delays.append(delay)\n    return delays\n```",
+    "自测说明": "我通过手动代入公开测试用例验证实现：\n- `backoff_delays(3, 1.0, 2.0, 60.0)`：i=0→min(60,1)=1.0；i=1→min(60,2)=2.0；i=2→min(60,4)=4.0，得 `[1.0, 2.0, 4.0]`，与期望一致。\n- `backoff_delays(1, 0.5, 2.0, 10.0)`：i=0→min(10,0.5)=0.5，得 `[0.5]`，与期望一致。\n- `backoff_delays(0, 1.0, 2.0, 60.0)`：range(0) 不循环，得 `[]`，与期望一致。\n验证覆盖范围为题目给出的三个公开示例及对应的边界（0次、1次、多次），未测试负数 base/factor、极大值等未公开场景，如实说明未臆造额外测试结果。"
+  },
+  "code": "def backoff_delays(max_retries: int, base: float = 1.0, factor: float = 2.0, cap: float = 60.0) -> list:\n    delays = []\n    for i in range(max_retries):\n        delay = min(cap, base * (factor ** i))\n        delays.append(delay)\n    return delays",
+  "public": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [
+    {
+      "section": "复杂度分析",
+      "error_type": "COMPLEXITY",
+      "error_type_label": "复杂度分析错误",
+      "detail": "复杂度分析段落未给出明确的 O(...) 形式结论，无法验证。",
+      "evidence": "时间复杂度：O(max_retries)，因为需要循环 max_retries 次，每次循环内为常数时间的乘法、幂运算和取最小值操作。\n空间复杂度：O(max_retries)，用于存储返回的长度为 max_retries 的等待时间列表，除此之外仅用了常数级别的临时变量。",
+      "confidence": 0.4,
+      "source": "rule"
+    }
+  ],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "解题思路准确描述了按公式循环生成列表的方法，与题目要求和代码实现一致，且测试全部通过。",
+      "evidence": "步骤内容称'遍历 i 从 0 到 max_retries-1，按公式计算每次的等待时间并加入列表'，代码实现为 for i in range(max_retries): delay = min(cap, base * (factor ** i)); delays.append(delay)，signals 中 public 和 adversarial 测试均 all_passed: true。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [
+        "复杂度分析错误"
+      ],
+      "reason": "步骤中明确写出了时间复杂度 O(max_retries) 和空间复杂度 O(max_retries) 的 O(...) 形式结论，且与代码实现中的单层循环和返回列表长度一致，rule_findings 的判定与事实不符。",
+      "evidence": "步骤内容：'时间复杂度：O(max_retries)... 空间复杂度：O(max_retries)...'；代码实现：'for i in range(max_retries): ... delays.append(delay)'，返回列表长度为 max_retries。",
+      "llm_verdict": "valid",
+      "rule_types": [
+        "复杂度分析错误"
+      ],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "该步骤对各个边界情况（max_retries=0/1、base/factor/cap 特殊值、溢出等）的描述与给定代码实现及题目公式一致，且测试全部通过，无具体依据判定为 flawed 或 suspicious。",
+      "evidence": "步骤内容中 max_retries=0 返回 []、max_retries=1 返回 [base]、base=0 得 0、factor=0 时 i>=1 为 0、cap<base 全为 cap、inf 处理等，均与代码 `for i in range(max_retries): delay = min(cap, base * (factor ** i))` 行为吻合；signals 显示 public 与 adversarial 测试均 all_passed。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "代码实现正确生成了最多 max_retries 次重试的等待秒数列表，公式为 min(cap, base * factor**i)，且公开与对抗测试全部通过。",
+      "evidence": "signals 中 public: total 3 passed 3 failed 0 all_passed true；adversarial: total 3 passed 3 failed 0 all_passed true；代码 for i in range(max_retries): delay = min(cap, base * (factor ** i)) 与题意一致。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "自测说明如实描述了手动代入三个公开测试用例的过程与结果，与代码实现和信号中公开测试全通过一致，且明确声明未测试未公开场景，无臆造。",
+      "evidence": "步骤内容列出 backoff_delays(3,1.0,2.0,60.0)→[1.0,2.0,4.0]、backoff_delays(1,0.5,2.0,10.0)→[0.5]、backoff_delays(0,...)→[]，与代码 for i in range(max_retries): min(cap, base*factor**i) 吻合；signals 中 public.total=3, passed=3, all_passed=true。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    }
+  ],
+  "checker_report": {
+    "process_ok": true,
+    "code_ok": true,
+    "pseudo_correct": false,
+    "public": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [
+      {
+        "section": "复杂度分析",
+        "error_type": "COMPLEXITY",
+        "error_type_label": "复杂度分析错误",
+        "detail": "复杂度分析段落未给出明确的 O(...) 形式结论，无法验证。",
+        "evidence": "时间复杂度：O(max_retries)，因为需要循环 max_retries 次，每次循环内为常数时间的乘法、幂运算和取最小值操作。\n空间复杂度：O(max_retries)，用于存储返回的长度为 max_retries 的等待时间列表，除此之外仅用了常数级别的临时变量。",
+        "confidence": 0.4,
+        "source": "rule"
+      }
+    ],
+    "forensics": [],
+    "signals": {
+      "problem_id": "rw-002",
+      "entry_point": "backoff_delays",
+      "max_loop_depth": 1,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": null,
+      "expected_complexity": null,
+      "public": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": [
+        {
+          "section": "复杂度分析",
+          "error_type": "COMPLEXITY",
+          "error_type_label": "复杂度分析错误",
+          "detail": "复杂度分析段落未给出明确的 O(...) 形式结论，无法验证。",
+          "evidence": "时间复杂度：O(max_retries)，因为需要循环 max_retries 次，每次循环内为常数时间的乘法、幂运算和取最小值操作。\n空间复杂度：O(max_retries)，用于存储返回的长度为 max_retries 的等待时间列表，除此之外仅用了常数级别的临时变量。",
+          "confidence": 0.4,
+          "source": "rule"
+        }
+      ]
+    },
+    "code": "def backoff_delays(max_retries: int, base: float = 1.0, factor: float = 2.0, cap: float = 60.0) -> list:\n    delays = []\n    for i in range(max_retries):\n        delay = min(cap, base * (factor ** i))\n        delays.append(delay)\n    return delays",
+    "llm_summary": {
+      "summary": "代码功能正确且通过全部公开与对抗测试，但复杂度分析段落未以标准 O(...) 形式明确给出结论，导致 pseudo_correct 判定为 false。",
+      "process_ok": true,
+      "code_ok": true,
+      "pseudo_correct": false,
+      "root_cause": "复杂度分析虽描述了循环次数与空间占用，但未提炼为形如 '时间复杂度 O(n)、空间复杂度 O(n)' 的明确 O(...) 结论语句，规则检查因此标记为 COMPLEXITY 错误。",
+      "debug_hints": [
+        "在解题过程的复杂度分析段落末尾补充明确结论，例如：'综上，时间复杂度为 O(max_retries)，空间复杂度为 O(max_retries)。'",
+        "检查其他题目是否也存在类似未显式写出 O(...) 结论的情况，统一在段落结尾用标准形式总结。"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开与对抗测试均通过，规则层未见高置信缺陷。"
+    ],
+    "sections": {
+      "解题思路": "本题要求生成指数退避重试的等待时间列表，第 i 次等待时间为 `min(cap, base * factor**i)`，共生成 `max_retries` 个元素（i 从 0 到 max_retries-1）。由于计算规则明确且无复杂依赖，直接采用简单的循环迭代即可：遍历 i 从 0 到 max_retries-1，按公式计算每次的等待时间并加入列表。使用列表作为结果存储结构，无需额外高级数据结构。该算法直观、高效，完全契合题目给定的确定性计算逻辑。",
+      "复杂度分析": "时间复杂度：O(max_retries)，因为需要循环 max_retries 次，每次循环内为常数时间的乘法、幂运算和取最小值操作。\n空间复杂度：O(max_retries)，用于存储返回的长度为 max_retries 的等待时间列表，除此之外仅用了常数级别的临时变量。",
+      "关键边界与处理策略": "- max_retries = 0：循环不执行，返回空列表 `[]`，符合示例。\n- max_retries = 1：只计算 i=0，返回单元素列表，如示例 `[0.5]`。\n- base 为 0 或负数：公式仍适用，min(cap, 0*factor**i)=0 或负数，按数学计算返回即可，题目未限制 base 正负。\n- factor 为 0：i=0 时为 base，i>=1 时为 0，按公式计算。\n- factor 为负数：幂运算可能产生正负交替，仍按 Python 的 `**` 运算规则计算并取 min。\n- cap 小于 base：第一次即被 cap 截断，后续也被 cap 截断，列表全为 cap。\n- 极大 max_retries 或极大 factor 导致溢出：Python 浮点数为双精度，极大值会变为 inf，min(cap, inf)=cap，不会报错，按语言特性处理。\n- 空输入：函数参数均有默认值，若调用时不传 max_retries 则使用默认，但题目给定签名中 max_retries 无默认，必须由调用者传入；若传入非整数（如 None）不在约束内，假设调用合法。",
+      "代码实现": "```python\ndef backoff_delays(max_retries: int, base: float = 1.0, factor: float = 2.0, cap: float = 60.0) -> list:\n    delays = []\n    for i in range(max_retries):\n        delay = min(cap, base * (factor ** i))\n        delays.append(delay)\n    return delays\n```",
+      "自测说明": "我通过手动代入公开测试用例验证实现：\n- `backoff_delays(3, 1.0, 2.0, 60.0)`：i=0→min(60,1)=1.0；i=1→min(60,2)=2.0；i=2→min(60,4)=4.0，得 `[1.0, 2.0, 4.0]`，与期望一致。\n- `backoff_delays(1, 0.5, 2.0, 10.0)`：i=0→min(10,0.5)=0.5，得 `[0.5]`，与期望一致。\n- `backoff_delays(0, 1.0, 2.0, 60.0)`：range(0) 不循环，得 `[]`，与期望一致。\n验证覆盖范围为题目给出的三个公开示例及对应的边界（0次、1次、多次），未测试负数 base/factor、极大值等未公开场景，如实说明未臆造额外测试结果。"
+    }
+  },
+  "elapsed_sec": 47.83,
+  "recorded_at": "2026-09-11T23:16:31"
+}

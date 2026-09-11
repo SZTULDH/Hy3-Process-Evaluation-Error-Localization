@@ -1,0 +1,217 @@
+{
+  "problem_id": "hard-008",
+  "title": "课程表（能否完成）",
+  "difficulty": "hard",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "can_finish",
+  "source_path": "datasets\\code\\hard\\can_finish.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "first_error_step": null,
+    "error_types": [],
+    "note": "正确对照样本"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "false_positive_solution": false,
+    "first_error_step": null,
+    "first_error_section": null,
+    "error_types": []
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求判断课程先修图（有向图）中是否存在环，即判断有向图是否为有向无环图（DAG）。适用的算法是拓扑排序（Topological Sort），具体采用基于入度表的 Kahn 算法。\n选择原因：Kahn 算法通过不断删除入度为 0 的节点并减少其邻接节点的入度，若最终能删除所有节点则说明无环；若剩余节点数大于 0 则说明存在环。该算法天然适合检测有向图环路，且实现简单、效率高。数据结构上使用邻接表（列表的列表或字典）存储图，队列（或列表模拟）存储当前入度为 0 的节点，以及一维数组记录各节点入度。\n\n## 2. 复杂度分析\n- 时间复杂度：O(num_courses + len(prerequisites))。推理依据：初始化入度数组和邻接表需遍历所有先修关系，耗时 O(E)（E 为边数即 len(prerequisites)）；拓扑排序中每个节点入队出队一次（O(V)，V 为 num_courses），每条边被处理一次（O(E)），总体为 O(V+E)。\n- 空间复杂度：O(num_courses + len(prerequisites))。推理依据：邻接表存储所有边占用 O(E)，入度数组占用 O(V)，队列最多存放 V 个节点占用 O(V)，合计 O(V+E)。\n\n## 3. 关键边界与处理策略\n- 空输入（prerequisites 为空）：图中没有边，所有课程入度为 0，直接全部入队处理，返回 True。\n- 单元素（num_courses=1）：无论有无先修（不可能有指向自身的合法先修除非自环），若 prerequisites 为空返回 True；若含 [0,0] 自环则入度永不为 0，返回 False。\n- 重复元素（重复先修关系如 [[1,0],[1,0]]）：建图时重复边会使入度重复加 1，但 Kahn 算法仍会正确处理（入度减多次后归零），不影响环检测，无需特殊去重。\n- 负数或非法课程编号：题目约束 num_courses>=1 且先修对为合法索引（通常 0~num_courses-1），若出现越界索引，代码会抛出 IndexError；按题意假设输入合法，不额外处理。\n- 极值（num_courses=2000，边数最多约 4e6）：使用迭代而非递归避免栈溢出，Kahn 算法线性复杂度可承受。\n- 自环（如 [0,0]）：节点入度至少为 1，无法入队，最终剩余节点数>0，返回 False。\n\n## 4. 代码实现\n```python\ndef can_finish(num_courses: int, prerequisites: list) -> bool:\n    from collections import deque\n    \n    indegree = [0] * num_courses\n    adj = [[] for _ in range(num_courses)]\n    \n    for dest, src in prerequisites:\n        adj[src].append(dest)\n        indegree[dest] += 1\n    \n    queue = deque()\n    for i in range(num_courses):\n        if indegree[i] == 0:\n            queue.append(i)\n    \n    visited = 0\n    while queue:\n        node = queue.popleft()\n        visited += 1\n        for neighbor in adj[node]:\n            indegree[neighbor] -= 1\n            if indegree[neighbor] == 0:\n                queue.append(neighbor)\n    \n    return visited == num_courses\n```\n\n## 5. 自测说明\n我通过构造与公开用例一致的手动测试来验证实现：\n- 测试 `can_finish(2, [[1,0]])`：建图后节点0入度0入队，处理0使1入度0入队，visited=2==2，返回 True，与期望一致。\n- 测试 `can_finish(2, [[1,0],[0,1]])`：节点0、1入度均1，队列空，visited=0!=2，返回 False，与期望一致。\n- 测试 `can_finish(1, [])`：节点0入度0入队，visited=1==1，返回 True，与期望一致。\n- 补充测试 `can_finish(1, [[0,0]])`：自环使入度1，visited=0，返回 False。\n- 补充测试 `can_finish(3, [[1,0],[1,2],[2,0]])`：无环，visited=3，返回 True。\n验证覆盖：公开示例、自环、单节点、多节点无环/有环情形；未覆盖大规模随机压力测试及非法输入（如负索引），如实说明未做此类臆造测试。",
+  "sections": {
+    "解题思路": "本题要求判断课程先修图（有向图）中是否存在环，即判断有向图是否为有向无环图（DAG）。适用的算法是拓扑排序（Topological Sort），具体采用基于入度表的 Kahn 算法。\n选择原因：Kahn 算法通过不断删除入度为 0 的节点并减少其邻接节点的入度，若最终能删除所有节点则说明无环；若剩余节点数大于 0 则说明存在环。该算法天然适合检测有向图环路，且实现简单、效率高。数据结构上使用邻接表（列表的列表或字典）存储图，队列（或列表模拟）存储当前入度为 0 的节点，以及一维数组记录各节点入度。",
+    "复杂度分析": "- 时间复杂度：O(num_courses + len(prerequisites))。推理依据：初始化入度数组和邻接表需遍历所有先修关系，耗时 O(E)（E 为边数即 len(prerequisites)）；拓扑排序中每个节点入队出队一次（O(V)，V 为 num_courses），每条边被处理一次（O(E)），总体为 O(V+E)。\n- 空间复杂度：O(num_courses + len(prerequisites))。推理依据：邻接表存储所有边占用 O(E)，入度数组占用 O(V)，队列最多存放 V 个节点占用 O(V)，合计 O(V+E)。",
+    "关键边界与处理策略": "- 空输入（prerequisites 为空）：图中没有边，所有课程入度为 0，直接全部入队处理，返回 True。\n- 单元素（num_courses=1）：无论有无先修（不可能有指向自身的合法先修除非自环），若 prerequisites 为空返回 True；若含 [0,0] 自环则入度永不为 0，返回 False。\n- 重复元素（重复先修关系如 [[1,0],[1,0]]）：建图时重复边会使入度重复加 1，但 Kahn 算法仍会正确处理（入度减多次后归零），不影响环检测，无需特殊去重。\n- 负数或非法课程编号：题目约束 num_courses>=1 且先修对为合法索引（通常 0~num_courses-1），若出现越界索引，代码会抛出 IndexError；按题意假设输入合法，不额外处理。\n- 极值（num_courses=2000，边数最多约 4e6）：使用迭代而非递归避免栈溢出，Kahn 算法线性复杂度可承受。\n- 自环（如 [0,0]）：节点入度至少为 1，无法入队，最终剩余节点数>0，返回 False。",
+    "代码实现": "```python\ndef can_finish(num_courses: int, prerequisites: list) -> bool:\n    from collections import deque\n    \n    indegree = [0] * num_courses\n    adj = [[] for _ in range(num_courses)]\n    \n    for dest, src in prerequisites:\n        adj[src].append(dest)\n        indegree[dest] += 1\n    \n    queue = deque()\n    for i in range(num_courses):\n        if indegree[i] == 0:\n            queue.append(i)\n    \n    visited = 0\n    while queue:\n        node = queue.popleft()\n        visited += 1\n        for neighbor in adj[node]:\n            indegree[neighbor] -= 1\n            if indegree[neighbor] == 0:\n                queue.append(neighbor)\n    \n    return visited == num_courses\n```",
+    "自测说明": "我通过构造与公开用例一致的手动测试来验证实现：\n- 测试 `can_finish(2, [[1,0]])`：建图后节点0入度0入队，处理0使1入度0入队，visited=2==2，返回 True，与期望一致。\n- 测试 `can_finish(2, [[1,0],[0,1]])`：节点0、1入度均1，队列空，visited=0!=2，返回 False，与期望一致。\n- 测试 `can_finish(1, [])`：节点0入度0入队，visited=1==1，返回 True，与期望一致。\n- 补充测试 `can_finish(1, [[0,0]])`：自环使入度1，visited=0，返回 False。\n- 补充测试 `can_finish(3, [[1,0],[1,2],[2,0]])`：无环，visited=3，返回 True。\n验证覆盖：公开示例、自环、单节点、多节点无环/有环情形；未覆盖大规模随机压力测试及非法输入（如负索引），如实说明未做此类臆造测试。"
+  },
+  "code": "def can_finish(num_courses: int, prerequisites: list) -> bool:\n    from collections import deque\n    \n    indegree = [0] * num_courses\n    adj = [[] for _ in range(num_courses)]\n    \n    for dest, src in prerequisites:\n        adj[src].append(dest)\n        indegree[dest] += 1\n    \n    queue = deque()\n    for i in range(num_courses):\n        if indegree[i] == 0:\n            queue.append(i)\n    \n    visited = 0\n    while queue:\n        node = queue.popleft()\n        visited += 1\n        for neighbor in adj[node]:\n            indegree[neighbor] -= 1\n            if indegree[neighbor] == 0:\n                queue.append(neighbor)\n    \n    return visited == num_courses",
+  "public": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 2,
+    "passed": 2,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [
+    {
+      "section": "复杂度分析",
+      "error_type": "COMPLEXITY",
+      "error_type_label": "复杂度分析错误",
+      "detail": "复杂度分析段落未给出明确的 O(...) 形式结论，无法验证。",
+      "evidence": "- 时间复杂度：O(num_courses + len(prerequisites))。推理依据：初始化入度数组和邻接表需遍历所有先修关系，耗时 O(E)（E 为边数即 len(prerequisites)）；拓扑排序中每个节点入队出队一次（O(V)，V 为 num_courses），每条边被处理一次（O(E)），总体为 O(V+E)。\n- 空间复杂度：O(num_courses + len(pr",
+      "confidence": 0.4,
+      "source": "rule"
+    }
+  ],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "解题思路正确描述了使用 Kahn 算法进行拓扑排序以检测有向图环，与题目要求和代码实现一致。",
+      "evidence": "步骤内容说明采用基于入度表的 Kahn 算法，通过删除入度为0节点判断是否有环；代码实现中构建了入度数组、邻接表、队列，并在最后返回 visited == num_courses，与思路完全吻合；signals 中测试全部通过且无实现相关错误。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [
+        "复杂度分析错误"
+      ],
+      "reason": "步骤中明确给出了时间复杂度和空间复杂度的 O(...) 形式结论（O(num_courses + len(prerequisites)) 即 O(V+E)），且推理与代码实现一致，rule_findings 的判定与步骤实际内容矛盾。",
+      "evidence": "步骤内容写明：'时间复杂度：O(num_courses + len(prerequisites))...总体为 O(V+E)'、'空间复杂度：O(num_courses + len(prerequisites))...合计 O(V+E)'；signals 中 rule_findings 称'未给出明确的 O(...) 形式结论'与原文不符。",
+      "llm_verdict": "valid",
+      "rule_types": [
+        "复杂度分析错误"
+      ],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "该步骤对空输入、单元素、重复边、自环等边界的描述与所给 Kahn 算法实现行为一致，且测试全部通过，无具体缺陷证据。",
+      "evidence": "步骤称重复边使入度重复加但 Kahn 仍正确（实现中 indegree[dest] += 1 多次，减多次后归零）；自环 [0,0] 入度至少为1无法入队返回 False（实现中 indegree[0] 初始为1，不进队，visited<num_courses 返回 False）；signals 显示 public 3/3、adversarial 2/2 全通过。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "代码实现使用标准拓扑排序（Kahn算法）判断有向图是否有环，逻辑正确且测试全部通过。",
+      "evidence": "signals中public测试3/3通过、adversarial测试2/2通过；代码构建入度表与邻接表，BFS遍历计数visited，最终返回visited==num_courses，符合O(V+E)拓扑排序实现。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "自测说明中列出的手动测试用例与代码实现行为一致，且公开与对抗测试全部通过，未发现该步骤描述与实现或信号矛盾。",
+      "evidence": "步骤内容中 can_finish(2,[[1,0]]) 等测试描述与代码拓扑排序逻辑吻合；signals 显示 public 3/3 passed、adversarial 2/2 passed，无失败样本。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    }
+  ],
+  "checker_report": {
+    "process_ok": true,
+    "code_ok": true,
+    "pseudo_correct": false,
+    "public": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [
+      {
+        "section": "复杂度分析",
+        "error_type": "COMPLEXITY",
+        "error_type_label": "复杂度分析错误",
+        "detail": "复杂度分析段落未给出明确的 O(...) 形式结论，无法验证。",
+        "evidence": "- 时间复杂度：O(num_courses + len(prerequisites))。推理依据：初始化入度数组和邻接表需遍历所有先修关系，耗时 O(E)（E 为边数即 len(prerequisites)）；拓扑排序中每个节点入队出队一次（O(V)，V 为 num_courses），每条边被处理一次（O(E)），总体为 O(V+E)。\n- 空间复杂度：O(num_courses + len(pr",
+        "confidence": 0.4,
+        "source": "rule"
+      }
+    ],
+    "forensics": [],
+    "signals": {
+      "problem_id": "hard-008",
+      "entry_point": "can_finish",
+      "max_loop_depth": 2,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": null,
+      "expected_complexity": "O(V+E)",
+      "public": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 2,
+        "passed": 2,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": [
+        {
+          "section": "复杂度分析",
+          "error_type": "COMPLEXITY",
+          "error_type_label": "复杂度分析错误",
+          "detail": "复杂度分析段落未给出明确的 O(...) 形式结论，无法验证。",
+          "evidence": "- 时间复杂度：O(num_courses + len(prerequisites))。推理依据：初始化入度数组和邻接表需遍历所有先修关系，耗时 O(E)（E 为边数即 len(prerequisites)）；拓扑排序中每个节点入队出队一次（O(V)，V 为 num_courses），每条边被处理一次（O(E)），总体为 O(V+E)。\n- 空间复杂度：O(num_courses + len(pr",
+          "confidence": 0.4,
+          "source": "rule"
+        }
+      ]
+    },
+    "code": "def can_finish(num_courses: int, prerequisites: list) -> bool:\n    from collections import deque\n    \n    indegree = [0] * num_courses\n    adj = [[] for _ in range(num_courses)]\n    \n    for dest, src in prerequisites:\n        adj[src].append(dest)\n        indegree[dest] += 1\n    \n    queue = deque()\n    for i in range(num_courses):\n        if indegree[i] == 0:\n            queue.append(i)\n    \n    visited = 0\n    while queue:\n        node = queue.popleft()\n        visited += 1\n        for neighbor in adj[node]:\n            indegree[neighbor] -= 1\n            if indegree[neighbor] == 0:\n                queue.append(neighbor)\n    \n    return visited == num_courses",
+    "llm_summary": {
+      "summary": "代码功能正确且通过全部测试，但复杂度分析段落被截断未给出完整明确结论，导致 pseudo_correct 判定为 false。",
+      "process_ok": true,
+      "code_ok": true,
+      "pseudo_correct": false,
+      "root_cause": "复杂度分析文本在证据中被截断（空间复杂度部分未写完），规则检查认为未给出明确的 O(...) 形式结论，从而标记 COMPLEXITY 错误并使 pseudo_correct=false；实际代码与算法逻辑无误。",
+      "debug_hints": [
+        "补全复杂度分析段落，明确写出：时间复杂度 O(num_courses + len(prerequisites))，空间复杂度 O(num_courses + len(prerequisites))，避免文本截断。",
+        "在生成解题过程时确保复杂度分析部分完整输出，不被后续内容或长度限制截断。",
+        "重新运行检查流程以确认补全后 pseudo_correct 变为 true。"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开与对抗测试均通过，规则层未见高置信缺陷。"
+    ],
+    "sections": {
+      "解题思路": "本题要求判断课程先修图（有向图）中是否存在环，即判断有向图是否为有向无环图（DAG）。适用的算法是拓扑排序（Topological Sort），具体采用基于入度表的 Kahn 算法。\n选择原因：Kahn 算法通过不断删除入度为 0 的节点并减少其邻接节点的入度，若最终能删除所有节点则说明无环；若剩余节点数大于 0 则说明存在环。该算法天然适合检测有向图环路，且实现简单、效率高。数据结构上使用邻接表（列表的列表或字典）存储图，队列（或列表模拟）存储当前入度为 0 的节点，以及一维数组记录各节点入度。",
+      "复杂度分析": "- 时间复杂度：O(num_courses + len(prerequisites))。推理依据：初始化入度数组和邻接表需遍历所有先修关系，耗时 O(E)（E 为边数即 len(prerequisites)）；拓扑排序中每个节点入队出队一次（O(V)，V 为 num_courses），每条边被处理一次（O(E)），总体为 O(V+E)。\n- 空间复杂度：O(num_courses + len(prerequisites))。推理依据：邻接表存储所有边占用 O(E)，入度数组占用 O(V)，队列最多存放 V 个节点占用 O(V)，合计 O(V+E)。",
+      "关键边界与处理策略": "- 空输入（prerequisites 为空）：图中没有边，所有课程入度为 0，直接全部入队处理，返回 True。\n- 单元素（num_courses=1）：无论有无先修（不可能有指向自身的合法先修除非自环），若 prerequisites 为空返回 True；若含 [0,0] 自环则入度永不为 0，返回 False。\n- 重复元素（重复先修关系如 [[1,0],[1,0]]）：建图时重复边会使入度重复加 1，但 Kahn 算法仍会正确处理（入度减多次后归零），不影响环检测，无需特殊去重。\n- 负数或非法课程编号：题目约束 num_courses>=1 且先修对为合法索引（通常 0~num_courses-1），若出现越界索引，代码会抛出 IndexError；按题意假设输入合法，不额外处理。\n- 极值（num_courses=2000，边数最多约 4e6）：使用迭代而非递归避免栈溢出，Kahn 算法线性复杂度可承受。\n- 自环（如 [0,0]）：节点入度至少为 1，无法入队，最终剩余节点数>0，返回 False。",
+      "代码实现": "```python\ndef can_finish(num_courses: int, prerequisites: list) -> bool:\n    from collections import deque\n    \n    indegree = [0] * num_courses\n    adj = [[] for _ in range(num_courses)]\n    \n    for dest, src in prerequisites:\n        adj[src].append(dest)\n        indegree[dest] += 1\n    \n    queue = deque()\n    for i in range(num_courses):\n        if indegree[i] == 0:\n            queue.append(i)\n    \n    visited = 0\n    while queue:\n        node = queue.popleft()\n        visited += 1\n        for neighbor in adj[node]:\n            indegree[neighbor] -= 1\n            if indegree[neighbor] == 0:\n                queue.append(neighbor)\n    \n    return visited == num_courses\n```",
+      "自测说明": "我通过构造与公开用例一致的手动测试来验证实现：\n- 测试 `can_finish(2, [[1,0]])`：建图后节点0入度0入队，处理0使1入度0入队，visited=2==2，返回 True，与期望一致。\n- 测试 `can_finish(2, [[1,0],[0,1]])`：节点0、1入度均1，队列空，visited=0!=2，返回 False，与期望一致。\n- 测试 `can_finish(1, [])`：节点0入度0入队，visited=1==1，返回 True，与期望一致。\n- 补充测试 `can_finish(1, [[0,0]])`：自环使入度1，visited=0，返回 False。\n- 补充测试 `can_finish(3, [[1,0],[1,2],[2,0]])`：无环，visited=3，返回 True。\n验证覆盖：公开示例、自环、单节点、多节点无环/有环情形；未覆盖大规模随机压力测试及非法输入（如负索引），如实说明未做此类臆造测试。"
+    }
+  },
+  "elapsed_sec": 77.39,
+  "recorded_at": "2026-09-11T22:56:25"
+}

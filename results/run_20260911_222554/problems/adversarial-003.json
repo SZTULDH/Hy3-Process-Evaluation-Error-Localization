@@ -1,0 +1,190 @@
+{
+  "problem_id": "adversarial-003",
+  "title": "缺失的数字（伪正确）",
+  "difficulty": "adversarial",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "missing_number",
+  "source_path": "datasets\\code\\adversarial\\missing_number.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": false,
+    "process_valid": false,
+    "first_error_step": "step_3_edge_cases",
+    "error_types": [
+      "实现逻辑缺陷",
+      "测试覆盖不足导致的伪正确"
+    ],
+    "note": "用 max 代替 n"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": false,
+    "false_positive_solution": true,
+    "first_error_step": "step_5_self_test",
+    "first_error_section": "自测说明",
+    "error_types": [
+      "幻觉",
+      "描述与实现不一致"
+    ]
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求在包含 0 到 n 中 n 个数的数组里找出缺失的那个数（数组长度为 n，本应包含 0~n 共 n+1 个数）。我选择使用数学求和法：先计算 0 到 n 的等差数列总和 expected_sum = n*(n+1)//2，再遍历数组求实际元素和 actual_sum，两者之差即为缺失的数字。该算法只需一次线性扫描和常数额外空间，逻辑直观且适用于所有合法输入。也可使用异或运算（利用 a^a=0, a^0=a 性质），但求和法更易于理解和验证。\n\n## 2. 复杂度分析\n时间复杂度：O(n)，其中 n 为数组长度。需要遍历数组一次计算实际和，等差数列求和为 O(1)，总体为线性时间。\n空间复杂度：O(1)，仅使用了固定数量的整型变量（n、expected_sum、actual_sum 等），与输入规模无关。\n\n## 3. 关键边界与处理策略\n- 空输入：根据约束 n == len(nums)，若 nums 为空则 n=0，此时应缺失 0（0~0 中缺 0），求和法 expected_sum=0, actual_sum=0，返回 0，正确。\n- 单元素：如 [1]（n=1），expected=1, actual=1，返回 0；如 [0]（n=1），expected=1, actual=0，返回 1，均正确。\n- 重复元素：题目给定是 0~n 中 n 个不同数（缺失一个），无重复；若意外重复则求和法会出错，但依题意不需处理。\n- 负数：题目限定 0~n，不含负数，无需特殊处理。\n- 极值：n 较大时（如 10^4 以上），Python 整型无溢出问题，求和法安全。\n- 缺失 0 或缺失 n：如 [1,2] 缺 0，expected=3, actual=3，返回 0；如 [0,1] 缺 2，expected=3, actual=1，返回 2，均覆盖。\n\n## 4. 代码实现\n```python\ndef missing_number(nums: list) -> int:\n    n = len(nums)\n    expected_sum = n * (n + 1) // 2\n    actual_sum = sum(nums)\n    return expected_sum - actual_sum\n```\n\n## 5. 自测说明\n我通过手动代入公开测试用例验证实现：\n- 输入 [3,0,1]：n=3, expected=6, actual=4, 返回 2，与期望一致。\n- 输入 [0,1,2,4]：n=4, expected=10, actual=7, 返回 3，与期望一致。\n- 输入 [1]：n=1, expected=1, actual=1, 返回 0，与期望一致。\n另补充自测：[] 返回 0；[0] 返回 1；[0,1] 返回 2；[1,2] 返回 0。验证覆盖空、单元素、缺 0、缺 n、常规缺失等边界，未使用自动化测试框架，未臆造额外运行结果。",
+  "sections": {
+    "解题思路": "本题要求在包含 0 到 n 中 n 个数的数组里找出缺失的那个数（数组长度为 n，本应包含 0~n 共 n+1 个数）。我选择使用数学求和法：先计算 0 到 n 的等差数列总和 expected_sum = n*(n+1)//2，再遍历数组求实际元素和 actual_sum，两者之差即为缺失的数字。该算法只需一次线性扫描和常数额外空间，逻辑直观且适用于所有合法输入。也可使用异或运算（利用 a^a=0, a^0=a 性质），但求和法更易于理解和验证。",
+    "复杂度分析": "时间复杂度：O(n)，其中 n 为数组长度。需要遍历数组一次计算实际和，等差数列求和为 O(1)，总体为线性时间。\n空间复杂度：O(1)，仅使用了固定数量的整型变量（n、expected_sum、actual_sum 等），与输入规模无关。",
+    "关键边界与处理策略": "- 空输入：根据约束 n == len(nums)，若 nums 为空则 n=0，此时应缺失 0（0~0 中缺 0），求和法 expected_sum=0, actual_sum=0，返回 0，正确。\n- 单元素：如 [1]（n=1），expected=1, actual=1，返回 0；如 [0]（n=1），expected=1, actual=0，返回 1，均正确。\n- 重复元素：题目给定是 0~n 中 n 个不同数（缺失一个），无重复；若意外重复则求和法会出错，但依题意不需处理。\n- 负数：题目限定 0~n，不含负数，无需特殊处理。\n- 极值：n 较大时（如 10^4 以上），Python 整型无溢出问题，求和法安全。\n- 缺失 0 或缺失 n：如 [1,2] 缺 0，expected=3, actual=3，返回 0；如 [0,1] 缺 2，expected=3, actual=1，返回 2，均覆盖。",
+    "代码实现": "```python\ndef missing_number(nums: list) -> int:\n    n = len(nums)\n    expected_sum = n * (n + 1) // 2\n    actual_sum = sum(nums)\n    return expected_sum - actual_sum\n```",
+    "自测说明": "我通过手动代入公开测试用例验证实现：\n- 输入 [3,0,1]：n=3, expected=6, actual=4, 返回 2，与期望一致。\n- 输入 [0,1,2,4]：n=4, expected=10, actual=7, 返回 3，与期望一致。\n- 输入 [1]：n=1, expected=1, actual=1, 返回 0，与期望一致。\n另补充自测：[] 返回 0；[0] 返回 1；[0,1] 返回 2；[1,2] 返回 0。验证覆盖空、单元素、缺 0、缺 n、常规缺失等边界，未使用自动化测试框架，未臆造额外运行结果。"
+  },
+  "code": "def missing_number(nums: list) -> int:\n    n = len(nums)\n    expected_sum = n * (n + 1) // 2\n    actual_sum = sum(nums)\n    return expected_sum - actual_sum",
+  "public": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "解题思路描述的数学求和法与代码实现一致，复杂度为O(n)符合期望，且所有测试通过无失败信号。",
+      "evidence": "步骤内容称'先计算 expected_sum = n*(n+1)//2，再遍历数组求 actual_sum，两者之差即为缺失的数字'，代码为 `expected_sum = n * (n + 1) // 2; actual_sum = sum(nums); return expected_sum - actual_sum`；signals 显示 public 和 adversarial 测试均 all_passed: true，claimed_complexity 为 'n' 对应 expected_complexity 'O(n)'。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "步骤中的复杂度分析与代码实现一致，遍历求和为O(n)、等差数列为O(1)、空间仅用固定变量，符合题目期望。",
+      "evidence": "代码使用 sum(nums) 遍历一次数组 O(n)，expected_sum 计算为 O(1)，仅用 n/expected_sum/actual_sum 等整型变量；signals 显示 claimed_complexity 为 n 且测试全通过。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "该步骤对空输入、单元素、缺失0或n等边界的分析与代码实现及测试结果一致，且未发现题意误读或逻辑缺陷。",
+      "evidence": "步骤中'[1,2]缺0，expected=3, actual=3，返回0'与代码 n=2 时 expected_sum=3 一致；signals 显示 public 和 adversarial 测试均全部通过（3/3），无失败样本。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "代码实现使用求和公式在O(n)时间内正确找出缺失数，且所有公开和对抗测试均通过。",
+      "evidence": "signals中public和adversarial测试均all_passed:true，代码逻辑为expected_sum=n*(n+1)//2减去sum(nums)，符合O(n)复杂度要求。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "flawed",
+      "confidence": 0.95,
+      "error_types": [
+        "幻觉",
+        "描述与实现不一致"
+      ],
+      "reason": "自测说明中手动代入的 expected/actual 数值与代码实现及数学事实不符，例如 [3,0,1] 按代码 n=3 时 expected_sum=6、actual_sum=4、返回 2，但说明写 expected=6, actual=4 却称与期望一致且返回 2 正确，而 [1] 按代码 n=1 时 expected=1、actual=1、返回 0，说明却写返回 0 与期望一致，这些数值描述自相矛盾且像臆造。",
+      "evidence": "步骤内容写：'[3,0,1]：n=3, expected=6, actual=4, 返回 2，与期望一致'；'[1]：n=1, expected=1, actual=1, 返回 0，与期望一致'。代码实现为 expected_sum = n*(n+1)//2, actual_sum = sum(nums), return expected_sum - actual_sum；对 [1] 实际返回 1-1=0，但说明称'与期望一致'且前面写 expected=1, actual=1 返回 0，逻辑上 expected-actual=0 却说与期望（缺失数应为0？题目说包含0到n中n个数，[1]缺0，返回0正确）但说明文字'expected=1, actual=1, 返回 0，与期望一致'表述混乱；对 [3,0,1] 返回 2 正确但说明中 expected/actual 标注方式像幻觉拼凑。s",
+      "llm_verdict": "flawed",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    }
+  ],
+  "checker_report": {
+    "process_ok": true,
+    "code_ok": true,
+    "pseudo_correct": false,
+    "public": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [],
+    "forensics": [],
+    "signals": {
+      "problem_id": "adversarial-003",
+      "entry_point": "missing_number",
+      "max_loop_depth": 0,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "n",
+      "expected_complexity": "O(n)",
+      "public": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": []
+    },
+    "code": "def missing_number(nums: list) -> int:\n    n = len(nums)\n    expected_sum = n * (n + 1) // 2\n    actual_sum = sum(nums)\n    return expected_sum - actual_sum",
+    "llm_summary": {
+      "summary": "公开与对抗测试全部通过，代码正确且非伪正确。",
+      "process_ok": true,
+      "code_ok": true,
+      "pseudo_correct": false,
+      "root_cause": "无失败用例，代码逻辑正确，不存在根因。",
+      "debug_hints": [
+        "无需调试，保持当前实现即可。"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开与对抗测试均通过，规则层未见高置信缺陷。"
+    ],
+    "sections": {
+      "解题思路": "本题要求在包含 0 到 n 中 n 个数的数组里找出缺失的那个数（数组长度为 n，本应包含 0~n 共 n+1 个数）。我选择使用数学求和法：先计算 0 到 n 的等差数列总和 expected_sum = n*(n+1)//2，再遍历数组求实际元素和 actual_sum，两者之差即为缺失的数字。该算法只需一次线性扫描和常数额外空间，逻辑直观且适用于所有合法输入。也可使用异或运算（利用 a^a=0, a^0=a 性质），但求和法更易于理解和验证。",
+      "复杂度分析": "时间复杂度：O(n)，其中 n 为数组长度。需要遍历数组一次计算实际和，等差数列求和为 O(1)，总体为线性时间。\n空间复杂度：O(1)，仅使用了固定数量的整型变量（n、expected_sum、actual_sum 等），与输入规模无关。",
+      "关键边界与处理策略": "- 空输入：根据约束 n == len(nums)，若 nums 为空则 n=0，此时应缺失 0（0~0 中缺 0），求和法 expected_sum=0, actual_sum=0，返回 0，正确。\n- 单元素：如 [1]（n=1），expected=1, actual=1，返回 0；如 [0]（n=1），expected=1, actual=0，返回 1，均正确。\n- 重复元素：题目给定是 0~n 中 n 个不同数（缺失一个），无重复；若意外重复则求和法会出错，但依题意不需处理。\n- 负数：题目限定 0~n，不含负数，无需特殊处理。\n- 极值：n 较大时（如 10^4 以上），Python 整型无溢出问题，求和法安全。\n- 缺失 0 或缺失 n：如 [1,2] 缺 0，expected=3, actual=3，返回 0；如 [0,1] 缺 2，expected=3, actual=1，返回 2，均覆盖。",
+      "代码实现": "```python\ndef missing_number(nums: list) -> int:\n    n = len(nums)\n    expected_sum = n * (n + 1) // 2\n    actual_sum = sum(nums)\n    return expected_sum - actual_sum\n```",
+      "自测说明": "我通过手动代入公开测试用例验证实现：\n- 输入 [3,0,1]：n=3, expected=6, actual=4, 返回 2，与期望一致。\n- 输入 [0,1,2,4]：n=4, expected=10, actual=7, 返回 3，与期望一致。\n- 输入 [1]：n=1, expected=1, actual=1, 返回 0，与期望一致。\n另补充自测：[] 返回 0；[0] 返回 1；[0,1] 返回 2；[1,2] 返回 0。验证覆盖空、单元素、缺 0、缺 n、常规缺失等边界，未使用自动化测试框架，未臆造额外运行结果。"
+    }
+  },
+  "elapsed_sec": 45.24,
+  "recorded_at": "2026-09-11T23:02:38"
+}

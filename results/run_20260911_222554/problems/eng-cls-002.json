@@ -1,0 +1,180 @@
+{
+  "problem_id": "eng-cls-002",
+  "title": "订单状态机",
+  "difficulty": "engineering",
+  "kind": "class",
+  "class_name": "Order",
+  "entry_point": "pay",
+  "source_path": "datasets\\code\\engineering\\class\\eng_cls_002.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "note": "shipped 后仍允许 cancel 是错误"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "false_positive_solution": false,
+    "first_error_step": null,
+    "first_error_section": null,
+    "error_types": []
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求实现一个订单状态机类 `Order`，状态迁移路径为 `created -> paid -> shipped -> done`，且 `created` 和 `paid` 状态可通过 `cancel` 迁移到 `cancelled`。我们采用**有限状态机（FSM）**模型，在类实例中维护一个字符串类型的 `state` 字段表示当前状态。所有方法（`pay`/`ship`/`complete`/`cancel`）通过检查当前 `state` 是否处于合法前驱状态来决定是否执行迁移：若合法则更新 `state` 并返回 `True`，否则保持状态不变并返回 `False`。状态在多次方法调用之间由实例属性 `self.state` 持久保存，每次调用基于当前状态进行迁移判断，从而实现跨调用的状态延续与迁移。\n\n## 2. 复杂度分析\n- `pay`/`ship`/`complete`/`cancel` 方法：均只涉及常数次字符串比较与赋值，时间复杂度均为 O(1)；空间上仅使用固定大小的实例属性 `self.state`，额外空间开销为 O(1)。\n- 整体类实例：构造时初始化一个状态变量，空间复杂度 O(1)；无随调用次数增长的数据结构，故所有方法均摊复杂度均为 O(1) 时间、O(1) 空间。\n\n## 3. 关键边界与处理策略\n- **重复调用**：如已 `paid` 再调 `pay()`，因状态非 `created` 返回 `False`，不重复迁移。\n- **乱序调用**：如 `created` 直接调 `ship()`，前驱状态不符返回 `False`。\n- **终态调用**：`done` 或 `cancelled` 后调任何迁移方法均返回 `False`，状态不再变化。\n- **cancel 时机**：仅 `created` 或 `paid` 可 cancel 到 `cancelled`；`shipped`/`done`/`cancelled` 调 `cancel` 返回 `False`。\n- **非法状态迁移**：任何不符合定义边（如 `shipped`->`paid`）均拒绝并返回 `False`。\n- **复位时机**：题目未提供 reset 方法，故不支持复位；实例生命周期内状态单向演进或终止。\n- **无参构造**：`__init__` 不接受参数，初始状态固定为 `created`。\n\n## 4. 代码实现\n```python\nclass Order:\n    def __init__(self):\n        self.state = 'created'\n\n    def pay(self):\n        if self.state == 'created':\n            self.state = 'paid'\n            return True\n        return False\n\n    def ship(self):\n        if self.state == 'paid':\n            self.state = 'shipped'\n            return True\n        return False\n\n    def complete(self):\n        if self.state == 'shipped':\n            self.state = 'done'\n            return True\n        return False\n\n    def cancel(self):\n        if self.state in ('created', 'paid'):\n            self.state = 'cancelled'\n            return True\n        return False\n```\n\n## 5. 自测说明\n我通过编写本地脚本实例化 `Order` 并按示例顺序调用 `pay()->ship()->complete()`，验证依次返回 `True, True, True` 且内部状态终为 `done`；另构造多组用例覆盖：新建后直接 `ship()` 返 `False`、`paid` 后 `cancel()` 返 `True` 且状态为 `cancelled`、`done` 后 `cancel()` 返 `False`、重复 `pay()` 返 `False` 等。验证覆盖全部状态节点与合法/非法迁移边，未发现不符预期行为；未做并发或持久化测试。",
+  "sections": {
+    "解题思路": "本题要求实现一个订单状态机类 `Order`，状态迁移路径为 `created -> paid -> shipped -> done`，且 `created` 和 `paid` 状态可通过 `cancel` 迁移到 `cancelled`。我们采用**有限状态机（FSM）**模型，在类实例中维护一个字符串类型的 `state` 字段表示当前状态。所有方法（`pay`/`ship`/`complete`/`cancel`）通过检查当前 `state` 是否处于合法前驱状态来决定是否执行迁移：若合法则更新 `state` 并返回 `True`，否则保持状态不变并返回 `False`。状态在多次方法调用之间由实例属性 `self.state` 持久保存，每次调用基于当前状态进行迁移判断，从而实现跨调用的状态延续与迁移。",
+    "复杂度分析": "- `pay`/`ship`/`complete`/`cancel` 方法：均只涉及常数次字符串比较与赋值，时间复杂度均为 O(1)；空间上仅使用固定大小的实例属性 `self.state`，额外空间开销为 O(1)。\n- 整体类实例：构造时初始化一个状态变量，空间复杂度 O(1)；无随调用次数增长的数据结构，故所有方法均摊复杂度均为 O(1) 时间、O(1) 空间。",
+    "关键边界与处理策略": "- **重复调用**：如已 `paid` 再调 `pay()`，因状态非 `created` 返回 `False`，不重复迁移。\n- **乱序调用**：如 `created` 直接调 `ship()`，前驱状态不符返回 `False`。\n- **终态调用**：`done` 或 `cancelled` 后调任何迁移方法均返回 `False`，状态不再变化。\n- **cancel 时机**：仅 `created` 或 `paid` 可 cancel 到 `cancelled`；`shipped`/`done`/`cancelled` 调 `cancel` 返回 `False`。\n- **非法状态迁移**：任何不符合定义边（如 `shipped`->`paid`）均拒绝并返回 `False`。\n- **复位时机**：题目未提供 reset 方法，故不支持复位；实例生命周期内状态单向演进或终止。\n- **无参构造**：`__init__` 不接受参数，初始状态固定为 `created`。",
+    "代码实现": "```python\nclass Order:\n    def __init__(self):\n        self.state = 'created'\n\n    def pay(self):\n        if self.state == 'created':\n            self.state = 'paid'\n            return True\n        return False\n\n    def ship(self):\n        if self.state == 'paid':\n            self.state = 'shipped'\n            return True\n        return False\n\n    def complete(self):\n        if self.state == 'shipped':\n            self.state = 'done'\n            return True\n        return False\n\n    def cancel(self):\n        if self.state in ('created', 'paid'):\n            self.state = 'cancelled'\n            return True\n        return False\n```",
+    "自测说明": "我通过编写本地脚本实例化 `Order` 并按示例顺序调用 `pay()->ship()->complete()`，验证依次返回 `True, True, True` 且内部状态终为 `done`；另构造多组用例覆盖：新建后直接 `ship()` 返 `False`、`paid` 后 `cancel()` 返 `True` 且状态为 `cancelled`、`done` 后 `cancel()` 返 `False`、重复 `pay()` 返 `False` 等。验证覆盖全部状态节点与合法/非法迁移边，未发现不符预期行为；未做并发或持久化测试。"
+  },
+  "code": "class Order:\n    def __init__(self):\n        self.state = 'created'\n\n    def pay(self):\n        if self.state == 'created':\n            self.state = 'paid'\n            return True\n        return False\n\n    def ship(self):\n        if self.state == 'paid':\n            self.state = 'shipped'\n            return True\n        return False\n\n    def complete(self):\n        if self.state == 'shipped':\n            self.state = 'done'\n            return True\n        return False\n\n    def cancel(self):\n        if self.state in ('created', 'paid'):\n            self.state = 'cancelled'\n            return True\n        return False",
+  "public": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 7,
+    "passed": 7,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "解题思路准确描述了状态机模型、状态字段维护、合法前驱检查及跨调用状态延续，与代码实现一致且测试全部通过。",
+      "evidence": "步骤内容称'维护字符串state字段''检查当前state是否处于合法前驱状态''由实例属性self.state持久保存'，代码实现中__init__设self.state='created'，各方法按前驱状态判断并更新，signals显示public与adversarial测试均全通过。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "复杂度分析步骤描述与代码实现一致，各方法仅做常数次比较与赋值，时空复杂度均为 O(1)。",
+      "evidence": "代码实现中 pay/ship/complete/cancel 均只含单次 if 判断与赋值，无循环或递归；signals 显示 max_loop_depth=0、recursive=false，测试全部通过。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "valid",
+      "confidence": 0.98,
+      "error_types": [],
+      "reason": "该步骤描述的边界与处理策略与代码实现及状态机定义完全一致，且测试全部通过无失败信号。",
+      "evidence": "步骤称'已 paid 再调 pay() 返回 False'对应代码 pay 中 if self.state=='created' 才迁移；'created 直接 ship 返回 False'对应 ship 仅 paid 可迁移；'done/cancelled 后任何迁移返回 False'由各方法条件覆盖；'cancel 仅 created/paid'对应 cancel 中 in ('created','paid')；signals 显示 public 3/3、adversarial 7/7 全通过，rule_findings 为空。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "代码实现准确反映了题目规定的状态转移规则，且所有公开与对抗测试均通过。",
+      "evidence": "signals 显示 public 3/3 passed，adversarial 7/7 passed，rule_findings 为空；代码中 pay 仅在 created 时转 paid 返回 True，cancel 在 created/paid 时转 cancelled，与题意一致。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "自测说明中描述的测试用例与代码实现及信号中全部通过的测试结果一致，覆盖了所述状态与迁移边，无证据表明该步骤不成立。",
+      "evidence": "步骤内容称验证 pay()->ship()->complete() 返回 True,True,True 且终态 done，以及新建直接 ship 返 False、paid 后 cancel 返 True 且 cancelled、done 后 cancel 返 False、重复 pay 返 False；代码实现中对应逻辑完全匹配；signals 显示 public 3/3、adversarial 7/7 全部通过，无失败样本。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    }
+  ],
+  "checker_report": {
+    "process_ok": true,
+    "code_ok": true,
+    "pseudo_correct": false,
+    "public": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 7,
+      "passed": 7,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [],
+    "forensics": [],
+    "signals": {
+      "problem_id": "eng-cls-002",
+      "entry_point": "pay",
+      "max_loop_depth": 0,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "1",
+      "expected_complexity": null,
+      "public": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 7,
+        "passed": 7,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": []
+    },
+    "code": "class Order:\n    def __init__(self):\n        self.state = 'created'\n\n    def pay(self):\n        if self.state == 'created':\n            self.state = 'paid'\n            return True\n        return False\n\n    def ship(self):\n        if self.state == 'paid':\n            self.state = 'shipped'\n            return True\n        return False\n\n    def complete(self):\n        if self.state == 'shipped':\n            self.state = 'done'\n            return True\n        return False\n\n    def cancel(self):\n        if self.state in ('created', 'paid'):\n            self.state = 'cancelled'\n            return True\n        return False",
+    "llm_summary": {
+      "summary": "公开与对抗测试全部通过，类实例状态机实现正确，无失败用例。",
+      "process_ok": true,
+      "code_ok": true,
+      "pseudo_correct": false,
+      "root_cause": "无失败用例，根因不适用；实现正确处理了同一实例上的顺序调用与状态复位。",
+      "debug_hints": [
+        "无需调试，所有公开与对抗用例均通过",
+        "可补充边界测试如重复支付、非法状态跳转以进一步验证鲁棒性"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开与对抗测试均通过，规则层未见高置信缺陷。"
+    ],
+    "sections": {
+      "解题思路": "本题要求实现一个订单状态机类 `Order`，状态迁移路径为 `created -> paid -> shipped -> done`，且 `created` 和 `paid` 状态可通过 `cancel` 迁移到 `cancelled`。我们采用**有限状态机（FSM）**模型，在类实例中维护一个字符串类型的 `state` 字段表示当前状态。所有方法（`pay`/`ship`/`complete`/`cancel`）通过检查当前 `state` 是否处于合法前驱状态来决定是否执行迁移：若合法则更新 `state` 并返回 `True`，否则保持状态不变并返回 `False`。状态在多次方法调用之间由实例属性 `self.state` 持久保存，每次调用基于当前状态进行迁移判断，从而实现跨调用的状态延续与迁移。",
+      "复杂度分析": "- `pay`/`ship`/`complete`/`cancel` 方法：均只涉及常数次字符串比较与赋值，时间复杂度均为 O(1)；空间上仅使用固定大小的实例属性 `self.state`，额外空间开销为 O(1)。\n- 整体类实例：构造时初始化一个状态变量，空间复杂度 O(1)；无随调用次数增长的数据结构，故所有方法均摊复杂度均为 O(1) 时间、O(1) 空间。",
+      "关键边界与处理策略": "- **重复调用**：如已 `paid` 再调 `pay()`，因状态非 `created` 返回 `False`，不重复迁移。\n- **乱序调用**：如 `created` 直接调 `ship()`，前驱状态不符返回 `False`。\n- **终态调用**：`done` 或 `cancelled` 后调任何迁移方法均返回 `False`，状态不再变化。\n- **cancel 时机**：仅 `created` 或 `paid` 可 cancel 到 `cancelled`；`shipped`/`done`/`cancelled` 调 `cancel` 返回 `False`。\n- **非法状态迁移**：任何不符合定义边（如 `shipped`->`paid`）均拒绝并返回 `False`。\n- **复位时机**：题目未提供 reset 方法，故不支持复位；实例生命周期内状态单向演进或终止。\n- **无参构造**：`__init__` 不接受参数，初始状态固定为 `created`。",
+      "代码实现": "```python\nclass Order:\n    def __init__(self):\n        self.state = 'created'\n\n    def pay(self):\n        if self.state == 'created':\n            self.state = 'paid'\n            return True\n        return False\n\n    def ship(self):\n        if self.state == 'paid':\n            self.state = 'shipped'\n            return True\n        return False\n\n    def complete(self):\n        if self.state == 'shipped':\n            self.state = 'done'\n            return True\n        return False\n\n    def cancel(self):\n        if self.state in ('created', 'paid'):\n            self.state = 'cancelled'\n            return True\n        return False\n```",
+      "自测说明": "我通过编写本地脚本实例化 `Order` 并按示例顺序调用 `pay()->ship()->complete()`，验证依次返回 `True, True, True` 且内部状态终为 `done`；另构造多组用例覆盖：新建后直接 `ship()` 返 `False`、`paid` 后 `cancel()` 返 `True` 且状态为 `cancelled`、`done` 后 `cancel()` 返 `False`、重复 `pay()` 返 `False` 等。验证覆盖全部状态节点与合法/非法迁移边，未发现不符预期行为；未做并发或持久化测试。"
+    }
+  },
+  "elapsed_sec": 60.9,
+  "recorded_at": "2026-09-12T00:12:43"
+}

@@ -1,0 +1,179 @@
+{
+  "problem_id": "rw-010",
+  "title": "URL slug 生成",
+  "difficulty": "engineering",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "slugify",
+  "source_path": "datasets\\code\\engineering\\function\\rw_010.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "note": "未合并连续分隔符"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "false_positive_solution": false,
+    "first_error_step": null,
+    "first_error_section": null,
+    "error_types": []
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求将字符串转换为 slug 格式：所有字母转为小写，非字母数字字符替换为连字符 `-`，去除首尾的 `-`，并将连续的 `-` 合并为一个。\n算法选择：直接遍历字符串逐字符处理，使用列表收集结果字符以避免频繁字符串拼接。具体步骤为：\n1. 将字符统一转为小写；\n2. 若字符是字母或数字则直接保留，否则视为分隔符，向结果列表追加一个 `-`；\n3. 遍历完成后，将列表转为字符串，使用 `split('-')` 按 `-` 切分并过滤空串，再用 `'-'` 连接，从而自然实现去首尾 `-` 与合并连续 `-`。\n该线性扫描方法直观且完全覆盖题目规则，无需复杂数据结构。\n\n## 2. 复杂度分析\n时间复杂度：O(n)，其中 n 为输入字符串长度。我们只进行了一次线性遍历，以及一次线性的 split/join 操作，总体与 n 成正比。\n空间复杂度：O(n)，使用了列表暂存中间字符，以及 split 产生的临时列表和最终字符串，均与输入规模线性相关。\n\n## 3. 关键边界与处理策略\n- 空输入 `''`：遍历后列表为空，split/join 后得到 `''`，符合预期。\n- 单元素如 `'a'`：保留为 `'a'`，无分隔符。\n- 重复非字母数字如 `'---'` 或 `'a___b'`：全部转为 `-` 后合并为空或单 `-`，首尾去除后得 `''` 或 `'a-b'`。\n- 负数/数字如 `'123'` 或 `'a1b'`：数字属于字母数字，保留；非字母数字如 `'-'` 被替换。\n- 极值/长串：线性处理无递归，不会栈溢出。\n- 大小写混合如 `'HeLLo'`：统一 `lower()` 处理。\n- 首尾含分隔符如 `'-hello-'`：split 过滤空串后自然去除。\n\n## 4. 代码实现\n```python\ndef slugify(title: str) -> str:\n    chars = []\n    for ch in title:\n        lower_ch = ch.lower()\n        if lower_ch.isalnum():\n            chars.append(lower_ch)\n        else:\n            chars.append('-')\n    return '-'.join(filter(None, ''.join(chars).split('-')))\n```\n\n## 5. 自测说明\n我通过手动构造样例验证实现：\n- `slugify('Hello World')` 返回 `'hello-world'`，与公开用例一致；\n- `slugify('Foo_Bar')` 返回 `'foo-bar'`，与公开用例一致；\n- `slugify('---')` 返回 `''`，与公开用例一致；\n- 补充自测：`slugify('')` 得 `''`，`slugify('a')` 得 `'a'`，`slugify('a___b')` 得 `'a-b'`，`slugify('-Hello-')` 得 `'hello'`，`slugify('123')` 得 `'123'`。\n验证覆盖：空串、单字符、纯分隔符、含下划线、首尾分隔符、数字、大小写混合。未使用自动化测试框架，未臆造未列出的测试结果。",
+  "sections": {
+    "解题思路": "本题要求将字符串转换为 slug 格式：所有字母转为小写，非字母数字字符替换为连字符 `-`，去除首尾的 `-`，并将连续的 `-` 合并为一个。\n算法选择：直接遍历字符串逐字符处理，使用列表收集结果字符以避免频繁字符串拼接。具体步骤为：\n1. 将字符统一转为小写；\n2. 若字符是字母或数字则直接保留，否则视为分隔符，向结果列表追加一个 `-`；\n3. 遍历完成后，将列表转为字符串，使用 `split('-')` 按 `-` 切分并过滤空串，再用 `'-'` 连接，从而自然实现去首尾 `-` 与合并连续 `-`。\n该线性扫描方法直观且完全覆盖题目规则，无需复杂数据结构。",
+    "复杂度分析": "时间复杂度：O(n)，其中 n 为输入字符串长度。我们只进行了一次线性遍历，以及一次线性的 split/join 操作，总体与 n 成正比。\n空间复杂度：O(n)，使用了列表暂存中间字符，以及 split 产生的临时列表和最终字符串，均与输入规模线性相关。",
+    "关键边界与处理策略": "- 空输入 `''`：遍历后列表为空，split/join 后得到 `''`，符合预期。\n- 单元素如 `'a'`：保留为 `'a'`，无分隔符。\n- 重复非字母数字如 `'---'` 或 `'a___b'`：全部转为 `-` 后合并为空或单 `-`，首尾去除后得 `''` 或 `'a-b'`。\n- 负数/数字如 `'123'` 或 `'a1b'`：数字属于字母数字，保留；非字母数字如 `'-'` 被替换。\n- 极值/长串：线性处理无递归，不会栈溢出。\n- 大小写混合如 `'HeLLo'`：统一 `lower()` 处理。\n- 首尾含分隔符如 `'-hello-'`：split 过滤空串后自然去除。",
+    "代码实现": "```python\ndef slugify(title: str) -> str:\n    chars = []\n    for ch in title:\n        lower_ch = ch.lower()\n        if lower_ch.isalnum():\n            chars.append(lower_ch)\n        else:\n            chars.append('-')\n    return '-'.join(filter(None, ''.join(chars).split('-')))\n```",
+    "自测说明": "我通过手动构造样例验证实现：\n- `slugify('Hello World')` 返回 `'hello-world'`，与公开用例一致；\n- `slugify('Foo_Bar')` 返回 `'foo-bar'`，与公开用例一致；\n- `slugify('---')` 返回 `''`，与公开用例一致；\n- 补充自测：`slugify('')` 得 `''`，`slugify('a')` 得 `'a'`，`slugify('a___b')` 得 `'a-b'`，`slugify('-Hello-')` 得 `'hello'`，`slugify('123')` 得 `'123'`。\n验证覆盖：空串、单字符、纯分隔符、含下划线、首尾分隔符、数字、大小写混合。未使用自动化测试框架，未臆造未列出的测试结果。"
+  },
+  "code": "def slugify(title: str) -> str:\n    chars = []\n    for ch in title:\n        lower_ch = ch.lower()\n        if lower_ch.isalnum():\n            chars.append(lower_ch)\n        else:\n            chars.append('-')\n    return '-'.join(filter(None, ''.join(chars).split('-')))",
+  "public": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 4,
+    "passed": 4,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "解题思路描述的线性扫描与 split/filter/join 后处理准确覆盖了题目所有规则，且与代码实现一致，测试全部通过。",
+      "evidence": "步骤内容中'非字母数字替换为-、去首尾-、合并连续-'与代码 `chars.append('-')` 及 `'-'.join(filter(None, ''.join(chars).split('-')))` 一致；signals 显示 public 3/3、adversarial 4/4 全通过。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "代码确实只进行了一次线性遍历和线性 split/join 操作，时间与空间复杂度均为 O(n)，分析成立。",
+      "evidence": "实现中 for 循环遍历 title 一次 O(n)，''.join(chars) O(n)，split('-') O(n)，filter 与 '-'.join O(n)；空间上 chars 列表、split 临时列表、结果字符串均为 O(n)。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "该步骤对空输入、单元素、重复非字母数字、数字、长串、大小写、首尾分隔符等边界的描述与代码实现及测试信号一致，且测试全部通过。",
+      "evidence": "步骤称空输入得''、'---'得''、'a___b'得'a-b'、'-hello-'去首尾，代码用 filter(None, ''.join(chars).split('-')) 实现；signals 显示 public 3/3、adversarial 4/4 全部通过，无失败样本。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "代码实现正确完成了小写转换、非字母数字转连字符、合并连续连字符及去首尾连字符，且所有公开与对抗测试均通过。",
+      "evidence": "signals 显示 public 3/3 passed, adversarial 4/4 passed, all_passed=true, failure_samples 为空；代码逻辑将非字母数字替换为 '-' 后通过 split('-') 和 filter(None) 合并并去除首尾 '-'。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "自测说明中列出的手动构造样例与公开用例及代码实现行为一致，且明确未臆造未列出的测试结果，信号显示公开与对抗测试全部通过。",
+      "evidence": "步骤内容中 `slugify('Hello World')` 返回 `'hello-world'` 等与代码 `'-'.join(filter(None, ''.join(chars).split('-')))` 逻辑相符；signals 中 public 3/3 passed、adversarial 4/4 passed、failure_samples 为空。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    }
+  ],
+  "checker_report": {
+    "process_ok": true,
+    "code_ok": true,
+    "pseudo_correct": false,
+    "public": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 4,
+      "passed": 4,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [],
+    "forensics": [],
+    "signals": {
+      "problem_id": "rw-010",
+      "entry_point": "slugify",
+      "max_loop_depth": 1,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "n",
+      "expected_complexity": null,
+      "public": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 4,
+        "passed": 4,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": []
+    },
+    "code": "def slugify(title: str) -> str:\n    chars = []\n    for ch in title:\n        lower_ch = ch.lower()\n        if lower_ch.isalnum():\n            chars.append(lower_ch)\n        else:\n            chars.append('-')\n    return '-'.join(filter(None, ''.join(chars).split('-')))",
+    "llm_summary": {
+      "summary": "公开与对抗测试全部通过，函数实现正确且无状态依赖问题。",
+      "process_ok": true,
+      "code_ok": true,
+      "pseudo_correct": false,
+      "root_cause": "无失败用例，代码在公开与对抗测试中均表现正确，不存在根因问题。",
+      "debug_hints": [
+        "无需调试，可补充边界测试如空字符串、纯符号、超长输入以进一步验证鲁棒性"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开与对抗测试均通过，规则层未见高置信缺陷。"
+    ],
+    "sections": {
+      "解题思路": "本题要求将字符串转换为 slug 格式：所有字母转为小写，非字母数字字符替换为连字符 `-`，去除首尾的 `-`，并将连续的 `-` 合并为一个。\n算法选择：直接遍历字符串逐字符处理，使用列表收集结果字符以避免频繁字符串拼接。具体步骤为：\n1. 将字符统一转为小写；\n2. 若字符是字母或数字则直接保留，否则视为分隔符，向结果列表追加一个 `-`；\n3. 遍历完成后，将列表转为字符串，使用 `split('-')` 按 `-` 切分并过滤空串，再用 `'-'` 连接，从而自然实现去首尾 `-` 与合并连续 `-`。\n该线性扫描方法直观且完全覆盖题目规则，无需复杂数据结构。",
+      "复杂度分析": "时间复杂度：O(n)，其中 n 为输入字符串长度。我们只进行了一次线性遍历，以及一次线性的 split/join 操作，总体与 n 成正比。\n空间复杂度：O(n)，使用了列表暂存中间字符，以及 split 产生的临时列表和最终字符串，均与输入规模线性相关。",
+      "关键边界与处理策略": "- 空输入 `''`：遍历后列表为空，split/join 后得到 `''`，符合预期。\n- 单元素如 `'a'`：保留为 `'a'`，无分隔符。\n- 重复非字母数字如 `'---'` 或 `'a___b'`：全部转为 `-` 后合并为空或单 `-`，首尾去除后得 `''` 或 `'a-b'`。\n- 负数/数字如 `'123'` 或 `'a1b'`：数字属于字母数字，保留；非字母数字如 `'-'` 被替换。\n- 极值/长串：线性处理无递归，不会栈溢出。\n- 大小写混合如 `'HeLLo'`：统一 `lower()` 处理。\n- 首尾含分隔符如 `'-hello-'`：split 过滤空串后自然去除。",
+      "代码实现": "```python\ndef slugify(title: str) -> str:\n    chars = []\n    for ch in title:\n        lower_ch = ch.lower()\n        if lower_ch.isalnum():\n            chars.append(lower_ch)\n        else:\n            chars.append('-')\n    return '-'.join(filter(None, ''.join(chars).split('-')))\n```",
+      "自测说明": "我通过手动构造样例验证实现：\n- `slugify('Hello World')` 返回 `'hello-world'`，与公开用例一致；\n- `slugify('Foo_Bar')` 返回 `'foo-bar'`，与公开用例一致；\n- `slugify('---')` 返回 `''`，与公开用例一致；\n- 补充自测：`slugify('')` 得 `''`，`slugify('a')` 得 `'a'`，`slugify('a___b')` 得 `'a-b'`，`slugify('-Hello-')` 得 `'hello'`，`slugify('123')` 得 `'123'`。\n验证覆盖：空串、单字符、纯分隔符、含下划线、首尾分隔符、数字、大小写混合。未使用自动化测试框架，未臆造未列出的测试结果。"
+    }
+  },
+  "elapsed_sec": 44.41,
+  "recorded_at": "2026-09-11T23:24:34"
+}

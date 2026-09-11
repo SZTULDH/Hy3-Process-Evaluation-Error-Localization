@@ -1,0 +1,223 @@
+{
+  "problem_id": "rw-014",
+  "title": "比较语义化版本",
+  "difficulty": "engineering",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "cmp_semver",
+  "source_path": "datasets\\code\\engineering\\function\\rw_014.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "note": "字符串比较会在 1.10 vs 1.2 失败"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": false,
+    "false_positive_solution": true,
+    "first_error_step": "step_2_complexity",
+    "first_error_section": "复杂度分析",
+    "error_types": [
+      "复杂度分析错误"
+    ]
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求比较两个语义化版本号（主.次.修订），缺失的段视为 0，返回 -1、0 或 1。由于版本号由最多三段非负整数组成，且比较规则明确（按主、次、修订顺序逐级比较），可直接采用字符串分割与整数转换的方法。将输入字符串按 '.' 分割成列表，不足三位的部分补 '0'，然后逐段转为整数进行比较。该算法简单直观，无需复杂数据结构，适用于本题的小规模、确定性比较场景。\n\n## 2. 复杂度分析\n时间复杂度：O(1)。版本号固定最多三段，分割与补零操作次数恒定，与输入长度无关（输入长度本身也极短）。\n空间复杂度：O(1)。仅使用固定大小的列表存储最多三个整数段，不随输入规模变化。\n\n## 3. 关键边界与处理策略\n- 空输入：题目未明确说明，但函数签名要求 str 输入；若传入空串，按 '.' 分割得 ['']，转 int 会报错。实际应假设输入为合法版本串（如 \"1\" 或 \"1.2\"），若严格处理可在分割后过滤空串或视为 0，但依题意“缺段视为 0”指段数不足而非空串，故不特殊处理空串，假定输入合法。\n- 单元素：如 \"1\" 或 \"1.2\"，缺段补 0 后为 [1,0,0] 或 [1,2,0]，正常比较。\n- 重复元素：如 \"1.0.0\" 与 \"1.0.0\"，逐段相等返回 0。\n- 负数：版本号段应为非负整数，若含负号转 int 得负数，按整数比较仍适用（但语义上非法，题目未约束，算法不特殊处理）。\n- 极值：如超大整数，Python int 无溢出问题，直接比较。\n- 多余段：如 \"1.2.3.4\"，题目仅比较主次修订，多余段忽略（按前三位比较）。\n\n## 4. 代码实现\n```python\ndef cmp_semver(a: str, b: str) -> int:\n    def parse(s: str):\n        parts = s.split('.')\n        while len(parts) < 3:\n            parts.append('0')\n        return [int(parts[0]), int(parts[1]), int(parts[2])]\n    \n    va = parse(a)\n    vb = parse(b)\n    for i in range(3):\n        if va[i] < vb[i]:\n            return -1\n        elif va[i] > vb[i]:\n            return 1\n    return 0\n```\n\n## 5. 自测说明\n验证方式：使用题目公开示例及补充边界用例手动推演代码逻辑。公开用例：('1.2.3','1.2.4') 补零后 [1,2,3] vs [1,2,4] 第三位 3<4 返回 -1；('2.0.0','1.9.9') 首位 2>1 返回 1；('1.0.0','1.0.0') 全等返回 0。补充用例：('1','1.0.1') 解析为 [1,0,0] vs [1,0,1] 返回 -1；('1.2','1.2.0') 返回 0。验证覆盖：段数不足、相等、主/次/修订各级差异，未覆盖空串及非法字符（依题意假定合法输入）。未实际运行代码，仅逻辑走查。",
+  "sections": {
+    "解题思路": "本题要求比较两个语义化版本号（主.次.修订），缺失的段视为 0，返回 -1、0 或 1。由于版本号由最多三段非负整数组成，且比较规则明确（按主、次、修订顺序逐级比较），可直接采用字符串分割与整数转换的方法。将输入字符串按 '.' 分割成列表，不足三位的部分补 '0'，然后逐段转为整数进行比较。该算法简单直观，无需复杂数据结构，适用于本题的小规模、确定性比较场景。",
+    "复杂度分析": "时间复杂度：O(1)。版本号固定最多三段，分割与补零操作次数恒定，与输入长度无关（输入长度本身也极短）。\n空间复杂度：O(1)。仅使用固定大小的列表存储最多三个整数段，不随输入规模变化。",
+    "关键边界与处理策略": "- 空输入：题目未明确说明，但函数签名要求 str 输入；若传入空串，按 '.' 分割得 ['']，转 int 会报错。实际应假设输入为合法版本串（如 \"1\" 或 \"1.2\"），若严格处理可在分割后过滤空串或视为 0，但依题意“缺段视为 0”指段数不足而非空串，故不特殊处理空串，假定输入合法。\n- 单元素：如 \"1\" 或 \"1.2\"，缺段补 0 后为 [1,0,0] 或 [1,2,0]，正常比较。\n- 重复元素：如 \"1.0.0\" 与 \"1.0.0\"，逐段相等返回 0。\n- 负数：版本号段应为非负整数，若含负号转 int 得负数，按整数比较仍适用（但语义上非法，题目未约束，算法不特殊处理）。\n- 极值：如超大整数，Python int 无溢出问题，直接比较。\n- 多余段：如 \"1.2.3.4\"，题目仅比较主次修订，多余段忽略（按前三位比较）。",
+    "代码实现": "```python\ndef cmp_semver(a: str, b: str) -> int:\n    def parse(s: str):\n        parts = s.split('.')\n        while len(parts) < 3:\n            parts.append('0')\n        return [int(parts[0]), int(parts[1]), int(parts[2])]\n    \n    va = parse(a)\n    vb = parse(b)\n    for i in range(3):\n        if va[i] < vb[i]:\n            return -1\n        elif va[i] > vb[i]:\n            return 1\n    return 0\n```",
+    "自测说明": "验证方式：使用题目公开示例及补充边界用例手动推演代码逻辑。公开用例：('1.2.3','1.2.4') 补零后 [1,2,3] vs [1,2,4] 第三位 3<4 返回 -1；('2.0.0','1.9.9') 首位 2>1 返回 1；('1.0.0','1.0.0') 全等返回 0。补充用例：('1','1.0.1') 解析为 [1,0,0] vs [1,0,1] 返回 -1；('1.2','1.2.0') 返回 0。验证覆盖：段数不足、相等、主/次/修订各级差异，未覆盖空串及非法字符（依题意假定合法输入）。未实际运行代码，仅逻辑走查。"
+  },
+  "code": "def cmp_semver(a: str, b: str) -> int:\n    def parse(s: str):\n        parts = s.split('.')\n        while len(parts) < 3:\n            parts.append('0')\n        return [int(parts[0]), int(parts[1]), int(parts[2])]\n    \n    va = parse(a)\n    vb = parse(b)\n    for i in range(3):\n        if va[i] < vb[i]:\n            return -1\n        elif va[i] > vb[i]:\n            return 1\n    return 0",
+  "public": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 4,
+    "passed": 4,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [
+    {
+      "section": "复杂度分析",
+      "error_type": "COMPLEXITY",
+      "error_type_label": "复杂度分析错误",
+      "detail": "声称时间复杂度 1，但代码中检测到最大循环嵌套深度为 1，实际下界约为 n。",
+      "evidence": "AST 静态分析：max_loop_depth=1, recursive=False",
+      "confidence": 0.7,
+      "source": "rule"
+    }
+  ],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "suspicious",
+      "confidence": 0.6,
+      "error_types": [
+        "描述与实现不一致"
+      ],
+      "reason": "解题思路称'无需复杂数据结构，适用于小规模确定性比较'且未提复杂度，但信号显示实现中声称复杂度为1而实际有循环，思路描述未反映实现中的循环比较逻辑细节。",
+      "evidence": "步骤内容：'该算法简单直观，无需复杂数据结构，适用于本题的小规模、确定性比较场景'；signals中rule_findings指出'声称时间复杂度 1，但代码中检测到最大循环嵌套深度为 1'，而步骤内容未说明具体比较循环，仅泛泛描述。",
+      "llm_verdict": "suspicious",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "flawed",
+      "confidence": 0.9,
+      "error_types": [
+        "复杂度分析错误"
+      ],
+      "reason": "声称时间复杂度 1，但代码中检测到最大循环嵌套深度为 1，实际下界约为 n。 Critic 补充：步骤声称时间复杂度 O(1) 与输入长度无关，但代码中 split 和循环解析实际处理输入字符串，长度可变，静态分析也指出存在循环且下界约为 n。",
+      "evidence": "AST 静态分析：max_loop_depth=1, recursive=False",
+      "llm_verdict": "flawed",
+      "rule_types": [
+        "复杂度分析错误"
+      ],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "suspicious",
+      "confidence": 0.6,
+      "error_types": [
+        "边界处理缺失"
+      ],
+      "reason": "步骤声称不特殊处理空串并假定输入合法，但代码实现中若传入空串会执行 int('') 报错，与'假定合法'的自述在严格性上存在未验证的边界缺口。",
+      "evidence": "步骤内容：'若传入空串，按 '.' 分割得 ['']，转 int 会报错...故不特殊处理空串，假定输入合法'；代码实现 parse 中直接 int(parts[i]) 无空串防护；signals 中测试全通过但未覆盖空串场景。",
+      "llm_verdict": "suspicious",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "代码实现正确解析了主次修订号、缺段补零并逐段比较返回-1/0/1，公开与对抗测试全部通过，无实现逻辑缺陷。",
+      "evidence": "signals 中 public: 3/3 passed, adversarial: 4/4 passed, all_passed=true；代码将 split('.') 后不足3段补'0'并转int比较，符合题目要求。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "suspicious",
+      "confidence": 0.6,
+      "error_types": [
+        "测试覆盖不足导致的伪正确"
+      ],
+      "reason": "自测说明仅通过手动逻辑走查验证，未实际运行代码，且明确未覆盖空串及非法字符，虽公开与对抗测试均通过，但自测步骤本身覆盖不足且非执行验证。",
+      "evidence": "步骤内容写明'未实际运行代码，仅逻辑走查'且'未覆盖空串及非法字符（依题意假定合法输入）'；signals 中 public 与 adversarial 均 all_passed=true 但自测步骤未包含这些执行结果作为依据。",
+      "llm_verdict": "suspicious",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    }
+  ],
+  "checker_report": {
+    "process_ok": false,
+    "code_ok": true,
+    "pseudo_correct": true,
+    "public": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 4,
+      "passed": 4,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [
+      {
+        "section": "复杂度分析",
+        "error_type": "COMPLEXITY",
+        "error_type_label": "复杂度分析错误",
+        "detail": "声称时间复杂度 1，但代码中检测到最大循环嵌套深度为 1，实际下界约为 n。",
+        "evidence": "AST 静态分析：max_loop_depth=1, recursive=False",
+        "confidence": 0.7,
+        "source": "rule"
+      }
+    ],
+    "forensics": [],
+    "signals": {
+      "problem_id": "rw-014",
+      "entry_point": "cmp_semver",
+      "max_loop_depth": 1,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "1",
+      "expected_complexity": null,
+      "public": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 4,
+        "passed": 4,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": [
+        {
+          "section": "复杂度分析",
+          "error_type": "COMPLEXITY",
+          "error_type_label": "复杂度分析错误",
+          "detail": "声称时间复杂度 1，但代码中检测到最大循环嵌套深度为 1，实际下界约为 n。",
+          "evidence": "AST 静态分析：max_loop_depth=1, recursive=False",
+          "confidence": 0.7,
+          "source": "rule"
+        }
+      ]
+    },
+    "code": "def cmp_semver(a: str, b: str) -> int:\n    def parse(s: str):\n        parts = s.split('.')\n        while len(parts) < 3:\n            parts.append('0')\n        return [int(parts[0]), int(parts[1]), int(parts[2])]\n    \n    va = parse(a)\n    vb = parse(b)\n    for i in range(3):\n        if va[i] < vb[i]:\n            return -1\n        elif va[i] > vb[i]:\n            return 1\n    return 0",
+    "llm_summary": {
+      "summary": "代码功能正确通过全部公开与对抗测试，但复杂度分析声称 O(1) 与实际 O(n) 不符。",
+      "process_ok": false,
+      "code_ok": true,
+      "pseudo_correct": true,
+      "root_cause": "解题过程中的复杂度分析错误：将含单层循环（遍历版本字符串分段）的实现误判为时间复杂度 O(1)，实际为 O(n)。",
+      "debug_hints": [
+        "修正复杂度分析：说明函数需按 '.' 分割并遍历各段数字，时间复杂度为 O(n)（n 为版本字符串长度或段数），空间复杂度 O(n) 或 O(1) 视实现而定。",
+        "检查代码中是否存在对输入字符串的 split 与循环比较，确认循环上界与输入规模相关。"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开测试通过但对抗失败：优先检查边界归一化、空/单元素、类型边界，并用 sandbox-debugger 在失败入参上下断点观察局部变量。",
+      "[COMPLEXITY] 声称时间复杂度 1，但代码中检测到最大循环嵌套深度为 1，实际下界约为 n。"
+    ],
+    "sections": {
+      "解题思路": "本题要求比较两个语义化版本号（主.次.修订），缺失的段视为 0，返回 -1、0 或 1。由于版本号由最多三段非负整数组成，且比较规则明确（按主、次、修订顺序逐级比较），可直接采用字符串分割与整数转换的方法。将输入字符串按 '.' 分割成列表，不足三位的部分补 '0'，然后逐段转为整数进行比较。该算法简单直观，无需复杂数据结构，适用于本题的小规模、确定性比较场景。",
+      "复杂度分析": "时间复杂度：O(1)。版本号固定最多三段，分割与补零操作次数恒定，与输入长度无关（输入长度本身也极短）。\n空间复杂度：O(1)。仅使用固定大小的列表存储最多三个整数段，不随输入规模变化。",
+      "关键边界与处理策略": "- 空输入：题目未明确说明，但函数签名要求 str 输入；若传入空串，按 '.' 分割得 ['']，转 int 会报错。实际应假设输入为合法版本串（如 \"1\" 或 \"1.2\"），若严格处理可在分割后过滤空串或视为 0，但依题意“缺段视为 0”指段数不足而非空串，故不特殊处理空串，假定输入合法。\n- 单元素：如 \"1\" 或 \"1.2\"，缺段补 0 后为 [1,0,0] 或 [1,2,0]，正常比较。\n- 重复元素：如 \"1.0.0\" 与 \"1.0.0\"，逐段相等返回 0。\n- 负数：版本号段应为非负整数，若含负号转 int 得负数，按整数比较仍适用（但语义上非法，题目未约束，算法不特殊处理）。\n- 极值：如超大整数，Python int 无溢出问题，直接比较。\n- 多余段：如 \"1.2.3.4\"，题目仅比较主次修订，多余段忽略（按前三位比较）。",
+      "代码实现": "```python\ndef cmp_semver(a: str, b: str) -> int:\n    def parse(s: str):\n        parts = s.split('.')\n        while len(parts) < 3:\n            parts.append('0')\n        return [int(parts[0]), int(parts[1]), int(parts[2])]\n    \n    va = parse(a)\n    vb = parse(b)\n    for i in range(3):\n        if va[i] < vb[i]:\n            return -1\n        elif va[i] > vb[i]:\n            return 1\n    return 0\n```",
+      "自测说明": "验证方式：使用题目公开示例及补充边界用例手动推演代码逻辑。公开用例：('1.2.3','1.2.4') 补零后 [1,2,3] vs [1,2,4] 第三位 3<4 返回 -1；('2.0.0','1.9.9') 首位 2>1 返回 1；('1.0.0','1.0.0') 全等返回 0。补充用例：('1','1.0.1') 解析为 [1,0,0] vs [1,0,1] 返回 -1；('1.2','1.2.0') 返回 0。验证覆盖：段数不足、相等、主/次/修订各级差异，未覆盖空串及非法字符（依题意假定合法输入）。未实际运行代码，仅逻辑走查。"
+    }
+  },
+  "elapsed_sec": 72.62,
+  "recorded_at": "2026-09-11T23:28:32"
+}

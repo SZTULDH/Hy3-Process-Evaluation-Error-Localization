@@ -1,0 +1,181 @@
+{
+  "problem_id": "rw-004",
+  "title": "解析简易 .env 行",
+  "difficulty": "engineering",
+  "kind": "function",
+  "class_name": null,
+  "entry_point": "parse_env",
+  "source_path": "datasets\\code\\engineering\\function\\rw_004.json",
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "note": "未处理注释或引号会失败"
+  },
+  "verdict": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "false_positive_solution": false,
+    "first_error_step": null,
+    "first_error_section": null,
+    "error_types": []
+  },
+  "raw_solution": "## 1. 解题思路\n本题要求解析多行 `.env` 格式文本，提取键值对并忽略空行与注释。选择逐行扫描的字符串处理算法：按换行符切分文本，对每一行先去除首尾空白，若为空或以 `#` 开头则跳过；否则查找第一个 `=` 分割键与值，键取 `=` 左侧去空白，值取右侧去空白后若被成对单引号或双引号包围则去掉引号。使用字典存储结果。该算法直接模拟 `.env` 解析规则，无需复杂数据结构，线性扫描即可完成，适用于本题无嵌套、无转义约束的场景。\n\n## 2. 复杂度分析\n时间复杂度：O(n)，其中 n 为输入字符串总长度。需遍历每个字符一次以切分与处理，分割与去引号均为线性操作。\n空间复杂度：O(m)，m 为解析出的键值对数量及键值总长度，用于存储返回字典及中间行列表，最坏情况下与输入规模同阶。\n\n## 3. 关键边界与处理策略\n- 空输入 `\"\"`：切分后无有效行，返回空 dict。\n- 单元素如 `\"A=1\"`：正常解析为 `{'A':'1'}`。\n- 重复键：后出现覆盖先出现，符合常见 env 语义。\n- 负数/特殊值如 `K=-1`：作为普通字符串值处理，不解析类型。\n- 极值/超长行：按行处理不限制长度，但受内存限制。\n- 空行与纯空白行：strip 后为空则跳过。\n- `#` 注释：行首（去空白后）为 `#` 则跳过；行内 `#` 不视为注释（依题意仅忽略注释行）。\n- 无 `=` 的行：跳过不报错。\n- 成对引号：值两端同是 `\"` 或 `'` 且长度≥2 时去除；单侧引号或嵌套引号保留原样。\n- 键或值为空：如 `=v` 或 `K=`，键或值取空串存入。\n\n## 4. 代码实现\n```python\ndef parse_env(text: str) -> dict:\n    result = {}\n    if not text:\n        return result\n    lines = text.split('\\n')\n    for line in lines:\n        stripped = line.strip()\n        if not stripped or stripped.startswith('#'):\n            continue\n        if '=' not in stripped:\n            continue\n        key, val = stripped.split('=', 1)\n        key = key.strip()\n        val = val.strip()\n        if len(val) >= 2:\n            if (val[0] == '\"' and val[-1] == '\"') or (val[0] == \"'\" and val[-1] == \"'\"):\n                val = val[1:-1]\n        result[key] = val\n    return result\n```\n\n## 5. 自测说明\n依据公开用例在脑中/本地解释器中验证：输入 `\"A=1\\nB=2\"` 得 `{'A':'1','B':'2'}`；`\"# c\\nX=y\"` 得 `{'X':'y'}`；`'NAME=\"hello\"'` 得 `{'NAME':'hello'}`。另手工构造空串、单键、重复键、空值、单引号值、无等号行等用例走查代码逻辑，确认跳过与去引号行为符合预期。未运行完整测试框架，覆盖范围为上述手工用例及公开示例，无臆造运行结果。",
+  "sections": {
+    "解题思路": "本题要求解析多行 `.env` 格式文本，提取键值对并忽略空行与注释。选择逐行扫描的字符串处理算法：按换行符切分文本，对每一行先去除首尾空白，若为空或以 `#` 开头则跳过；否则查找第一个 `=` 分割键与值，键取 `=` 左侧去空白，值取右侧去空白后若被成对单引号或双引号包围则去掉引号。使用字典存储结果。该算法直接模拟 `.env` 解析规则，无需复杂数据结构，线性扫描即可完成，适用于本题无嵌套、无转义约束的场景。",
+    "复杂度分析": "时间复杂度：O(n)，其中 n 为输入字符串总长度。需遍历每个字符一次以切分与处理，分割与去引号均为线性操作。\n空间复杂度：O(m)，m 为解析出的键值对数量及键值总长度，用于存储返回字典及中间行列表，最坏情况下与输入规模同阶。",
+    "关键边界与处理策略": "- 空输入 `\"\"`：切分后无有效行，返回空 dict。\n- 单元素如 `\"A=1\"`：正常解析为 `{'A':'1'}`。\n- 重复键：后出现覆盖先出现，符合常见 env 语义。\n- 负数/特殊值如 `K=-1`：作为普通字符串值处理，不解析类型。\n- 极值/超长行：按行处理不限制长度，但受内存限制。\n- 空行与纯空白行：strip 后为空则跳过。\n- `#` 注释：行首（去空白后）为 `#` 则跳过；行内 `#` 不视为注释（依题意仅忽略注释行）。\n- 无 `=` 的行：跳过不报错。\n- 成对引号：值两端同是 `\"` 或 `'` 且长度≥2 时去除；单侧引号或嵌套引号保留原样。\n- 键或值为空：如 `=v` 或 `K=`，键或值取空串存入。",
+    "代码实现": "```python\ndef parse_env(text: str) -> dict:\n    result = {}\n    if not text:\n        return result\n    lines = text.split('\\n')\n    for line in lines:\n        stripped = line.strip()\n        if not stripped or stripped.startswith('#'):\n            continue\n        if '=' not in stripped:\n            continue\n        key, val = stripped.split('=', 1)\n        key = key.strip()\n        val = val.strip()\n        if len(val) >= 2:\n            if (val[0] == '\"' and val[-1] == '\"') or (val[0] == \"'\" and val[-1] == \"'\"):\n                val = val[1:-1]\n        result[key] = val\n    return result\n```",
+    "自测说明": "依据公开用例在脑中/本地解释器中验证：输入 `\"A=1\\nB=2\"` 得 `{'A':'1','B':'2'}`；`\"# c\\nX=y\"` 得 `{'X':'y'}`；`'NAME=\"hello\"'` 得 `{'NAME':'hello'}`。另手工构造空串、单键、重复键、空值、单引号值、无等号行等用例走查代码逻辑，确认跳过与去引号行为符合预期。未运行完整测试框架，覆盖范围为上述手工用例及公开示例，无臆造运行结果。"
+  },
+  "code": "def parse_env(text: str) -> dict:\n    result = {}\n    if not text:\n        return result\n    lines = text.split('\\n')\n    for line in lines:\n        stripped = line.strip()\n        if not stripped or stripped.startswith('#'):\n            continue\n        if '=' not in stripped:\n            continue\n        key, val = stripped.split('=', 1)\n        key = key.strip()\n        val = val.strip()\n        if len(val) >= 2:\n            if (val[0] == '\"' and val[-1] == '\"') or (val[0] == \"'\" and val[-1] == \"'\"):\n                val = val[1:-1]\n        result[key] = val\n    return result",
+  "public": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "adversarial": {
+    "total": 5,
+    "passed": 5,
+    "failed": 0,
+    "all_passed": true,
+    "failure_samples": []
+  },
+  "rule_findings": [],
+  "section_verdicts": [
+    {
+      "section": "解题思路",
+      "step_id": "step_1_approach",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "解题思路描述与代码实现一致，且公开与对抗测试全部通过，无证据表明该步骤描述有误。",
+      "evidence": "思路称'按换行符切分、去空白、跳过空行与#、找第一个=分割、去成对引号'，代码用split('\\n')、strip()、startswith('#')、split('=',1)、判断首尾引号去引号，完全对应；signals显示public 3/3、adversarial 5/5通过，rule_findings为空。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "复杂度分析",
+      "step_id": "step_2_complexity",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "复杂度分析描述与实现一致：代码对输入字符串按行分割后线性遍历处理，时间和空间复杂度分析正确。",
+      "evidence": "实现中 text.split('\\n') 后 for line in lines 单层循环，每个字符在 strip/split 等操作中被处理常数次；空间上 result 字典和 lines 列表规模与输入及键值对数量同阶，与步骤中 O(n)/O(m) 描述吻合。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "关键边界与处理策略",
+      "step_id": "step_3_edge_cases",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "该步骤列出的边界与处理策略与代码实现一致，且公开与对抗测试全部通过，无具体证据表明存在缺陷。",
+      "evidence": "步骤内容中'行内 # 不视为注释'、'成对引号去除'、'无=跳过'、'空键值存空串'等均在代码中有对应实现（如 stripped.startswith('#') 仅判断行首、val[0]==val[-1] 去引号、'=' not in stripped 跳过、key/val 可为空）；signals 显示 public 3/3、adversarial 5/5 全通过，rule_findings 为空。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "代码实现",
+      "step_id": "step_4_implementation",
+      "verdict": "valid",
+      "confidence": 0.95,
+      "error_types": [],
+      "reason": "代码实现正确处理了空行、注释、KEY=VALUE解析及成对引号去除，且所有公开与对抗测试均通过，无静态分析告警。",
+      "evidence": "signals中public: 3/3 passed, adversarial: 5/5 passed, rule_findings: []；代码逻辑覆盖strip、startswith('#')、split('=',1)、引号配对剥离。",
+      "llm_verdict": "valid",
+      "rule_types": [],
+      "signal_agreement": "agree"
+    },
+    {
+      "section": "自测说明",
+      "step_id": "step_5_self_test",
+      "verdict": "suspicious",
+      "confidence": 0.7,
+      "error_types": [
+        "测试覆盖不足导致的伪正确"
+      ],
+      "reason": "自测说明仅依赖手工构造的少量用例和公开示例，未运行完整测试框架，虽信号显示全部通过，但覆盖有限可能遗漏边界情形。",
+      "evidence": "步骤内容称'未运行完整测试框架，覆盖范围为上述手工用例及公开示例'；signals 中 public 3/3、adversarial 5/5 通过，但自测说明本身承认未用完整框架验证。",
+      "llm_verdict": "suspicious",
+      "rule_types": [],
+      "signal_agreement": "llm_only"
+    }
+  ],
+  "checker_report": {
+    "process_ok": true,
+    "code_ok": true,
+    "pseudo_correct": false,
+    "public": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "adversarial": {
+      "total": 5,
+      "passed": 5,
+      "failed": 0,
+      "all_passed": true,
+      "failure_samples": []
+    },
+    "findings": [],
+    "forensics": [],
+    "signals": {
+      "problem_id": "rw-004",
+      "entry_point": "parse_env",
+      "max_loop_depth": 1,
+      "recursive": false,
+      "parse_error": null,
+      "claimed_complexity": "n",
+      "expected_complexity": null,
+      "public": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "adversarial": {
+        "total": 5,
+        "passed": 5,
+        "failed": 0,
+        "all_passed": true,
+        "failure_samples": []
+      },
+      "rule_findings": []
+    },
+    "code": "def parse_env(text: str) -> dict:\n    result = {}\n    if not text:\n        return result\n    lines = text.split('\\n')\n    for line in lines:\n        stripped = line.strip()\n        if not stripped or stripped.startswith('#'):\n            continue\n        if '=' not in stripped:\n            continue\n        key, val = stripped.split('=', 1)\n        key = key.strip()\n        val = val.strip()\n        if len(val) >= 2:\n            if (val[0] == '\"' and val[-1] == '\"') or (val[0] == \"'\" and val[-1] == \"'\"):\n                val = val[1:-1]\n        result[key] = val\n    return result",
+    "llm_summary": {
+      "summary": "公开与对抗测试全部通过，函数实现正确且无状态问题。",
+      "process_ok": true,
+      "code_ok": true,
+      "pseudo_correct": false,
+      "root_cause": "无失败用例，代码与逻辑均正确。",
+      "debug_hints": [
+        "无需调试，保持当前实现即可。"
+      ],
+      "failed_case_analysis": []
+    },
+    "debug_hints": [
+      "公开与对抗测试均通过，规则层未见高置信缺陷。"
+    ],
+    "sections": {
+      "解题思路": "本题要求解析多行 `.env` 格式文本，提取键值对并忽略空行与注释。选择逐行扫描的字符串处理算法：按换行符切分文本，对每一行先去除首尾空白，若为空或以 `#` 开头则跳过；否则查找第一个 `=` 分割键与值，键取 `=` 左侧去空白，值取右侧去空白后若被成对单引号或双引号包围则去掉引号。使用字典存储结果。该算法直接模拟 `.env` 解析规则，无需复杂数据结构，线性扫描即可完成，适用于本题无嵌套、无转义约束的场景。",
+      "复杂度分析": "时间复杂度：O(n)，其中 n 为输入字符串总长度。需遍历每个字符一次以切分与处理，分割与去引号均为线性操作。\n空间复杂度：O(m)，m 为解析出的键值对数量及键值总长度，用于存储返回字典及中间行列表，最坏情况下与输入规模同阶。",
+      "关键边界与处理策略": "- 空输入 `\"\"`：切分后无有效行，返回空 dict。\n- 单元素如 `\"A=1\"`：正常解析为 `{'A':'1'}`。\n- 重复键：后出现覆盖先出现，符合常见 env 语义。\n- 负数/特殊值如 `K=-1`：作为普通字符串值处理，不解析类型。\n- 极值/超长行：按行处理不限制长度，但受内存限制。\n- 空行与纯空白行：strip 后为空则跳过。\n- `#` 注释：行首（去空白后）为 `#` 则跳过；行内 `#` 不视为注释（依题意仅忽略注释行）。\n- 无 `=` 的行：跳过不报错。\n- 成对引号：值两端同是 `\"` 或 `'` 且长度≥2 时去除；单侧引号或嵌套引号保留原样。\n- 键或值为空：如 `=v` 或 `K=`，键或值取空串存入。",
+      "代码实现": "```python\ndef parse_env(text: str) -> dict:\n    result = {}\n    if not text:\n        return result\n    lines = text.split('\\n')\n    for line in lines:\n        stripped = line.strip()\n        if not stripped or stripped.startswith('#'):\n            continue\n        if '=' not in stripped:\n            continue\n        key, val = stripped.split('=', 1)\n        key = key.strip()\n        val = val.strip()\n        if len(val) >= 2:\n            if (val[0] == '\"' and val[-1] == '\"') or (val[0] == \"'\" and val[-1] == \"'\"):\n                val = val[1:-1]\n        result[key] = val\n    return result\n```",
+      "自测说明": "依据公开用例在脑中/本地解释器中验证：输入 `\"A=1\\nB=2\"` 得 `{'A':'1','B':'2'}`；`\"# c\\nX=y\"` 得 `{'X':'y'}`；`'NAME=\"hello\"'` 得 `{'NAME':'hello'}`。另手工构造空串、单键、重复键、空值、单引号值、无等号行等用例走查代码逻辑，确认跳过与去引号行为符合预期。未运行完整测试框架，覆盖范围为上述手工用例及公开示例，无臆造运行结果。"
+    }
+  },
+  "elapsed_sec": 47.95,
+  "recorded_at": "2026-09-11T23:18:48"
+}
