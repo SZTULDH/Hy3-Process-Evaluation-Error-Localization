@@ -1,0 +1,24 @@
+{
+  "id": "rw-005",
+  "difficulty": "engineering",
+  "kind": "function",
+  "category": "engineering",
+  "title": "Webhook 时间窗校验",
+  "description": "校验签名时间戳 ts 相对 now 是否在 tolerance 秒内（含边界）。",
+  "function_signature": "def webhook_ts_valid(ts: float, now: float, tolerance: float = 300.0) -> bool",
+  "entry_point": "webhook_ts_valid",
+  "language": "python",
+  "dependencies": [],
+  "public_tests": [
+    {"args": [1000.0, 1100.0, 300.0], "expected": true},
+    {"args": [1000.0, 1400.0, 300.0], "expected": false},
+    {"args": [1000.0, 1000.0, 0.0], "expected": true}
+  ],
+  "adversarial_tests": [
+    {"args": [1000.0, 1300.0, 300.0], "expected": true},
+    {"args": [1000.0, 1300.1, 300.0], "expected": false},
+    {"args": [1200.0, 1000.0, 300.0], "expected": true},
+    {"args": [1400.0, 1000.0, 300.0], "expected": false}
+  ],
+  "ground_truth": {"result_correct": true, "truly_correct": true, "process_valid": true, "note": "只检查过去不检查未来会失败"}
+}

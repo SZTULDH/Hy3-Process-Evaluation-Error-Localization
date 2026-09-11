@@ -1,0 +1,24 @@
+{
+  "id": "rw-019",
+  "difficulty": "engineering",
+  "kind": "function",
+  "category": "engineering",
+  "title": "角色权限蕴含",
+  "description": "admin > editor > viewer；未知角色 False。",
+  "function_signature": "def role_implies(have: str, need: str) -> bool",
+  "entry_point": "role_implies",
+  "language": "python",
+  "dependencies": [],
+  "public_tests": [
+    {"args": ["admin", "viewer"], "expected": true},
+    {"args": ["viewer", "admin"], "expected": false},
+    {"args": ["editor", "editor"], "expected": true}
+  ],
+  "adversarial_tests": [
+    {"args": ["editor", "viewer"], "expected": true},
+    {"args": ["viewer", "editor"], "expected": false},
+    {"args": ["admin", "admin"], "expected": true},
+    {"args": ["root", "viewer"], "expected": false}
+  ],
+  "ground_truth": {"result_correct": true, "truly_correct": true, "process_valid": true, "note": "未知角色当 admin 是漏洞"}
+}

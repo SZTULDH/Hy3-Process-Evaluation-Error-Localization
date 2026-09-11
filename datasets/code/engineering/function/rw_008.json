@@ -1,0 +1,24 @@
+{
+  "id": "rw-008",
+  "difficulty": "engineering",
+  "kind": "function",
+  "category": "engineering",
+  "title": "安全路径拼接",
+  "description": "拼接 base_dir 与 user_path；规范化后若不在 base_dir 下返回 None。POSIX 风格，不访问磁盘。",
+  "function_signature": "def safe_join(base_dir: str, user_path: str) -> str | None",
+  "entry_point": "safe_join",
+  "language": "python",
+  "dependencies": [],
+  "public_tests": [
+    {"args": ["/var/data", "a/b.txt"], "expected": "/var/data/a/b.txt"},
+    {"args": ["/var/data", "../etc/passwd"], "expected": null},
+    {"args": ["/var/data", "x"], "expected": "/var/data/x"}
+  ],
+  "adversarial_tests": [
+    {"args": ["/var/data", "a/../../etc/passwd"], "expected": null},
+    {"args": ["/var/data", "./a"], "expected": "/var/data/a"},
+    {"args": ["/var/data", ""], "expected": "/var/data"},
+    {"args": ["/var/data", "a//b"], "expected": "/var/data/a/b"}
+  ],
+  "ground_truth": {"result_correct": true, "truly_correct": true, "process_valid": true, "note": "仅 ban 前缀 .. 不够"}
+}

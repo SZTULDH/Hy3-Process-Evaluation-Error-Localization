@@ -1,0 +1,21 @@
+{
+  "id": "rw-016",
+  "difficulty": "engineering",
+  "kind": "function",
+  "category": "engineering",
+  "title": "内容 ETag 计算",
+  "description": "弱 ETag：W/\"{md5hex}\"，utf-8 编码。",
+  "function_signature": "def weak_etag(content: str) -> str",
+  "entry_point": "weak_etag",
+  "language": "python",
+  "dependencies": [],
+  "public_tests": [
+    {"args": [""], "expected": "W/\"d41d8cd98f00b204e9800998ecf8427e\""},
+    {"args": ["a"], "expected": "W/\"0cc175b9c0f1b6a831c399e269772661\""}
+  ],
+  "adversarial_tests": [
+    {"args": ["hello"], "expected": "W/\"5d41402abc4b2a76b9719d911017c592\""},
+    {"args": ["你好"], "expected": "W/\"7eca689f0d3389d9dea66ae112e5cfd7\""}
+  ],
+  "ground_truth": {"result_correct": true, "truly_correct": true, "process_valid": true, "note": "编码或标记错误"}
+}

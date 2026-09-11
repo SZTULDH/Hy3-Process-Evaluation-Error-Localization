@@ -1,0 +1,23 @@
+{
+  "id": "rw-002",
+  "difficulty": "engineering",
+  "kind": "function",
+  "category": "engineering",
+  "title": "指数退避等待序列",
+  "description": "生成最多 max_retries 次重试的等待秒数列表。第 i 次（从 0）等待为 min(cap, base * factor**i)。不包含 jitter。",
+  "function_signature": "def backoff_delays(max_retries: int, base: float = 1.0, factor: float = 2.0, cap: float = 60.0) -> list",
+  "entry_point": "backoff_delays",
+  "language": "python",
+  "dependencies": [],
+  "public_tests": [
+    {"args": [3, 1.0, 2.0, 60.0], "expected": [1.0, 2.0, 4.0]},
+    {"args": [1, 0.5, 2.0, 10.0], "expected": [0.5]},
+    {"args": [0, 1.0, 2.0, 60.0], "expected": []}
+  ],
+  "adversarial_tests": [
+    {"args": [5, 10.0, 2.0, 30.0], "expected": [10.0, 20.0, 30.0, 30.0, 30.0]},
+    {"args": [2, 1.0, 3.0, 100.0], "expected": [1.0, 3.0]},
+    {"args": [4, 2.0, 2.0, 5.0], "expected": [2.0, 4.0, 5.0, 5.0]}
+  ],
+  "ground_truth": {"result_correct": true, "truly_correct": true, "process_valid": true, "note": "漏掉 cap 会在对抗测试暴露。"}
+}

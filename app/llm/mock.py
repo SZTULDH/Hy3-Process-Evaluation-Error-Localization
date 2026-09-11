@@ -41,8 +41,15 @@ class MockLLM(BaseLLM):
         temperature: float | None = None,
         max_tokens: int | None = None,
         response_format_json: bool = False,
+        *,
+        tools=None,
+        tool_choice=None,
+        thinking=None,
+        reasoning_effort: str | None = None,
+        preserved_thinking: bool | None = None,
+        **kwargs,
     ) -> LLMResponse:
-        blob = "\n".join(m.content for m in messages)
+        blob = "\n".join((m.content or "") for m in messages)
         role_match = _ROLE_RE.search(blob)
         role = role_match.group(1) if role_match else "generic"
 
@@ -50,10 +57,31 @@ class MockLLM(BaseLLM):
             text = self._bound_solution or self._fallback_solution()
         elif role == "critic":
             text = self._critic_response(blob)
+        elif role == "checker":
+            text = json.dumps(
+                {
+                    "summary": "Mock 检查：以规则与沙盒结果为准",
+                    "process_ok": True,
+                    "code_ok": True,
+                    "pseudo_correct": False,
+                    "root_cause": "",
+                    "debug_hints": [],
+                    "failed_case_analysis": [],
+                },
+                ensure_ascii=False,
+            )
         else:
             text = ""
 
-        return LLMResponse(text=text, raw={"mock": True}, model="mock", simulated=True)
+        return LLMResponse(
+            text=text,
+            raw={"mock": True},
+            model="mock",
+            simulated=True,
+            reasoning_content=None,
+            finish_reason="stop",
+            message=ChatMessage(role="assistant", content=text),
+        )
 
     # ------------------------------------------------------------ 各角色
 

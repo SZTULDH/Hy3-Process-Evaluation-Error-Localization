@@ -1,0 +1,26 @@
+{
+  "id": "rw-007",
+  "difficulty": "engineering",
+  "kind": "function",
+  "category": "engineering",
+  "title": "订单状态机合法跳转",
+  "description": "状态 created->paid->shipped->done；created/paid->cancelled。判断 from->to 是否合法。",
+  "function_signature": "def order_transition_ok(from_state: str, to_state: str) -> bool",
+  "entry_point": "order_transition_ok",
+  "language": "python",
+  "dependencies": [],
+  "public_tests": [
+    {"args": ["created", "paid"], "expected": true},
+    {"args": ["paid", "shipped"], "expected": true},
+    {"args": ["shipped", "created"], "expected": false}
+  ],
+  "adversarial_tests": [
+    {"args": ["created", "cancelled"], "expected": true},
+    {"args": ["paid", "cancelled"], "expected": true},
+    {"args": ["shipped", "cancelled"], "expected": false},
+    {"args": ["done", "paid"], "expected": false},
+    {"args": ["created", "created"], "expected": false},
+    {"args": ["foo", "paid"], "expected": false}
+  ],
+  "ground_truth": {"result_correct": true, "truly_correct": true, "process_valid": true, "note": "漏 cancelled 分支"}
+}

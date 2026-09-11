@@ -1,0 +1,24 @@
+{
+  "id": "rw-006",
+  "difficulty": "engineering",
+  "kind": "function",
+  "category": "engineering",
+  "title": "日志敏感字段脱敏",
+  "description": "将 password/token/secret/api_key（不区分大小写）后的赋值脱敏为 ***。",
+  "function_signature": "def mask_secrets(text: str) -> str",
+  "entry_point": "mask_secrets",
+  "language": "python",
+  "dependencies": [],
+  "public_tests": [
+    {"args": ["user=a password=secret123"], "expected": "user=a password=***"},
+    {"args": ["hello world"], "expected": "hello world"},
+    {"args": ["Token: abc"], "expected": "Token: ***"}
+  ],
+  "adversarial_tests": [
+    {"args": ["password=x token=y"], "expected": "password=*** token=***"},
+    {"args": ["API_KEY=zzz end"], "expected": "API_KEY=*** end"},
+    {"args": ["secret: s"], "expected": "secret: ***"},
+    {"args": [""], "expected": ""}
+  ],
+  "ground_truth": {"result_correct": true, "truly_correct": true, "process_valid": true, "note": "大小写或分隔符处理不全"}
+}

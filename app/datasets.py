@@ -7,7 +7,14 @@ from pathlib import Path
 
 from .config import DATASET_ROOT
 
-_DIFFICULTY_ORDER = {"easy": 0, "medium": 1, "hard": 2, "adversarial": 3}
+_DIFFICULTY_ORDER = {
+    "easy": 0,
+    "medium": 1,
+    "hard": 2,
+    "adversarial": 3,
+    "engineering": 4,
+    "realworld": 4,
+}
 
 
 def load_problem(path: Path) -> dict:

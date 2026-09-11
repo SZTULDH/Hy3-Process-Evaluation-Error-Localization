@@ -1,0 +1,24 @@
+{
+  "id": "rw-017",
+  "difficulty": "engineering",
+  "kind": "function",
+  "category": "engineering",
+  "title": "解析查询字符串",
+  "description": "a=1&b=2；同名键升 list；空串 {}。",
+  "function_signature": "def parse_qs_simple(qs: str) -> dict",
+  "entry_point": "parse_qs_simple",
+  "language": "python",
+  "dependencies": [],
+  "public_tests": [
+    {"args": ["a=1&b=2"], "expected": {"a": "1", "b": "2"}},
+    {"args": ["a=1&a=2"], "expected": {"a": ["1", "2"]}},
+    {"args": [""], "expected": {}}
+  ],
+  "adversarial_tests": [
+    {"args": ["a=&b=2"], "expected": {"a": "", "b": "2"}},
+    {"args": ["flag"], "expected": {"flag": ""}},
+    {"args": ["x=a=b"], "expected": {"x": "a=b"}},
+    {"args": ["a=1&a=2&a=3"], "expected": {"a": ["1", "2", "3"]}}
+  ],
+  "ground_truth": {"result_correct": true, "truly_correct": true, "process_valid": true, "note": "重复键未升级 list"}
+}

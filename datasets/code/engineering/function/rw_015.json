@@ -1,0 +1,23 @@
+{
+  "id": "rw-015",
+  "difficulty": "engineering",
+  "kind": "function",
+  "category": "engineering",
+  "title": "过滤 Hop-by-hop 头",
+  "description": "移除 connection/keep-alive/te/trailers/transfer-encoding/upgrade 等（大小写不敏感）。",
+  "function_signature": "def filter_hop_headers(headers: dict) -> dict",
+  "entry_point": "filter_hop_headers",
+  "language": "python",
+  "dependencies": [],
+  "public_tests": [
+    {"args": [{"Host": "a.com", "Connection": "keep-alive"}], "expected": {"Host": "a.com"}},
+    {"args": [{"Content-Type": "text/plain"}], "expected": {"Content-Type": "text/plain"}},
+    {"args": [{}], "expected": {}}
+  ],
+  "adversarial_tests": [
+    {"args": [{"CONNECTION": "close", "X-Req": "1"}], "expected": {"X-Req": "1"}},
+    {"args": [{"Transfer-Encoding": "chunked", "Accept": "*/*"}], "expected": {"Accept": "*/*"}},
+    {"args": [{"Keep-Alive": "timeout=5"}], "expected": {}}
+  ],
+  "ground_truth": {"result_correct": true, "truly_correct": true, "process_valid": true, "note": "大小写敏感会漏过滤"}
+}

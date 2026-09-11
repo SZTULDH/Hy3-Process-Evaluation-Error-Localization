@@ -10,10 +10,13 @@
 from __future__ import annotations
 
 import time
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 
-from ..config import SECTION_TITLES
+from ..config import CRITIC_PARALLELISM, SECTION_TITLES
 from ..llm.base import BaseLLM
+from ..agents.checker import CheckerAgent, CheckerReport
+from ..agents.producer import ProducerAgent
 from ..llm.factory import get_llm
 from ..llm.mock import MockLLM
 from ..sandbox.runner import SuiteResult, run_suite
@@ -38,9 +41,10 @@ class EvaluationResult:
     adversarial: SuiteResult
 
     rule_findings: list[Finding] = field(default_factory=list)
+    checker_report: dict = field(default_factory=dict)
+    multi_agent: bool = True
     section_verdicts: list[SectionVerdict] = field(default_factory=list)
 
-    # 两条通道
     result_correct: bool = False
     truly_correct: bool = False
     process_valid: bool = False
@@ -74,69 +78,114 @@ class EvaluationResult:
             },
             "code": self.code,
             "rule_findings": [f.to_dict() for f in self.rule_findings],
+            "checker_report": self.checker_report,
+            "multi_agent": self.multi_agent,
             "section_verdicts": [v.to_dict() for v in self.section_verdicts],
             "elapsed_sec": round(self.elapsed_sec, 2),
         }
 
 
 class EvalPipeline:
+    """多 Agent 评估流水线：Producer 生产 → Checker 检查/调试 → Critic 分步审查。"""
+
     def __init__(self, llm: BaseLLM | None = None) -> None:
         self.llm = llm or get_llm()
-        self.solver = Solver(self.llm)
+        self.producer = ProducerAgent(self.llm)
+        self.checker = CheckerAgent(self.llm)
         self.critic = Critic(self.llm)
-
-    # ------------------------------------------------------------------
+        self.solver = self.producer.solver
 
     def run(self, problem: dict) -> EvaluationResult:
+        """完整链路：Producer 生成解答后评估。"""
+        start = time.perf_counter()
+        raw = self.producer.produce(problem)
+        result = self.evaluate_solution(problem, raw)
+        result.elapsed_sec = time.perf_counter() - start
+        return result
+
+    def evaluate_solution(
+        self,
+        problem: dict,
+        raw_solution: str,
+        only_sections: list[str] | None = None,
+    ) -> EvaluationResult:
+        """评估一份**外部给定**的解答，跳过 Producer。
+
+        GUI / 人工抽检用：用户已有候选解答时不必再让模型生成一遍。
+        `only_sections` 非空时只审查指定段落（例如只给代码、只想看实现是否正确）。
+        """
         start = time.perf_counter()
 
-        raw = self.solver.solve(problem)
-        parsed: ParsedSolution = split_sections(raw)
-        code = extract_code(parsed.get("代码实现").content if parsed.get("代码实现") else raw)
-        if not code:
-            code = extract_code(raw)
-
-        entry = problem.get("entry_point", "")
-        public = run_suite(code, entry, problem.get("public_tests", []))
-        adversarial = run_suite(code, entry, problem.get("adversarial_tests", []))
-
-        findings, signals = analyze(problem, parsed, code, public, adversarial)
-
-        verdicts: list[SectionVerdict] = []
-        for title in SECTION_TITLES:
-            section = parsed.get(title)
-            content = section.content if section else ""
-            verdicts.append(
-                self.critic.review_section(
-                    section_title=title,
-                    step_id=section.step_id if section else f"step_{SECTION_TITLES.index(title) + 1}",
-                    section_content=content,
-                    problem=problem,
-                    code=code,
-                    signals=signals,
-                    rule_findings=findings,
-                )
-            )
+        check = self.checker.check(problem, raw_solution)
+        parsed = check.parsed or split_sections(raw_solution)
+        verdicts = self._review_sections(
+            parsed, problem, check.code, check.signals, check.findings,
+            only_sections=only_sections,
+        )
 
         result = EvaluationResult(
             problem_id=problem.get("id", "unknown"),
             difficulty=problem.get("difficulty", "unknown"),
             title=problem.get("title", ""),
-            raw_solution=raw,
+            raw_solution=raw_solution,
             sections=parsed.as_dict(),
-            code=code,
-            public=public,
-            adversarial=adversarial,
-            rule_findings=findings,
+            code=check.code,
+            public=check.public or SuiteResult(),
+            adversarial=check.adversarial or SuiteResult(),
+            rule_findings=check.findings,
             section_verdicts=verdicts,
             elapsed_sec=time.perf_counter() - start,
             backend="mock" if isinstance(self.llm, MockLLM) else "hy3",
+            checker_report=check.to_dict(),
+            multi_agent=True,
         )
 
         self._aggregate(result)
         return result
 
-    # ------------------------------------------------------------------
+    def _review_sections(
+        self,
+        parsed,
+        problem,
+        code,
+        signals,
+        findings,
+        only_sections: list[str] | None = None,
+    ) -> list[SectionVerdict]:
+        """逐段调用 Critic；CRITIC_PARALLELISM>1 时并发，结果与顺序同串行一致。"""
+        jobs = []
+        for title in SECTION_TITLES:
+            if only_sections and title not in only_sections:
+                continue
+            section = parsed.get(title)
+            jobs.append(
+                (
+                    title,
+                    section.step_id if section else f"step_{SECTION_TITLES.index(title) + 1}",
+                    section.content if section else "",
+                )
+            )
+
+        workers = min(CRITIC_PARALLELISM, len(jobs))
+        if workers <= 1:
+            return [
+                self.critic.review_section(
+                    section_title=t, step_id=s, section_content=c,
+                    problem=problem, code=code, signals=signals, rule_findings=findings,
+                )
+                for t, s, c in jobs
+            ]
+
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            futures = [
+                pool.submit(
+                    self.critic.review_section,
+                    section_title=t, step_id=s, section_content=c,
+                    problem=problem, code=code, signals=signals, rule_findings=findings,
+                )
+                for t, s, c in jobs
+            ]
+            return [f.result() for f in futures]
 
     def _aggregate(self, r: EvaluationResult) -> None:
         r.result_correct = r.public.all_passed
@@ -157,7 +206,6 @@ class EvalPipeline:
             types.update(v.error_types)
         r.error_types = sorted(types)
 
-        # 伪正确：公开测试通过，但过程不成立或对抗测试失败
         r.false_positive_solution = bool(
             r.result_correct and (not r.process_valid or not r.truly_correct)
         )

@@ -1,11 +1,8 @@
-"""子进程内执行的测试夹具（harness）。
+"""子进程内测试夹具：函数级 + 类级。
 
 由 runner.py 通过 `python -I _harness.py <spec.json> <out.json>` 调用。
 
-关键设计：**增量落盘**。每跑完一个用例就把结果写回 out.json，并提前把
-即将执行的用例下标写入 `in_progress`。这样即使某个用例死循环触发父进程
-超时，父进程仍能读到已完成用例的结果，并准确知道是第几个用例挂住的——
-既避免了“每个用例一个进程”的启动开销，又不损失失败归因精度。
+类级默认同一实例顺序执行；单测 reset=true 时重建实例。
 """
 
 from __future__ import annotations
@@ -19,7 +16,6 @@ import time
 import traceback
 from contextlib import redirect_stderr, redirect_stdout
 
-# 尽力而为的危险模块拒绝列表（研究用途，非安全边界）
 BLOCKED_MODULES = {
     "subprocess",
     "socket",
@@ -36,11 +32,12 @@ BLOCKED_MODULES = {
 }
 
 OUT_PATH: str | None = None
+_STATE_LOCK = threading.Lock()
+_COMPLETED: list[dict] = []
+_CURRENT_INDEX: list[int | None] = [None]
 
 
 class _LimitedWriter(io.StringIO):
-    """限制写入总量，防止死循环刷爆内存。"""
-
     def __init__(self, limit: int) -> None:
         super().__init__()
         self._limit = limit
@@ -71,22 +68,11 @@ def _make_import():
 
 
 def write_state(state: dict) -> None:
-    """把当前进度写入结果文件（UTF-8，规避跨进程编码问题）。"""
     if not OUT_PATH:
         return
     with _STATE_LOCK:
         with open(OUT_PATH, "w", encoding="utf-8") as fh:
             json.dump(state, fh, ensure_ascii=False, default=repr)
-
-
-# ---- 逐用例超时看门狗 ----
-# 父进程给的是整个套件的总预算，若只靠它，排在后面的用例会"继承"前面
-# 用例省下来的时间，导致单个用例的 timeout 形同虚设。这里在子进程内用
-# 定时器线程自行掐断：超时即记录进度并 os._exit。
-# 子进程是一次性的，直接退出是安全的；Windows 上也没有 signal.alarm 可用。
-_STATE_LOCK = threading.Lock()
-_COMPLETED: list[dict] = []
-_CURRENT_INDEX: list[int | None] = [None]
 
 
 def _watchdog(deadline: float) -> threading.Timer | None:
@@ -110,7 +96,6 @@ def _watchdog(deadline: float) -> threading.Timer | None:
 
 
 def load_module(code_path: str, max_output: int, recursion_limit: int):
-    """载入候选代码，返回 (namespace, error_payload)。"""
     import builtins as _b
 
     ns: dict = {"__name__": "__candidate__"}
@@ -164,45 +149,122 @@ def run_one(fn, args: list, kwargs: dict, max_output: int) -> dict:
         }
 
 
+def _missing(msg: str, n: int) -> list[dict]:
+    return [{"index": i, "status": "missing_entry", "error": msg} for i in range(n)]
+
+
 def main() -> None:
     global OUT_PATH
     OUT_PATH = sys.argv[2] if len(sys.argv) > 2 else None
 
     spec = json.load(open(sys.argv[1], encoding="utf-8"))
     tests = spec.get("tests", [])
-    entry = spec["entry_point"]
+    kind = (spec.get("kind") or "function").lower()
+    entry = spec.get("entry_point") or ""
     max_output = spec.get("max_output_chars", 20000)
 
     ns, err = load_module(
         spec["code_path"], max_output, spec.get("recursion_limit", 3000)
     )
     if err is not None:
-        # 载入失败：所有用例统一记为同一错误
         completed = [dict(err, index=i) for i in range(len(tests))]
         write_state({"completed": completed, "in_progress": None, "load_error": True})
         return
 
+    if kind == "class":
+        class_name = spec.get("class_name") or entry
+        cls = ns.get(class_name)
+        if cls is None:
+            write_state(
+                {
+                    "completed": _missing(f"未找到类 `{class_name}`", len(tests)),
+                    "in_progress": None,
+                    "load_error": True,
+                }
+            )
+            return
+        init_args = list(spec.get("init_args") or [])
+        init_kwargs = dict(spec.get("init_kwargs") or {})
+        default_method = entry
+        instance = None
+
+        def ensure_instance():
+            nonlocal instance
+            if instance is None:
+                instance = cls(*init_args, **init_kwargs)
+            return instance
+
+        _COMPLETED.clear()
+        for i, case in enumerate(tests):
+            _CURRENT_INDEX[0] = i
+            write_state({"completed": list(_COMPLETED), "in_progress": i})
+            timer = _watchdog(float(case.get("timeout", 0) or 0))
+            try:
+                if case.get("reset"):
+                    instance = None
+                try:
+                    obj = ensure_instance()
+                except BaseException as exc:  # noqa: BLE001
+                    payload = {
+                        "status": "runtime_error",
+                        "error_type": type(exc).__name__,
+                        "error": f"构造失败: {exc}"[:500],
+                        "traceback": traceback.format_exc()[-1500:],
+                        "duration_ms": 0.0,
+                    }
+                else:
+                    method_name = case.get("method") or default_method
+                    if not method_name:
+                        payload = {
+                            "status": "missing_entry",
+                            "error": "类级用例未指定 method，且无默认 entry_point",
+                        }
+                    else:
+                        fn = getattr(obj, method_name, None)
+                        if fn is None or not callable(fn):
+                            payload = {
+                                "status": "missing_entry",
+                                "error": f"实例上未找到方法 `{method_name}`",
+                            }
+                        else:
+                            payload = run_one(
+                                fn,
+                                case.get("args", []),
+                                case.get("kwargs", {}),
+                                max_output,
+                            )
+                            payload["method"] = method_name
+            finally:
+                if timer is not None:
+                    timer.cancel()
+            payload["index"] = i
+            _COMPLETED.append(payload)
+            _CURRENT_INDEX[0] = None
+            write_state({"completed": list(_COMPLETED), "in_progress": None})
+
+        write_state({"completed": list(_COMPLETED), "in_progress": None, "done": True})
+        return
+
     fn = ns.get(entry)
     if fn is None:
-        completed = [
+        write_state(
             {
-                "index": i,
-                "status": "missing_entry",
-                "error": f"未找到入口函数 `{entry}`",
+                "completed": _missing(f"未找到入口函数 `{entry}`", len(tests)),
+                "in_progress": None,
+                "load_error": True,
             }
-            for i in range(len(tests))
-        ]
-        write_state({"completed": completed, "in_progress": None, "load_error": True})
+        )
         return
 
     _COMPLETED.clear()
     for i, case in enumerate(tests):
         _CURRENT_INDEX[0] = i
         write_state({"completed": list(_COMPLETED), "in_progress": i})
-
         timer = _watchdog(float(case.get("timeout", 0) or 0))
         try:
-            payload = run_one(fn, case.get("args", []), case.get("kwargs", {}), max_output)
+            payload = run_one(
+                fn, case.get("args", []), case.get("kwargs", {}), max_output
+            )
         finally:
             if timer is not None:
                 timer.cancel()

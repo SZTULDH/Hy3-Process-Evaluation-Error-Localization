@@ -1,0 +1,24 @@
+{
+  "id": "rw-003",
+  "difficulty": "engineering",
+  "kind": "function",
+  "category": "engineering",
+  "title": "固定窗口限流判定",
+  "description": "给定同一 key 在窗口内的历史时间戳列表 timestamps（升序）与当前时间 now、窗口 window_sec、上限 limit，判断本次请求是否允许。统计区间为 (now - window_sec, now]。",
+  "function_signature": "def rate_limit_allow(timestamps: list, now: float, window_sec: float, limit: int) -> bool",
+  "entry_point": "rate_limit_allow",
+  "language": "python",
+  "dependencies": [],
+  "public_tests": [
+    {"args": [[], 10.0, 60.0, 5], "expected": true},
+    {"args": [[1.0, 2.0, 3.0], 10.0, 60.0, 5], "expected": true},
+    {"args": [[8.0, 9.0, 9.5, 9.8, 9.9], 10.0, 5.0, 5], "expected": false}
+  ],
+  "adversarial_tests": [
+    {"args": [[1.0, 2.0], 10.0, 5.0, 2], "expected": true},
+    {"args": [[5.0, 6.0, 7.0], 10.0, 5.0, 3], "expected": false},
+    {"args": [[5.0], 10.0, 5.0, 1], "expected": true},
+    {"args": [[10.0], 10.0, 1.0, 1], "expected": false}
+  ],
+  "ground_truth": {"result_correct": true, "truly_correct": true, "process_valid": true, "note": "闭开区间错误会导致边界对抗失败。"}
+}

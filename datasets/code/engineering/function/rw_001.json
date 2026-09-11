@@ -1,0 +1,35 @@
+{
+  "id": "rw-001",
+  "difficulty": "engineering",
+  "category": "engineering",
+  "kind": "function",
+  "title": "深度合并配置",
+  "description": "将 override 深度合并进 base。嵌套 dict 递归合并；非 dict 值整键覆盖；None 表示删除该键。返回新 dict，不修改入参。",
+  "function_signature": "def deep_merge(base: dict, override: dict) -> dict",
+  "entry_point": "deep_merge",
+  "language": "python",
+  "constraints": "嵌套深度 <= 10；键为 str。",
+  "expected_complexity": { "time": "O(n)", "space": "O(n)" },
+  "required_edge_cases": ["空 dict", "None 删除键", "嵌套覆盖"],
+  "dependencies": [],
+  "source": "inspired by config merge patterns",
+  "public_tests": [
+    { "args": [{ "a": 1 }, { "b": 2 }], "expected": { "a": 1, "b": 2 } },
+    { "args": [{ "a": { "x": 1 } }, { "a": { "y": 2 } }], "expected": { "a": { "x": 1, "y": 2 } } },
+    { "args": [{ "a": 1, "b": 2 }, { "b": null }], "expected": { "a": 1 } }
+  ],
+  "adversarial_tests": [
+    { "args": [{}, {}], "expected": {} },
+    { "args": [{ "a": { "b": { "c": 1 } } }, { "a": { "b": { "d": 2 } } }], "expected": { "a": { "b": { "c": 1, "d": 2 } } } },
+    { "args": [{ "a": 1 }, { "a": { "x": 1 } }], "expected": { "a": { "x": 1 } } },
+    { "args": [{ "a": null }, { "a": 1 }], "expected": { "a": 1 } }
+  ],
+  "ground_truth": {
+    "result_correct": true,
+    "truly_correct": true,
+    "process_valid": true,
+    "first_error_step": null,
+    "error_types": [],
+    "note": "正确实现应递归合并；浅合并会在对抗用例失败。"
+  }
+}

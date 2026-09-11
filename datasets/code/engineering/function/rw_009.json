@@ -1,0 +1,23 @@
+{
+  "id": "rw-009",
+  "difficulty": "engineering",
+  "kind": "function",
+  "category": "engineering",
+  "title": "扁平化嵌套 JSON 字典",
+  "description": "嵌套 dict 扁平化，键用 . 连接。列表不展开。",
+  "function_signature": "def flatten_dict(d: dict, sep: str = \".\") -> dict",
+  "entry_point": "flatten_dict",
+  "language": "python",
+  "dependencies": [],
+  "public_tests": [
+    {"args": [{"a": 1, "b": {"c": 2}}], "expected": {"a": 1, "b.c": 2}},
+    {"args": [{}], "expected": {}},
+    {"args": [{"x": [1, 2]}], "expected": {"x": [1, 2]}}
+  ],
+  "adversarial_tests": [
+    {"args": [{"a": {"b": {"c": 3}}}], "expected": {"a.b.c": 3}},
+    {"args": [{"a": 1, "b": {}}], "expected": {"a": 1}},
+    {"args": [{"a": {"b": 1}, "a.b": 2}], "expected": {"a.b": 2}}
+  ],
+  "ground_truth": {"result_correct": true, "truly_correct": true, "process_valid": true, "note": "空嵌套不应产生多余键"}
+}
