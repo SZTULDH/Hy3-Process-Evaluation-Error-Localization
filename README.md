@@ -23,6 +23,8 @@
 
 > **预览方式**：点击下方截图或「在线预览」链接，由 [htmlpreview.github.io](https://htmlpreview.github.io/)
 > 在线渲染，无需下载；也可以直接把 `assets/*.html` 下载到本地用浏览器打开。
+>
+> 完整录屏：[`assets/demo-video.mp4`](assets/demo-video.mp4)（18 MB · MP4 · 约 2 分钟，点击播放 / 下载）。
 
 ### ① 困难题「单词拆分」· 全绿通过
 
