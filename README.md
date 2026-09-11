@@ -17,37 +17,42 @@
 
 ## 演示
 
-一次完整的「解题生成 → 沙盒执行 → 规则取证 → 分步审查 → 汇总裁决」流程：
+三份工作台快照，覆盖两种题目形态（算法竞赛 / 工程任务·类级）。
+每份都同时提供**静态截图**与**可交互 HTML 页面** —— HTML 里保留了当时的完整 DOM，
+可以逐段展开查看 Checker / Critic 每一步的真实输入与输出。
 
-<video src="assets/demo-video.mp4" controls preload="metadata" width="760"></video>
+> **预览方式**：点击下方截图或「在线预览」链接，由 [htmlpreview.github.io](https://htmlpreview.github.io/)
+> 在线渲染，无需下载；也可以直接把 `assets/*.html` 下载到本地用浏览器打开。
 
-> 若上方播放器未渲染，点这里直接观看或下载：[`assets/demo-video.mp4`](assets/demo-video.mp4)
-
-### 界面截图
-
-**① 困难题「单词拆分」· 全绿通过**
+### ① 困难题「单词拆分」· 全绿通过
 
 左侧是题库与题面（含公开 / 对抗两组测试），右侧是本次评估的完整产出：
 Agent 工作流（Checker 执行取证 / Critic 分步裁决）、四个判定灯、Checker 总评、
 五段逐条结论、提取到的代码，以及开启深度思考后的推理过程。
 本例公开 3/3、对抗 2/2，四个判定全部成立 —— 典型的 DP 解法，过程无瑕疵。
 
-![困难题「单词拆分」· 全绿通过](assets/1.jpeg)
+[![困难题「单词拆分」· 全绿通过](https://github.com/SZTULDH/Hy3-Process-Evaluation-Error-Localization/blob/main/assets/1.jpeg)](https://htmlpreview.github.io/?https://github.com/SZTULDH/Hy3-Process-Evaluation-Error-Localization/blob/main/assets/1.html)
 
-**② 困难题「第 K 个最大元素」· 伪正确识别**
+[**▶ 在线预览交互页面（HTML）**](https://htmlpreview.github.io/?https://github.com/SZTULDH/Hy3-Process-Evaluation-Error-Localization/blob/main/assets/1.html) · [下载 HTML](assets/1.html) · [下载截图](assets/1.jpeg)
+
+### ② 困难题「第 K 个最大元素」· 伪正确识别
 
 公开 2/2、对抗 2/2 **全部通过**，但过程成立为**否**：复杂度分析与实际实现不符、
 描述与实现不一致，首个不成立步骤定位到**「复杂度分析」**。
 这正是本项目要抓的核心 —— 结果对了，过程不成立；只看测试通过率完全发现不了。
 
-![伪正确识别 · 第 K 个最大元素](assets/2.jpeg)
+[![伪正确识别 · 第 K 个最大元素](https://github.com/SZTULDH/Hy3-Process-Evaluation-Error-Localization/blob/main/assets/2.jpeg)](https://htmlpreview.github.io/?https://github.com/SZTULDH/Hy3-Process-Evaluation-Error-Localization/blob/main/assets/2.html)
 
-**③ 工程任务（类级）·「订单状态机」**
+[**▶ 在线预览交互页面（HTML）**](https://htmlpreview.github.io/?https://github.com/SZTULDH/Hy3-Process-Evaluation-Error-Localization/blob/main/assets/2.html) · [下载 HTML](assets/2.html) · [下载截图](assets/2.jpeg)
+
+### ③ 工程任务（类级）·「订单状态机」
 
 同一套链路跑**有状态题目**：交付的是类而非函数，用例在**同一实例**上按序调用。
 本例公开 3/3、对抗 7/7，状态机在多次调用间的迁移与复位全部正确，五段过程成立。
 
-![工程任务（类级）· 订单状态机](assets/3.jpeg)
+[![工程任务（类级）· 订单状态机](https://github.com/SZTULDH/Hy3-Process-Evaluation-Error-Localization/blob/main/assets/3.jpeg)](https://htmlpreview.github.io/?https://github.com/SZTULDH/Hy3-Process-Evaluation-Error-Localization/blob/main/assets/3.html)
+
+[**▶ 在线预览交互页面（HTML）**](https://htmlpreview.github.io/?https://github.com/SZTULDH/Hy3-Process-Evaluation-Error-Localization/blob/main/assets/3.html) · [下载 HTML](assets/3.html) · [下载截图](assets/3.jpeg)
 
 ## 子项目：Sandbox Debugger
 
